@@ -1,0 +1,46 @@
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.codex
+/.cursor/
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/build
+/public/fonts-manifest.dev.json
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+_ide_helper.php
+Homestead.json
+Homestead.yaml
+Thumbs.db
+
+# Supabase: archivos locales y secretos
+/supabase/.temp/
+/supabase/.branches/
+/supabase/.profiles/
+
+# Pruebas temporales locales
+/prueba_*.sql
+/prueba_*.sh
+
+# Metadatos de Windows
+*:Zone.Identifier
+
+# Archivos de entorno
+**/.env
+**/.env.*
+!**/.env.example
+/supabase/snippets/
+/supabase/snippets/
