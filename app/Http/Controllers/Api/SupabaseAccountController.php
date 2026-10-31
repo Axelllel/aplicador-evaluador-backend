@@ -33,7 +33,8 @@ class SupabaseAccountController extends Controller
         if (!$response->successful()) {
             return response()->json(['message'=>'No fue posible registrar la cuenta.'],422);
         }
-        $uid=$response->json('user.id');
+        // GoTrue /signup devuelve 'id' en la raiz; aceptar formato alternativo si cambia.
+        $uid=$response->json('id') ?? $response->json('user.id');
         if (!is_string($uid) || !Str::isUuid($uid)) {
             return response()->json(['message'=>'Revisa tu correo para completar el registro.'],202);
         }
@@ -41,7 +42,9 @@ class SupabaseAccountController extends Controller
             app(DatabaseUserContext::class)->ejecutarConDocenteVerificado($uid, function () use($uid,$data): void {
                 DB::table('docente')->insertOrIgnore([
                     'id'=>$uid,'nombre'=>$data['nombre'],'correo'=>$data['email'],
-                    'telefono'=>$data['telefono']??null,'estado_pago'=>'inactivo',
+                    'telefono'=>$data['telefono']??null,
+                    // La DB asigna estado_pago='inactivo' por DEFAULT; laravel_app
+                    // no tiene permisos de escritura sobre esa columna sensible.
                 ]);
             });
         } catch (Throwable $e) {
