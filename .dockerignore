@@ -1,0 +1,15 @@
+.git
+.env
+.env.*
+!.env.example
+vendor
+node_modules
+tests
+supabase
+*.dump
+*.bak
+*.tar.gz
+*.zip
+probar_bigbitbyte_completo.py
+docker-compose*.yml
+compose.yaml
