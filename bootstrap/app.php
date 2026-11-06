@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\RequiereSesionPanel;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,7 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Protege el panel web: sin token de acceso en la sesión redirige al inicio de sesión.
+        $middleware->alias([
+            'panel.sesion' => RequiereSesionPanel::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

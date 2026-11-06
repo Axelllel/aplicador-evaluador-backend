@@ -35,6 +35,9 @@ Thumbs.db
 /prueba_*.sql
 /prueba_*.sh
 
+# Credenciales del docente de prueba local (nunca se versionan)
+/docs/dev-credenciales.local.md
+
 # Metadatos de Windows
 *:Zone.Identifier
 
