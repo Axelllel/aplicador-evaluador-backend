@@ -36,7 +36,7 @@ class StudentPortalController extends Controller
     public function validateFolio(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'folio_codigo' => ['required', 'string', 'regex:/\\A[A-Za-z0-9]{4,20}\\z/'],
+            'folio_codigo' => ['required', 'string', 'regex:/\A[A-Za-z0-9]{4,20}\z/'],
         ]);
         try {
             $row = DB::selectOne(
