@@ -54,6 +54,7 @@ Nota: No crea cuentas ni autoriza intentos de examen.
                             <input id="folio" name="folio" placeholder="Ej. BBB2026" autocomplete="off" maxlength="20" spellcheck="false" required>
                         </div>
                         <p class="field-hint">Tu docente te compartirá el folio de tu grupo.</p>
+                        <p role="alert" class="entry-message" id="folio-feedback" hidden></p>
                         <button class="primary-button" type="submit">Continuar &nbsp; →</button>
                     </form>
                     <div class="separator"><span></span>o<span></span></div>
@@ -74,8 +75,9 @@ Nota: No crea cuentas ni autoriza intentos de examen.
                     </div>
                     <form id="student-form" novalidate>
                         <label for="student-name">Nombre completo <span class="required">*</span></label>
-                        <div class="input-wrap name-input"><input id="student-name" name="nombre" placeholder="Escribe tu nombre y apellidos" autocomplete="name" maxlength="150" required></div>
+                        <div class="input-wrap name-input" id="name-wrap"><input id="student-name" name="nombre" placeholder="Escribe tu nombre y apellidos" autocomplete="name" maxlength="150" required></div>
                         <p class="field-hint">Así te reconocerá tu docente en el grupo.</p>
+                        <p role="alert" class="entry-message" id="name-feedback" hidden></p>
                         <button class="primary-button" type="submit" id="join-button">Unirme al grupo &nbsp; →</button>
                     </form>
                     <button type="button" class="back-button" id="back-button">← &nbsp; Volver</button>
@@ -93,7 +95,6 @@ Nota: No crea cuentas ni autoriza intentos de examen.
                     <a class="primary-button" style="display:block;text-align:center;text-decoration:none;margin-top:14px" href="{{ route('student.home') }}">Ir al portal del estudiante →</a>
                     <button class="secondary-button" type="button" id="reset-button">Volver al ingreso</button>
                 </div>
-                <p role="alert" class="entry-message" id="student-feedback" hidden></p>
                 <div class="card-footer"><span aria-hidden="true">♢</span><span>Un espacio seguro para aprender y crear.</span></div>
             </section>
             <div class="below-card"><span class="mini-line"></span><p>Pequeños pasos. <strong>Grandes posibilidades.</strong></p><span class="mini-line"></span></div>
