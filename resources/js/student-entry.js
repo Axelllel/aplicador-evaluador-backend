@@ -41,23 +41,56 @@ if (portal) {
     try { saveTheme(localStorage.getItem('bbb-theme') === 'dark'); } catch (_) { saveTheme(false); }
     $('toggle-theme').addEventListener('click', () => saveTheme(!portal.classList.contains('dark')));
 
-    const acceptFolio = (value) => {
+    const acceptFolio = async (value) => {
         const code = value.trim().toUpperCase();
-        // La API actual solo admite A-Z, 0-9, entre 4 y 20 caracteres.
         if (!/^[A-Z0-9]{4,20}$/.test(code)) {
             setMessage('El folio debe tener entre 4 y 20 letras o números, sin guiones.');
             return false;
         }
-        folio = code;
-        $('folio').value = code;
-        $('folio-preview').textContent = code;
-        setStep(2);
-        $('student-name').focus();
-        return true;
+        const button = $('folio-form').querySelector('button[type="submit"]');
+        button.disabled = true;
+        button.textContent = 'Verificando…';
+        setMessage('');
+        try {
+            const response = await fetch(portal.dataset.validateUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ folio_codigo: code }),
+            });
+            const json = await response.json().catch(() => ({}));
+            if (!response.ok || json.data?.valido !== true) {
+                const messages = {
+                    404: 'No encontramos un grupo activo con ese folio. Verifica el código o consulta a tu docente.',
+                    422: 'El folio no tiene un formato válido.',
+                    429: 'Demasiados intentos. Espera un minuto e inténtalo de nuevo.',
+                    419: 'Tu sesión expiró. Actualiza la página e inténtalo nuevamente.',
+                    503: 'No fue posible verificar el grupo. Inténtalo más tarde.',
+                };
+                throw new Error(messages[response.status] || 'No pudimos verificar el folio. Inténtalo nuevamente.');
+            }
+            folio = code;
+            $('folio').value = code;
+            $('folio-preview').textContent = code;
+            setStep(2);
+            $('student-name').focus();
+            return true;
+        } catch (error) {
+            setMessage(error instanceof TypeError
+                ? 'No se pudo conectar con el servidor. Revisa tu conexión.'
+                : (error.message || 'No se pudo validar el grupo.'));
+            return false;
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Continuar →';
+        }
     };
     $('folio-form').addEventListener('submit', (event) => {
         event.preventDefault();
-        acceptFolio($('folio').value);
+        void acceptFolio($('folio').value);
     });
     $('back-button').addEventListener('click', () => { setStep(1); $('folio').focus(); });
     $('reset-button').addEventListener('click', () => {
@@ -161,7 +194,7 @@ if (portal) {
                         // Un QR puede contener el folio directamente o en un enlace ?folio=...
                         try { const url = new URL(raw); raw = url.searchParams.get('folio') || raw; } catch (_) { /* Folio directo. */ }
                         closeQr();
-                        if (acceptFolio(raw)) return;
+                        if (await acceptFolio(raw)) return;
                     }
                 } catch (_) { /* Otro fotograma. */ }
                 if (scanning) requestAnimationFrame(scan);
