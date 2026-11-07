@@ -153,8 +153,8 @@ form label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 9
 .brand-row { display: flex; align-items: center; gap: 14px; }
 .entry-card { max-width: 480px; }
 #student-feedback { min-height: 1.5em; }
-.entry-message { color: #B3261E; font-size: 12px; margin-top: 12px; line-height: 1.5; }
-.portal.dark .entry-message { color: #ffb7ad; }
+.entry-message { color: #9f1d20; background: #fef2f2; border: 1px solid #fecaca; border-radius: 9px; padding: 12px 14px; font-size: 12px; font-weight: 550; margin-top: 12px; line-height: 1.55; }
+.portal.dark .entry-message { color: #ffd4d4; background: #431e2b; border-color: #894256; }
 .success-box { border: 1px solid var(--line); background: var(--pale); border-radius: 12px; padding: 16px; margin: 18px 0; font-size: 14px; }
 .success-box strong { display:block; font-size: 18px; margin-top: 8px; }
 .modal video { width:100%; min-height:180px; max-height:250px; background:#0c1523; border-radius:12px; margin-top:18px; }
