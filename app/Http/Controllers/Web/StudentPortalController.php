@@ -9,6 +9,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 use Illuminate\View\View;
 use Throwable;
 
@@ -28,6 +30,26 @@ class StudentPortalController extends Controller
     public function entry(): View
     {
         return view('student.entry');
+    }
+
+    /** Comprueba un folio contra Supabase, sin crear alumnos ni mostrar datos privados. */
+    public function validateFolio(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'folio_codigo' => ['required', 'string', 'regex:/\\A[A-Za-z0-9]{4,20}\\z/'],
+        ]);
+        try {
+            $row = DB::selectOne(
+                'SELECT public.fn_validar_folio_grupo(CAST(? AS text)) AS valido',
+                [$data['folio_codigo']]
+            );
+        } catch (QueryException $e) {
+            return response()->json(['message' => 'No fue posible verificar el grupo. Inténtalo más tarde.'], 503);
+        }
+        if (!$row || !$row->valido) {
+            return response()->json(['message' => 'No encontramos un grupo activo con ese folio. Verifica el código o consulta a tu docente.'], 404);
+        }
+        return response()->json(['data' => ['valido' => true]], 200);
     }
 
     public function join(Request $request): JsonResponse
