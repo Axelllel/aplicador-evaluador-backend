@@ -14,7 +14,7 @@ Nota: No crea cuentas ni autoriza intentos de examen.
     @vite(['resources/css/student-entry.css', 'resources/js/student-entry.js'])
 </head>
 <body>
-<div class="portal" id="student-entry" data-join-url="{{ route('student.join') }}">
+<div class="portal" id="student-entry" data-join-url="{{ route('student.join') }}" data-validate-url="{{ route('student.validate-folio') }}">
     <div class="ambient ambient-one" aria-hidden="true"></div>
     <div class="ambient ambient-two" aria-hidden="true"></div>
     <div class="background-grid" aria-hidden="true"></div>
@@ -69,7 +69,7 @@ Nota: No crea cuentas ni autoriza intentos de examen.
                         <div>
                             <span class="group-kicker">FOLIO DEL GRUPO</span>
                             <strong id="folio-preview"></strong>
-                            <span>Confirmaremos el grupo al registrarte.</span>
+                            <span>Grupo activo verificado en Supabase.</span>
                         </div>
                         <span class="verified" aria-hidden="true">✓</span>
                     </div>
