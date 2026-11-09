@@ -75,8 +75,8 @@ Nota: No crea cuentas ni autoriza intentos de examen.
                     </div>
                     <form id="student-form" novalidate>
                         <label for="student-name">Nombre completo <span class="required">*</span></label>
-                        <div class="input-wrap name-input" id="name-wrap"><input id="student-name" name="nombre" placeholder="Escribe tu nombre y apellidos" autocomplete="name" maxlength="150" required></div>
-                        <p class="field-hint">Así te reconocerá tu docente en el grupo.</p>
+                        <div class="input-wrap name-input" id="name-wrap"><input id="student-name" name="nombre" placeholder="Escribe tu nombre y apellidos" autocomplete="name" maxlength="150" value="{{ $enrolledStudent['nombre'] ?? '' }}" @readonly($enrolledStudent) required></div>
+                        <p class="field-hint">{{ $enrolledStudent ? 'Usaremos el nombre de tu sesión para agregarte al grupo.' : 'Así te reconocerá tu docente en el grupo.' }}</p>
                         <p role="alert" class="entry-message" id="name-feedback" hidden></p>
                         <button class="primary-button" type="submit" id="join-button">Unirme al grupo &nbsp; →</button>
                     </form>
@@ -92,7 +92,7 @@ Nota: No crea cuentas ni autoriza intentos de examen.
                     </div>
                     <div class="success-box"><span>Materia registrada</span><strong id="success-subject"></strong></div>
                     <p class="prototype-note">Ya puedes consultar los exámenes de tu grupo e iniciar los que estén disponibles.</p>
-                    <a class="primary-button" style="display:block;text-align:center;text-decoration:none;margin-top:14px" href="{{ route('student.home') }}">Ir al portal del estudiante →</a>
+                    <a class="primary-button" id="success-home" style="display:block;text-align:center;text-decoration:none;margin-top:14px" href="{{ route('student.home') }}">Ir al portal del estudiante →</a>
                     <button class="secondary-button" type="button" id="reset-button">Volver al ingreso</button>
                 </div>
                 <div class="card-footer"><span aria-hidden="true">♢</span><span>Un espacio seguro para aprender y crear.</span></div>

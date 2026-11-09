@@ -19,7 +19,7 @@
     </div>
     <nav aria-label="Menú principal">
         <a class="sh-nav-item {{ $activePage === 'home' ? 'sh-nav-active' : '' }}" href="{{ route('student.home') }}" @if ($activePage === 'home') aria-current="page" @endif>⌂ &nbsp; Inicio</a>
-        <a class="sh-nav-item" href="{{ $activePage === 'home' ? '' : route('student.home') }}#bbb-pending">▤ &nbsp; Exámenes por materia</a>
+        <a class="sh-nav-item" href="{{ $activePage === 'home' ? '' : route('student.home', ['grupo' => $student['grupo_id']]) }}#bbb-pending">▤ &nbsp; Exámenes por materia</a>
         <a class="sh-nav-item {{ $activePage === 'grades' ? 'sh-nav-active' : '' }}" href="{{ route('student.grades') }}" @if ($activePage === 'grades') aria-current="page" @endif>▥ &nbsp; Calificaciones</a>
         <button class="sh-nav-item" id="bbb-groups-open" type="button" aria-haspopup="dialog" aria-controls="bbb-groups-dialog"><x-icon name="user-group" /> Mis grupos</button>
         <a class="sh-nav-item sh-nav-join" href="{{ route('student.entry') }}">＋ &nbsp; Unirse a un grupo</a>
@@ -42,14 +42,23 @@
     <p class="sh-dialog-eyebrow">APRENDEMOS EN COMUNIDAD</p>
     <h2 id="bbb-groups-title">Mis grupos</h2>
 
-    <article class="mt-6 rounded-xl border border-[var(--sh-border)] bg-[var(--sh-pale)] p-5">
-        <span class="ei-state ei-state-available"><span aria-hidden="true"></span> Grupo actual</span>
-        <h3 class="mt-3 text-xl font-bold">Grupo #{{ $student['grupo_id'] }}</h3>
-        <p class="mt-2 text-xs text-[var(--sh-muted)]">{{ $student['materia'] }}</p>
-        @if (!empty($student['folio_codigo']))
-            <p class="mt-4 border-t border-[var(--sh-border)] pt-3 font-mono text-xs text-[var(--sh-blue)]">{{ $student['folio_codigo'] }}</p>
-        @endif
-    </article>
+    <div class="mt-6 grid gap-3">
+        @foreach ($groups as $group)
+            <a class="block rounded-xl border border-[var(--sh-border)] bg-[var(--sh-pale)] p-5 hover:border-blue-400"
+               href="{{ route('student.home', ['grupo' => $group['grupo_id']]) }}#bbb-pending"
+               @if ($group['grupo_id'] === $student['grupo_id']) aria-current="true" @endif>
+                @if ($group['grupo_id'] === $student['grupo_id'])
+                    <span class="ei-state ei-state-available"><span aria-hidden="true"></span> Grupo actual</span>
+                @endif
+                <h3 class="mt-2 text-xl font-bold">Grupo #{{ $group['grupo_id'] }}</h3>
+                <p class="mt-2 text-xs text-[var(--sh-muted)]">{{ $group['materia'] }}</p>
+                @if (!empty($group['folio_codigo']))
+                    <p class="mt-4 border-t border-[var(--sh-border)] pt-3 font-mono text-xs text-[var(--sh-blue)]">{{ $group['folio_codigo'] }}</p>
+                @endif
+                <span class="mt-3 block text-xs text-[var(--sh-blue)]">Ver exámenes →</span>
+            </a>
+        @endforeach
+    </div>
 
     <a class="sh-dialog-action" href="{{ route('student.entry') }}"><x-icon name="plus" /> Unirse a un grupo</a>
     @if ($activePage === 'home')
@@ -57,6 +66,6 @@
             <button class="sh-dialog-action sh-dialog-secondary" type="submit">Volver al inicio →</button>
         </form>
     @else
-        <a class="sh-dialog-action sh-dialog-secondary" href="{{ route('student.home') }}">Volver al inicio →</a>
+        <a class="sh-dialog-action sh-dialog-secondary" href="{{ route('student.home', ['grupo' => $student['grupo_id']]) }}">Volver al inicio →</a>
     @endif
 </dialog>

@@ -22,7 +22,24 @@ class StudentPortalController extends Controller
 
     private function attempt(Request $request): ?array
     {
-        return $request->session()->get('bbb.attempt');
+        $attempt = $request->session()->get('bbb.attempt');
+
+        return $attempt ? $attempt + ['grupo_id' => $this->student($request)['grupo_id'] ?? null] : null;
+    }
+
+    private function groups(Request $request, array $student): array
+    {
+        return [$student['grupo_id'] => $student] + $request->session()->get('bbb.groups', []);
+    }
+
+    private function groupForRequest(Request $request, array $student): ?array
+    {
+        $data = $request->validate(['grupo' => ['sometimes', 'nullable', 'integer', 'min:1']]);
+        if (!isset($data['grupo'])) {
+            return null;
+        }
+
+        return $this->groups($request, $student)[(int) $data['grupo']] ?? abort(404);
     }
 
     private function completedAttempts(Request $request): array
@@ -33,12 +50,15 @@ class StudentPortalController extends Controller
             $completed[$current['intento_id']] = $current;
         }
 
-        return array_reverse($completed, true);
+        return array_map(
+            fn (array $attempt) => $attempt + ['grupo_id' => $this->student($request)['grupo_id'] ?? null],
+            array_reverse($completed, true),
+        );
     }
 
-    private function recentResults(array $completed): array
+    private function resultCards(array $completed, array $groups): array
     {
-        return array_map(function (array $attempt): array {
+        return array_map(function (array $attempt) use ($groups): array {
             $result = [];
             try {
                 $function = isset($attempt['nombre'], $attempt['fecha_entrega'])
@@ -61,6 +81,8 @@ class StudentPortalController extends Controller
 
             return [
                 'intento_id' => $attempt['intento_id'],
+                'grupo_id' => $attempt['grupo_id'],
+                'materia' => $groups[$attempt['grupo_id']]['materia'] ?? null,
                 'nombre' => $attempt['nombre'] ?? $result['nombre'] ?? 'Examen #'.$attempt['examen_id'],
                 'fecha_inicio' => $attempt['fecha_inicio'],
                 'fecha_entrega' => $attempt['fecha_entrega'] ?? $result['fecha_entrega'] ?? null,
@@ -68,12 +90,12 @@ class StudentPortalController extends Controller
                 'escala' => $result['escala'] ?? null,
                 'estado' => $result['estado'] ?? null,
             ];
-        }, array_slice($completed, 0, 3));
+        }, $completed);
     }
 
-    public function entry(): View
+    public function entry(Request $request): View
     {
-        return view('student.entry');
+        return view('student.entry', ['enrolledStudent' => $this->student($request)]);
     }
 
     /** Comprueba un folio contra Supabase, sin crear alumnos ni mostrar datos privados. */
@@ -98,6 +120,11 @@ class StudentPortalController extends Controller
 
     public function join(Request $request): JsonResponse
     {
+        $student = $this->student($request);
+        if ($student) {
+            return $this->joinAdditionalGroup($request, $student);
+        }
+
         // Reutiliza exactamente la funcion / validacion de la API ya probada.
         $response = app(StudentJoinController::class)->store($request);
         if ($response->getStatusCode() !== 201) {
@@ -105,7 +132,7 @@ class StudentPortalController extends Controller
         }
         $data = $response->getData(true)['data'];
         $request->session()->regenerate();
-        $request->session()->forget(['bbb.attempt', 'bbb.completed_attempts']);
+        $request->session()->forget(['bbb.attempt', 'bbb.completed_attempts', 'bbb.groups']);
         $request->session()->put('bbb.student', [
             'alumno_id' => (int) $data['alumno_id'],
             'grupo_id' => (int) $data['grupo_id'],
@@ -113,7 +140,53 @@ class StudentPortalController extends Controller
             'nombre' => (string) $request->input('nombre'),
             'folio_codigo' => mb_strtoupper((string) $request->input('folio_codigo')),
         ]);
-        return $response;
+        $payload = $response->getData(true);
+        $payload['data']['home_url'] = route('student.home');
+
+        return $response->setData($payload);
+    }
+
+    private function joinAdditionalGroup(Request $request, array $student): JsonResponse
+    {
+        $data = $request->validate(['folio_codigo' => ['required', 'string', 'regex:/\A[A-Za-z0-9]{4,20}\z/']]);
+        $folio = mb_strtoupper($data['folio_codigo']);
+
+        try {
+            $group = DB::selectOne('SELECT * FROM public.fn_unirse_otro_grupo(CAST(? AS text), CAST(? AS bigint))', [
+                $folio, $student['alumno_id'],
+            ], false);
+        } catch (QueryException $exception) {
+            $status = match ($exception->errorInfo[0] ?? null) {
+                'P1001' => 402,
+                'P1002' => 404,
+                'P1003' => 422,
+                default => 503,
+            };
+            if ($status === 503) {
+                report($exception);
+            }
+
+            return response()->json(['message' => 'No se pudo agregar el grupo.'], $status);
+        }
+
+        $profile = array_replace($student, [
+            'grupo_id' => (int) $group->grupo_id,
+            'materia' => $group->materia,
+            'folio_codigo' => $folio,
+        ]);
+        if ($profile['grupo_id'] === $student['grupo_id']) {
+            $request->session()->put('bbb.student', $profile);
+        } else {
+            $request->session()->put('bbb.groups.'.$profile['grupo_id'], $profile);
+        }
+
+        return response()->json(['data' => [
+            'alumno_id' => $student['alumno_id'],
+            'grupo_id' => $profile['grupo_id'],
+            'materia' => $profile['materia'],
+            'estado' => 'inscrito',
+            'home_url' => route('student.home', ['grupo' => $profile['grupo_id']]),
+        ]], 201);
     }
 
     public function home(Request $request): View|RedirectResponse
@@ -122,6 +195,8 @@ class StudentPortalController extends Controller
         if (!$student) {
             return redirect()->route('student.entry');
         }
+        $groups = $this->groups($request, $student);
+        $student = $this->groupForRequest($request, $student) ?? $student;
 
         try {
             $exams = $this->examsForStudent($student);
@@ -131,20 +206,21 @@ class StudentPortalController extends Controller
         }
 
         $attempt = $this->attempt($request);
-        $completed = $this->completedAttempts($request);
+        $completed = array_filter($this->completedAttempts($request), fn ($item) => $item['grupo_id'] === $student['grupo_id']);
         $excluded = array_column($completed, 'examen_id');
         if ($attempt) {
             $excluded[] = $attempt['examen_id'];
         }
         $activeAttempt = $attempt && !$attempt['finished'] ? $attempt : null;
+        $activeInGroup = $activeAttempt && $activeAttempt['grupo_id'] === $student['grupo_id'] ? $activeAttempt : null;
         $pendingExams = $exams === null ? null : array_values(array_filter(
             $exams,
             fn ($exam) => !in_array((int) $exam->examen_id, $excluded, true),
         ));
         $completedCount = count($completed);
-        $recentResults = $this->recentResults($completed);
+        $recentResults = $this->resultCards(array_slice($completed, 0, 3), $groups);
 
-        return view('student.home', compact('student', 'activeAttempt', 'pendingExams', 'completedCount', 'recentResults'));
+        return view('student.home', compact('student', 'groups', 'activeAttempt', 'activeInGroup', 'pendingExams', 'completedCount', 'recentResults'));
     }
 
     private function examsForStudent(array $student): array
@@ -167,6 +243,7 @@ class StudentPortalController extends Controller
     {
         $student = $this->student($request);
         if (!$student) return response()->json(['message'=>'Primero ingresa a un grupo.'], 401);
+        $student = $this->groupForRequest($request, $student) ?? $student;
         $previous = $this->attempt($request);
         if ($previous && !$previous['finished']) {
             return response()->json(['message' => 'Entrega el examen en curso antes de iniciar otro.'], 409);
@@ -211,6 +288,7 @@ class StudentPortalController extends Controller
             'intento_id' => (int) $result->intento_id,
             'token_sesion' => (string) $result->token_sesion,
             'examen_id' => $examId,
+            'grupo_id' => $student['grupo_id'],
             'nombre' => $result->nombre,
             'fecha_inicio' => (string) $result->fecha_inicio,
             'finished' => false,
@@ -221,11 +299,14 @@ class StudentPortalController extends Controller
 
     public function exam(Request $request): View|RedirectResponse
     {
-        if (!$this->student($request)) return redirect()->route('student.entry');
+        $student = $this->student($request);
+        if (!$student) return redirect()->route('student.entry');
         $attempt = $this->attempt($request);
         if (!$attempt) return redirect()->route('student.home');
         if ($attempt['finished']) return redirect()->route('student.grades');
-        return view('student.exam', ['student'=>$this->student($request),'attempt'=>$attempt]);
+        $student = $this->groups($request, $student)[$attempt['grupo_id']] ?? abort(404);
+
+        return view('student.exam', compact('student', 'attempt'));
     }
 
     private function invoke(Request $request, string $method, bool $mustBeOpen = true, ?string $query = null, ?array $attempt = null): JsonResponse
@@ -301,9 +382,23 @@ class StudentPortalController extends Controller
         $student = $this->student($request);
         if (!$student) return redirect()->route('student.entry');
 
-        $attempt = $this->selectedResult($request) ?? $this->attempt($request);
+        $groups = $this->groups($request, $student);
+        $filter = $this->groupForRequest($request, $student);
+        if ($request->has('intento')) {
+            $attempt = $this->selectedResult($request);
+            $student = $groups[$attempt['grupo_id']] ?? abort(404);
 
-        return view('student.grades', compact('student', 'attempt'));
+            return view('student.grades', compact('student', 'groups', 'attempt', 'filter'));
+        }
+
+        $completed = $this->completedAttempts($request);
+        if ($filter) {
+            $completed = array_filter($completed, fn ($item) => $item['grupo_id'] === $filter['grupo_id']);
+            $student = $filter;
+        }
+        $results = $this->resultCards($completed, $groups);
+
+        return view('student.grade-list', compact('student', 'groups', 'filter', 'results'));
     }
 
     public function result(Request $request): JsonResponse

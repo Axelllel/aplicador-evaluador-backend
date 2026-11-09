@@ -96,7 +96,7 @@ if (portal) {
     $('reset-button').addEventListener('click', () => {
         folio = '';
         $('folio').value = '';
-        $('student-name').value = '';
+        if (!$('student-name').readOnly) $('student-name').value = '';
         setStep(1);
     });
     $('student-form').addEventListener('submit', async (event) => {
@@ -142,6 +142,7 @@ if (portal) {
             } catch (_) { /* El registro ya existe en el servidor. */ }
             $('success-title').textContent = `¡Todo listo, ${nombre.split(' ')[0]}!`;
             $('success-subject').textContent = json.data.materia || 'Grupo registrado';
+            if (json.data.home_url) $('success-home').href = json.data.home_url;
             setStep(3);
         } catch (error) {
             setMessage(error instanceof TypeError

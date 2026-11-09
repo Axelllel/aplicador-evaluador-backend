@@ -103,7 +103,7 @@ if (root) {
         launch.disabled = true;
         launch.textContent = 'Iniciando examen…';
         try {
-          const data = await request(urls.start, {examen_id: launch.dataset.examId});
+          const data = await request(urls.start, {examen_id: launch.dataset.examId, grupo: urls.group});
           location.assign(data.url || urls.exam);
         } catch (error) {
           output.textContent = error.message;

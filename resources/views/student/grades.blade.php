@@ -6,7 +6,7 @@
 
 <main class="sh-main pb-8">
     <div class="sh-content student-grades">
-        <a class="sg-back-link" href="{{ route('student.home') }}#bbb-pending">← Mis exámenes</a>
+        <a class="sg-back-link" href="{{ route('student.grades', $filter ? ['grupo' => $filter['grupo_id']] : []) }}">← Mis evaluaciones</a>
         <div class="sh-page-heading sg-detail-heading">
             <div>
                 <p class="sh-welcome-label">{{ $student['materia'] }}</p>

@@ -102,8 +102,8 @@
         <h2 id="bbb-done-title">Examen entregado</h2>
         <p class="er-exam-name">Tus respuestas quedaron registradas.</p>
         <div class="bbb-modal-actions">
-            <a class="bbb-primary" href="{{ route('student.grades') }}">Ver resultado →</a>
-            <a class="bbb-secondary" href="{{ route('student.home') }}">Volver al inicio</a>
+            <a class="bbb-primary" href="{{ route('student.grades', ['intento' => $attempt['intento_id']]) }}">Ver resultado →</a>
+            <a class="bbb-secondary" href="{{ route('student.home', ['grupo' => $student['grupo_id']]) }}">Volver al inicio</a>
         </div>
     </dialog>
 </div>
