@@ -73,8 +73,27 @@ class StudentPortalController extends Controller
 
     public function home(Request $request): View|RedirectResponse
     {
-        if (!$this->student($request)) return redirect()->route('student.entry');
-        return view('student.home', ['student' => $this->student($request), 'attempt' => $this->attempt($request)]);
+        $student = $this->student($request);
+        if (!$student) {
+            return redirect()->route('student.entry');
+        }
+
+        try {
+            $exams = DB::select('SELECT * FROM public.fn_examenes_portal_alumno(?, ?)', [
+                $student['alumno_id'], $student['grupo_id'],
+            ]);
+        } catch (QueryException $exception) {
+            report($exception);
+            $exams = null;
+        }
+
+        $attempt = $this->attempt($request);
+        $pendingExams = $exams === null ? null : array_values(array_filter(
+            $exams,
+            fn ($exam) => (int) $exam->examen_id !== ($attempt['examen_id'] ?? null),
+        ));
+
+        return view('student.home', compact('student', 'attempt', 'pendingExams'));
     }
 
     public function start(Request $request): JsonResponse
@@ -82,7 +101,10 @@ class StudentPortalController extends Controller
         $student = $this->student($request);
         if (!$student) return response()->json(['message'=>'Primero ingresa a un grupo.'], 401);
         if ($this->attempt($request)) return response()->json(['message'=>'Ya tienes un examen iniciado o entregado en esta sesión.'], 409);
-        $data = $request->validate(['pase'=>['required','string','max:4096']]);
+        $data = $request->validate([
+            'pase' => ['required', 'string', 'max:4096'],
+            'examen_id' => ['sometimes', 'required', 'integer', 'min:1'],
+        ]);
         try {
             $grant = json_decode(Crypt::decryptString($data['pase']), true, 512, JSON_THROW_ON_ERROR);
         } catch (Throwable $e) {
@@ -91,6 +113,9 @@ class StudentPortalController extends Controller
         // El pase debe estar emitido exactamente para el alumno de ESTA sesión.
         if (!is_array($grant) || ($grant['student'] ?? null) !== $student['alumno_id']) {
             return response()->json(['message'=>'El pase no corresponde a este alumno.'], 403);
+        }
+        if (isset($data['examen_id']) && ($grant['exam'] ?? null) !== (int) $data['examen_id']) {
+            return response()->json(['message' => 'El pase no corresponde al examen seleccionado.'], 403);
         }
         $request->merge(['plataforma'=>'web']);
         $response = app(StudentExamController::class)->start($request);

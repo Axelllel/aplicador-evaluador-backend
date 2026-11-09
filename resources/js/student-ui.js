@@ -14,6 +14,19 @@ if (root) {
   document.querySelectorAll('[data-theme-toggle]').forEach(b => b.addEventListener('click', () => {
     localStorage.setItem('bbb-theme', root.classList.contains('sh-dark') ? 'light' : 'dark'); theme();
   }));
+  const account = root.querySelector('.sh-account');
+  if (account) {
+    document.addEventListener('click', event => {
+      if (!account.contains(event.target)) account.open = false;
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && account.open) {
+        const focusWasInside = account.contains(document.activeElement);
+        account.open = false;
+        if (focusWasInside) account.querySelector('summary').focus();
+      }
+    });
+  }
   const request = async (url, data={}) => {
     const res = await fetch(url, {method:'POST', credentials:'same-origin', headers:{'Accept':'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrf}, body:JSON.stringify(data)});
     const json = await res.json().catch(() => ({}));
@@ -24,9 +37,27 @@ if (root) {
   const close = id => { if ($(id)?.open) $(id).close(); };
   if (urls.screen === 'home') {
     const menu=$('bbb-menu-toggle'), side=$('student-navigation');
-    if(menu && side) menu.addEventListener('click',()=>{side.hidden=!side.hidden; root.classList.toggle('sh-sidebar-open',!side.hidden);menu.setAttribute('aria-expanded', String(!side.hidden));});
-    const grantBtn=$('bbb-feature-exam'), launch=$('bbb-instr-go');
-    grantBtn?.addEventListener('click',()=>dialog('bbb-instructions'));
+    if (menu && side) {
+      const setMenu = open => {
+        side.hidden = !open;
+        root.classList.toggle('sh-sidebar-open', open);
+        menu.setAttribute('aria-expanded', String(open));
+      };
+      menu.addEventListener('click', () => setMenu(side.hidden));
+      side.querySelectorAll('a[href^="#"]').forEach(link => link.addEventListener('click', () => {
+        if (window.matchMedia('(max-width: 1050px)').matches) {
+          setMenu(false);
+          $(link.hash.slice(1))?.focus();
+        }
+      }));
+    }
+    const launch=$('bbb-instr-go');
+    let selectedExam = '';
+    root.querySelectorAll('[data-exam-pass]').forEach(button => button.addEventListener('click', () => {
+      selectedExam = button.dataset.examPass;
+      $('bbb-grant-error').hidden = true;
+      dialog('bbb-instructions');
+    }));
     $('bbb-close-grant')?.addEventListener('click',()=>close('bbb-instructions'));
     $('bbb-cancel-grant')?.addEventListener('click',()=>close('bbb-instructions'));
     launch?.addEventListener('click',async()=>{
@@ -34,7 +65,8 @@ if (root) {
       output.hidden=true;
       if(!pase){output.textContent='Ingresa el pase de tu docente.';output.hidden=false;return;}
       launch.disabled=true;launch.textContent='Verificando pase…';
-      try { const data=await request(urls.start,{pase});location.assign(data.url || urls.exam); }
+      const payload = selectedExam ? {pase, examen_id: selectedExam} : {pase};
+      try { const data=await request(urls.start,payload);location.assign(data.url || urls.exam); }
       catch(e){output.textContent=e.message;output.hidden=false;launch.disabled=false;launch.textContent='Iniciar examen →';}
     });
   }
