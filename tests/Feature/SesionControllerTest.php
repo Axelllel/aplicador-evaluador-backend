@@ -56,12 +56,15 @@ class SesionControllerTest extends TestCase
             ->assertSee('<title>Iniciar sesión · Sistema Aplicador / Evaluador de Exámenes</title>', false);
     }
 
-    public function test_login_muestra_el_logotipo_de_96_px_con_texto_alternativo(): void
+    public function test_login_docente_reutiliza_la_identidad_visual_del_portal_alumno(): void
     {
         $this->get('/login')
             ->assertOk()
-            ->assertSee('style="height: 96px"', false)
-            ->assertSee('alt="Logotipo de BigBitByte: un cubo con tres letras B"', false);
+            ->assertSee('style="height: 42px"', false)
+            ->assertSee('alt="Logotipo de BigBitByte: un cubo con tres letras B"', false)
+            ->assertSee('Portal del docente')
+            ->assertSee('student-entry.css')
+            ->assertSee('id="toggle-theme"', false);
     }
 
     public function test_login_tiene_el_boton_principal_de_ancho_completo(): void
