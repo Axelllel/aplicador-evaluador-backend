@@ -1,6 +1,6 @@
 /*
  * Comportamientos de la interfaz del panel, sin dependencias externas:
- * menú lateral en pantallas pequeñas, menú de cuenta, ventanas modales,
+ * menú lateral, menú de cuenta, ventanas modales,
  * avisos que se ocultan a los 5 s y copia del folio (Manual COD-WEB, secciones 6.16 a 6.18).
  */
 
@@ -41,28 +41,27 @@ function mostrarAvisos(contenedor) {
     });
 }
 
-function alternarMenuLateral() {
+function alternarMenuLateral(forzarCierre = false) {
+    const panel = document.getElementById('teacher-panel');
     const menu = document.getElementById('menu-lateral');
     const fondo = document.getElementById('menu-fondo');
+    const boton = document.querySelector('button[data-menu-alternar]');
 
-    if (!menu || !fondo) {
+    if (!panel || !menu || !fondo || !boton) {
         return;
     }
 
-    const estaAbierto = menu.classList.toggle('hidden') === false;
-    fondo.classList.toggle('hidden', !estaAbierto);
+    const estabaAbierto = panel.classList.contains('tp-menu-abierto');
+    const debeAbrir = !forzarCierre && !estabaAbierto;
 
-    document.querySelectorAll('button[data-menu-alternar]').forEach((boton) => {
-        boton.setAttribute('aria-expanded', String(estaAbierto));
-    });
-}
-
-function cerrarMenuLateral() {
-    const menu = document.getElementById('menu-lateral');
-
-    if (menu && !menu.classList.contains('hidden') && window.innerWidth < 1024) {
-        alternarMenuLateral();
+    if (estabaAbierto && !debeAbrir && (menu.contains(document.activeElement) || document.activeElement === document.body)) {
+        boton.focus();
     }
+
+    panel.classList.toggle('tp-menu-abierto', debeAbrir);
+    menu.inert = !debeAbrir;
+    fondo.classList.toggle('hidden', !debeAbrir);
+    boton.setAttribute('aria-expanded', String(debeAbrir));
 }
 
 function alternarMenuDeCuenta(forzarCierre = false) {
@@ -172,7 +171,7 @@ document.addEventListener('keydown', (evento) => {
     }
 
     alternarMenuDeCuenta(true);
-    cerrarMenuLateral();
+    alternarMenuLateral(true);
 });
 
 iniciarAvisos();
