@@ -1,19 +1,24 @@
 <?php
 
+/**
+ * Archivo: ExampleTest.php
+ * Módulo: tests/Feature
+ * Descripción: Verifica que la raíz del sitio redirige al inicio de sesión.
+ * Autor: Leonardo Ballestero López
+ * Creado: 27/10/2026
+ * Modificado: 27/10/2026 · Leonardo Ballestero López · GET / ahora redirige a /login
+ */
+
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_la_raiz_redirige_al_inicio_de_sesion(): void
     {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
+        $this->get('/')->assertRedirect('/login');
     }
 }

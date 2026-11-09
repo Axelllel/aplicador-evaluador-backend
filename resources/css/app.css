@@ -2,8 +2,31 @@
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
+@source "../**/*.blade.php";
+@source "../**/*.js";
+@source "../**/*.vue";
+
+/* Anillo de foco de 2 px en acento para todo enlace (Manual COD-WEB, secciones 6.14 y 6.17). */
+@layer base {
+    a:focus-visible {
+        outline: 2px solid var(--color-acento);
+        outline-offset: 2px;
+    }
+}
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-primario: #1f2937;
+    --color-acento: #2e74b5;
+    --color-acento-claro: #3b82f6;
+    /* Serie secundaria de las gráficas (Manual de Calidad §3.10); sobre blanco da 2.54:1, por eso lleva etiquetas directas. */
+    --color-acento-medio: #60a5fa;
+    --color-borde: #a0aec0;
+    --color-texto-suave: #4b5563;
+    --color-superficie: #f3f4f6;
+    --color-exito: #2e7d32;
+    --color-aviso: #b45309;
+    --color-error: #b3261e;
 }
