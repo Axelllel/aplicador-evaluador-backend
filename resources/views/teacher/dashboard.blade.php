@@ -9,13 +9,20 @@
 --}}
 <x-layouts.panel :titulo="__('panel.inicio.titulo')" :descripcion="__('panel.inicio.descripcion')">
     @if ($plan === null)
-        <x-alerta tipo="aviso">{{ __('mensajes.aviso.sin_plan') }}</x-alerta>
+        <x-alerta tipo="aviso">
+            {{ __('mensajes.aviso.sin_plan') }}
+
+            <x-slot:accion>
+                <x-boton variante="secundario" icono="credit-card" :href="route('panel.suscripcion')">
+                    {{ __('acciones.ver_suscripcion') }}
+                </x-boton>
+            </x-slot:accion>
+        </x-alerta>
 
         <section aria-labelledby="titulo-sin-plan">
             <x-tarjeta class="space-y-3">
                 <h2 id="titulo-sin-plan" class="text-xl font-semibold text-primario">{{ __('panel.inicio.sin_plan_encabezado') }}</h2>
                 <p>{{ __('panel.inicio.sin_plan_mensaje') }}</p>
-                <x-boton variante="secundario" icono="credit-card" :href="route('panel.suscripcion')">{{ __('acciones.ver_suscripcion') }}</x-boton>
             </x-tarjeta>
         </section>
     @else

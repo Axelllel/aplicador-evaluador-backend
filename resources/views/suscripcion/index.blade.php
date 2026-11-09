@@ -31,11 +31,15 @@
                     {{ __('suscripcion.vigente.vigente_hasta', ['fecha' => \Carbon\CarbonImmutable::parse($vigente['pago']['fecha_fin_vigencia'])->format($formatoDeFecha)]) }}
                 </p>
             @endif
+
+            <x-boton variante="secundario" href="#titulo-planes">{{ __('acciones.ver_planes') }}</x-boton>
         </x-tarjeta>
     </section>
 
     <section aria-labelledby="titulo-planes" class="space-y-4">
-        <h2 id="titulo-planes" class="text-xl font-semibold text-primario">{{ __('suscripcion.planes.encabezado') }}</h2>
+        <h2 id="titulo-planes" tabindex="-1" class="scroll-mt-24 text-xl font-semibold text-primario">
+            {{ __('suscripcion.planes.encabezado') }}
+        </h2>
 
         @if ($planes->isEmpty())
             <x-tarjeta>

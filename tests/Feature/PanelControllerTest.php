@@ -134,7 +134,8 @@ class PanelControllerTest extends TestCase
             ->assertSee('Límite alcanzado')
             ->assertSee('Cerca del límite')
             ->assertSee('Dentro del límite')
-            ->assertSee('Alcanzaste el límite de grupos de tu plan. Actualiza tu suscripción para crear más.');
+            ->assertSee('Alcanzaste el límite de grupos de tu plan. Actualiza tu suscripción para crear más.')
+            ->assertDontSee('Ver suscripción');
     }
 
     public function test_el_consumo_de_grupos_solo_cuenta_los_grupos_activos(): void
@@ -152,14 +153,33 @@ class PanelControllerTest extends TestCase
     {
         $this->prepararLecturas(['pagos' => []]);
 
-        $this->get('/panel')
+        $respuesta = $this->get('/panel')
             ->assertOk()
             ->assertSee('Tu cuenta no tiene un plan activo o tu pago ya venció. Revisa tu suscripción para continuar.')
             ->assertSee('Sin plan activo')
-            ->assertSee('Ver suscripción')
             ->assertDontSee('Resumen del plan');
 
+        $this->assertSame(
+            [route('panel.suscripcion')],
+            $this->consultar($respuesta->getContent(), '//*[@data-alerta]//a[normalize-space(.)="Ver suscripción"]/@href'),
+        );
         $this->assertSame([], $this->api->llamadasA('GET', '/teacher/groups/1/students'));
+    }
+
+    public function test_suscripcion_enlaza_al_catalogo_de_planes_disponibles(): void
+    {
+        $this->prepararLecturas();
+
+        $respuesta = $this->get('/suscripcion')->assertOk()->assertSee('Plan profesional');
+
+        $this->assertSame(
+            ['#titulo-planes'],
+            $this->consultar($respuesta->getContent(), '//main//a[normalize-space(.)="Ver planes disponibles"]/@href'),
+        );
+        $this->assertSame(
+            ['Planes disponibles'],
+            $this->consultar($respuesta->getContent(), '//section[@aria-labelledby="titulo-planes"]//h2[@id="titulo-planes"]'),
+        );
     }
 
     public function test_un_pago_vencido_cuenta_como_sin_plan(): void
