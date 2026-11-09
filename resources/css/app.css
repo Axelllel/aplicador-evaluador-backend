@@ -247,6 +247,18 @@
   background-color: var(--tp-blue);
 }
 
+/* Avisos y errores con la paleta del ingreso del alumno. */
+.tp-shell .tp-main [data-alerta]:is(.bg-aviso, .bg-error) {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #9f1d20;
+}
+.tp-shell.tp-dark .tp-main [data-alerta]:is(.bg-aviso, .bg-error) {
+  background-color: #431e2b;
+  border-color: #894256;
+  color: #ffd4d4;
+}
+
 /* Tablas: fondos consistentes en los dos temas. */
 .tp-shell .tp-main table:not(.sr-only) {
   background: var(--tp-card);
