@@ -1,8 +1,8 @@
 {{--
     Archivo: index.blade.php
     Módulo: resources/views/suscripcion
-    Descripción: Suscripción del docente en solo lectura: plan vigente, planes disponibles con sus límites y tabla
-                 de pagos con 15 filas por página (Manual COD-WEB, secciones 6.16 y 6.17).
+    Descripción: Suscripción del docente en solo lectura: plan vigente, enlace al catálogo y tabla de pagos
+                 con 15 filas por página (Manual COD-WEB, secciones 6.16 y 6.17).
     Autor: Leonardo Ballestero López
     Creado: 06/11/2026
     Modificado: 06/11/2026 · Leonardo Ballestero López · Versión inicial
@@ -11,7 +11,6 @@
     $formatoDeFecha = 'd/m/Y';
     $dinero = fn ($monto): string => __('suscripcion.precio', ['monto' => number_format((float) $monto, 2, '.', ',')]);
     $tonosDeEstado = ['confirmado' => 'exito', 'pendiente' => 'aviso', 'rechazado' => 'error', 'cancelado' => 'error'];
-    $idDelPlanVigente = $vigente !== null ? (int) $vigente['plan']['id'] : null;
 @endphp
 <x-layouts.panel :titulo="__('suscripcion.titulo')" :descripcion="__('suscripcion.descripcion')">
     @if ($vigente === null)
@@ -32,37 +31,8 @@
                 </p>
             @endif
 
-            <x-boton variante="secundario" href="#titulo-planes">{{ __('acciones.ver_planes') }}</x-boton>
+            <x-boton variante="secundario" :href="route('panel.suscripcion.planes')">{{ __('acciones.ver_planes') }}</x-boton>
         </x-tarjeta>
-    </section>
-
-    <section aria-labelledby="titulo-planes" class="space-y-4">
-        <h2 id="titulo-planes" tabindex="-1" class="scroll-mt-24 text-xl font-semibold text-primario">
-            {{ __('suscripcion.planes.encabezado') }}
-        </h2>
-
-        @if ($planes->isEmpty())
-            <x-tarjeta>
-                <p>{{ __('suscripcion.planes.vacia') }}</p>
-            </x-tarjeta>
-        @else
-            <x-tabla :titulo="__('suscripcion.planes.titulo')" :columnas="array_values(__('suscripcion.planes.columnas'))">
-                @foreach ($planes as $plan)
-                    <x-tabla.fila>
-                        <x-tabla.celda class="font-semibold">
-                            <span>{{ $plan['nombre'] }}</span>
-                            @if ($idDelPlanVigente === (int) $plan['id'])
-                                <x-insignia tono="exito" class="ml-2">{{ __('suscripcion.planes.plan_actual') }}</x-insignia>
-                            @endif
-                        </x-tabla.celda>
-                        <x-tabla.celda>{{ $plan['max_grupos'] }}</x-tabla.celda>
-                        <x-tabla.celda>{{ $plan['max_preguntas'] }}</x-tabla.celda>
-                        <x-tabla.celda>{{ $plan['max_alumnos'] }}</x-tabla.celda>
-                        <x-tabla.celda>{{ $dinero($plan['precio']) }}</x-tabla.celda>
-                    </x-tabla.fila>
-                @endforeach
-            </x-tabla>
-        @endif
     </section>
 
     <section aria-labelledby="titulo-pagos" class="space-y-4">

@@ -64,6 +64,7 @@ Route::middleware('panel.sesion')->group(function (): void {
         ->whereNumber('examen')->name('panel.examenes.preguntas.store');
 
     Route::get('/suscripcion', [SuscripcionController::class, 'index'])->name('panel.suscripcion');
+    Route::get('/suscripcion/planes', [SuscripcionController::class, 'catalogo'])->name('panel.suscripcion.planes');
 
     // Resultados: tabla de intentos por examen, detalle de un intento y calificación (manual y automática).
     Route::get('/resultados', [ResultadoController::class, 'index'])->name('panel.resultados');

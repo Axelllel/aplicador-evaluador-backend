@@ -34,19 +34,32 @@ class SuscripcionController extends Controller
     }
 
     /**
-     * Muestra el plan vigente, la lista de planes y la tabla de pagos (15 por página).
+     * Muestra el plan vigente y la tabla de pagos (15 por página).
      */
     public function index(Request $solicitud): View
     {
-        $planes = $this->consultas->planes()->sortBy('precio')->values();
+        $planes = $this->consultas->planes();
         $pagos = $this->consultas->pagos();
         $vigente = $this->planes->planVigente($planes, $pagos);
 
         return view('suscripcion.index', [
-            'planes' => $planes,
             'vigente' => $vigente,
             'nombresDePlanes' => $planes->pluck('nombre', 'id'),
             'pagos' => $this->paginador->paginar($pagos, $solicitud->integer('page', 1)),
+        ]);
+    }
+
+    /**
+     * Muestra los planes disponibles ordenados por precio y marca el plan vigente.
+     */
+    public function catalogo(): View
+    {
+        $planes = $this->consultas->planes()->sortBy('precio')->values();
+        $vigente = $this->planes->planVigente($planes, $this->consultas->pagos());
+
+        return view('suscripcion.planes', [
+            'planes' => $planes,
+            'idDelPlanVigente' => $vigente !== null ? (int) $vigente['plan']['id'] : null,
         ]);
     }
 }

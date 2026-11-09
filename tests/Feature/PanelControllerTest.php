@@ -159,9 +159,10 @@ class PanelControllerTest extends TestCase
             ->assertSee('Sin plan activo')
             ->assertDontSee('Resumen del plan');
 
+        $this->assertSame([], $this->consultar($respuesta->getContent(), '//*[@data-alerta]//a'));
         $this->assertSame(
             [route('panel.suscripcion')],
-            $this->consultar($respuesta->getContent(), '//*[@data-alerta]//a[normalize-space(.)="Ver suscripción"]/@href'),
+            $this->consultar($respuesta->getContent(), '//section[@aria-labelledby="titulo-sin-plan"]//a/@href'),
         );
         $this->assertSame([], $this->api->llamadasA('GET', '/teacher/groups/1/students'));
     }
@@ -170,16 +171,31 @@ class PanelControllerTest extends TestCase
     {
         $this->prepararLecturas();
 
-        $respuesta = $this->get('/suscripcion')->assertOk()->assertSee('Plan profesional');
+        $respuesta = $this->get('/suscripcion')->assertOk()->assertSee('Tus pagos');
 
         $this->assertSame(
-            ['#titulo-planes'],
+            [url('/suscripcion/planes')],
             $this->consultar($respuesta->getContent(), '//main//a[normalize-space(.)="Ver planes disponibles"]/@href'),
         );
+
+        $catalogo = $this->get('/suscripcion/planes')
+            ->assertOk()
+            ->assertSee('Planes disponibles')
+            ->assertSee('Plan básico')
+            ->assertSee('Plan profesional')
+            ->assertSee('Tu plan');
+
         $this->assertSame(
-            ['Planes disponibles'],
-            $this->consultar($respuesta->getContent(), '//section[@aria-labelledby="titulo-planes"]//h2[@id="titulo-planes"]'),
+            [route('panel.suscripcion')],
+            $this->consultar($catalogo->getContent(), '//main//a[normalize-space(.)="Volver a Suscripción"]/@href'),
         );
+    }
+
+    public function test_el_catalogo_muestra_el_estado_vacio_si_no_hay_planes(): void
+    {
+        $this->prepararLecturas(['planes' => [], 'pagos' => []]);
+
+        $this->get('/suscripcion/planes')->assertOk()->assertSee('Aún no hay planes disponibles.');
     }
 
     public function test_un_pago_vencido_cuenta_como_sin_plan(): void
