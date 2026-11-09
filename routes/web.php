@@ -90,10 +90,10 @@ Route::prefix('alumno')->name('student.')->group(function () {
     Route::get('/inicio', [StudentPortalController::class, 'home'])->name('home');
     Route::post('/examen/iniciar', [StudentPortalController::class, 'start'])->name('start')->middleware('throttle:5,1');
     Route::get('/examen', [StudentPortalController::class, 'exam'])->name('exam');
-    Route::post('/api/preguntas', [StudentPortalController::class, 'questions'])->name('questions');
-    Route::post('/api/respuesta', [StudentPortalController::class, 'answer'])->name('answer');
+    Route::post('/api/preguntas', [StudentPortalController::class, 'questions'])->name('questions')->middleware('throttle:60,1');
+    Route::post('/api/respuesta', [StudentPortalController::class, 'answer'])->name('answer')->middleware('throttle:120,1');
     Route::post('/api/entrega', [StudentPortalController::class, 'finish'])->name('finish')->middleware('throttle:5,1');
     Route::get('/calificaciones', [StudentPortalController::class, 'grades'])->name('grades');
-    Route::post('/api/resultado', [StudentPortalController::class, 'result'])->name('result');
-    Route::post('/salir', [StudentPortalController::class, 'leave'])->name('leave');
+    Route::post('/api/resultado', [StudentPortalController::class, 'result'])->name('result')->middleware('throttle:30,1');
+    Route::post('/salir', [StudentPortalController::class, 'leave'])->name('leave')->middleware('throttle:20,1');
 });
