@@ -23,6 +23,8 @@ class ExampleTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('Selecciona tu perfil')
+            ->assertSee('id="toggle-theme"', false)
+            ->assertSee('aria-label="Activar modo oscuro"', false)
             ->assertSee('Docente')
             ->assertSee('Alumno')
             ->assertSee('href="'.route('login').'"', false)

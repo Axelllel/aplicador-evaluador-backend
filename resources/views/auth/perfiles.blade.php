@@ -7,10 +7,16 @@
     @vite('resources/css/student-entry.css')
 </head>
 <body>
-<div class="portal">
+<div class="portal" id="profile-entry">
     <div class="ambient ambient-one" aria-hidden="true"></div>
     <div class="ambient ambient-two" aria-hidden="true"></div>
     <div class="background-grid" aria-hidden="true"></div>
+
+    <button type="button" id="toggle-theme" class="icon-button theme-button absolute top-5 right-5 z-10"
+            title="{{ __('sesion.perfiles.cambiar_tema') }}"
+            aria-label="{{ __('sesion.perfiles.activar_oscuro') }}"
+            data-activar-claro="{{ __('sesion.perfiles.activar_claro') }}"
+            data-activar-oscuro="{{ __('sesion.perfiles.activar_oscuro') }}" hidden>☾</button>
 
     <main>
         <section class="entry-card w-full" aria-labelledby="titulo-perfil">
@@ -48,5 +54,28 @@
         </section>
     </main>
 </div>
+<script>
+(() => {
+    const portal = document.getElementById('profile-entry');
+    const boton = document.getElementById('toggle-theme');
+
+    const aplicarTema = (oscuro) => {
+        portal.classList.toggle('dark', oscuro);
+        boton.textContent = oscuro ? '☀' : '☾';
+        boton.setAttribute('aria-label', oscuro ? boton.dataset.activarClaro : boton.dataset.activarOscuro);
+    };
+
+    let oscuro = false;
+    try { oscuro = localStorage.getItem('bbb-theme') === 'dark'; } catch (_) { /* Almacenamiento opcional. */ }
+    aplicarTema(oscuro);
+    boton.hidden = false;
+
+    boton.addEventListener('click', () => {
+        oscuro = !oscuro;
+        aplicarTema(oscuro);
+        try { localStorage.setItem('bbb-theme', oscuro ? 'dark' : 'light'); } catch (_) { /* Almacenamiento opcional. */ }
+    });
+})();
+</script>
 </body>
 </html>

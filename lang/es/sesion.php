@@ -21,6 +21,9 @@ return [
         'docente_ayuda' => 'Inicia sesión con tu cuenta.',
         'alumno' => 'Alumno',
         'alumno_ayuda' => 'Ingresa con el folio de tu grupo.',
+        'cambiar_tema' => 'Cambiar tema',
+        'activar_claro' => 'Activar modo claro',
+        'activar_oscuro' => 'Activar modo oscuro',
     ],
 
     'campos' => [
