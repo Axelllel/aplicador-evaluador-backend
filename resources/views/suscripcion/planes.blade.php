@@ -1,3 +1,11 @@
+{{--
+    Archivo: planes.blade.php
+    Módulo: resources/views/suscripcion
+    Descripción: Catálogo de planes disponibles, separado de la suscripción actual del docente.
+    Autor: Axel (Axelllel)
+    Creado: 08/11/2026
+    Modificado: 09/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+--}}
 <x-layouts.panel :titulo="__('suscripcion.planes.encabezado')" :descripcion="__('suscripcion.planes.descripcion')">
     <div>
         <x-boton variante="secundario" :href="route('panel.suscripcion')">

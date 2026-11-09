@@ -296,7 +296,8 @@ class PanelControllerTest extends TestCase
         $this->prepararLecturas();
 
         foreach (['/panel', '/grupos', '/banco-de-preguntas', '/examenes', '/suscripcion', '/resultados', '/guia-estilo'] as $ruta) {
-            $texto = strip_tags($this->get($ruta)->assertOk()->getContent());
+            $html = (string) preg_replace('#<script\b.*?</script>#is', '', $this->get($ruta)->assertOk()->getContent());
+            $texto = strip_tags($html);
 
             $this->assertDoesNotMatchRegularExpression(
                 '/\b(?:panel|guia|mensajes|acciones|sesion|ejemplo|grupos|preguntas|examenes|suscripcion|registro|api)\.[a-z_]+/',

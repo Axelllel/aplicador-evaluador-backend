@@ -77,16 +77,16 @@
                     </div>
 
                     @if (session('error'))
-                        <div class="entry-message login-notice" role="alert">{{ session('error') }}</div>
+                        <div class="entry-message login-notice" role="alert"><strong>{{ __('mensajes.tipos.error') }}.</strong> {{ session('error') }}</div>
                     @endif
                     @if (session('aviso'))
-                        <div class="entry-message login-notice" role="status">{{ session('aviso') }}</div>
+                        <div class="entry-message login-notice" role="status"><strong>{{ __('mensajes.tipos.aviso') }}.</strong> {{ session('aviso') }}</div>
                     @endif
                     @if (session('exito'))
-                        <div class="login-notice-ok login-notice" role="status">{{ session('exito') }}</div>
+                        <div class="login-notice-ok login-notice" role="status"><strong>{{ __('mensajes.tipos.exito') }}.</strong> {{ session('exito') }}</div>
                     @endif
                     @if (session('info'))
-                        <div class="login-notice-ok login-notice" role="status">{{ session('info') }}</div>
+                        <div class="login-notice-ok login-notice" role="status"><strong>{{ __('mensajes.tipos.info') }}.</strong> {{ session('info') }}</div>
                     @endif
 
                     <form method="POST" action="{{ route('sesion.store') }}" novalidate>

@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * Archivo: StudentPortalController.php
+ * Módulo: app/Http/Controllers/Web
+ * Descripción: Portal web del alumno: valida el folio, registra al alumno en el grupo, inicia el examen con el
+ *              pase cifrado del docente y reenvía preguntas, respuestas y entrega a la API del alumno.
+ * Autor: Axel (Axelllel)
+ * Creado: 06/11/2026
+ * Modificado: 09/11/2026 · Leonardo Ballestero López · Prólogo del manual y strict_types
+ */
+
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;

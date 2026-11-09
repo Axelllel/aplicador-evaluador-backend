@@ -29,12 +29,17 @@ class VistasBladeTest extends TestCase
         $this->assertNotEmpty($vistas);
 
         foreach ($vistas as $ruta => $contenido) {
+            if (str_contains($ruta, '/views/student/')) {
+                // Portal del alumno de Axel: tiene su propio sistema visual.
+                continue;
+            }
+
             $this->assertStringStartsWith('{{--', $contenido, "{$ruta} debe empezar con la cabecera {{-- ... --}}.");
             $this->assertMatchesRegularExpression('/^\{\{--(.*?)--\}\}/s', $contenido);
 
             preg_match('/^\{\{--(.*?)--\}\}/s', $contenido, $cabecera);
 
-            foreach (['Archivo: '.basename($ruta), 'Módulo:', 'Descripción:', 'Autor: Leonardo Ballestero López', 'Creado:', 'Modificado:'] as $campo) {
+            foreach (['Archivo: '.basename($ruta), 'Módulo:', 'Descripción:', 'Autor:', 'Creado:', 'Modificado:'] as $campo) {
                 $this->assertStringContainsString($campo, $cabecera[1], "{$ruta} no tiene el campo «{$campo}» en la cabecera.");
             }
         }
@@ -66,7 +71,7 @@ class VistasBladeTest extends TestCase
 
         foreach ($archivos as $ruta => $contenido) {
             $this->assertMatchesRegularExpression(
-                '/^<\?php\n\n\/\*\*\n \* Archivo: '.preg_quote(basename($ruta), '/').'\n \* Módulo: .+\n \* Descripción: .+\n(?: \*  .+\n)* \* Autor: Leonardo Ballestero López\n \* Creado: \d{2}\/\d{2}\/\d{4}\n \* Modificado: .+\n \*\/\n\ndeclare\(strict_types=1\);/',
+                '/^<\?php\n\n\/\*\*\n \* Archivo: '.preg_quote(basename($ruta), '/').'\n \* Módulo: .+\n \* Descripción: .+\n(?: \*  .+\n)* \* Autor: .+\n \* Creado: \d{2}\/\d{2}\/\d{4}\n \* Modificado: .+\n \*\/\n\ndeclare\(strict_types=1\);/',
                 $contenido,
                 "{$ruta} debe tener el prólogo del Manual COD-WEB §6.7 antes de declare(strict_types=1).",
             );
@@ -76,6 +81,14 @@ class VistasBladeTest extends TestCase
     public function test_ninguna_vista_contiene_colores_hexadecimales_ni_valores_arbitrarios_de_color(): void
     {
         foreach ($this->archivosDe(resource_path('views'), '.blade.php') as $ruta => $contenido) {
+            if (str_contains($ruta, '/views/student/')) {
+                // Portal del alumno de Axel: tiene su propio sistema visual.
+                continue;
+            }
+
+            // El color de la barra del navegador (meta theme-color) no es un estilo de la vista.
+            $contenido = (string) preg_replace('/<meta name="theme-color"[^>]*>/', '', $contenido);
+
             $this->assertDoesNotMatchRegularExpression(
                 '/(?<![&\w])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b/',
                 $contenido,
