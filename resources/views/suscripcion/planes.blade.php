@@ -25,10 +25,15 @@
                         <p id="etiqueta-cupo" class="text-sm text-texto-suave">{{ __('suscripcion.cotizacion.capacidad') }}</p>
                         <output for="campo-grupos campo-alumnos" aria-labelledby="etiqueta-cupo" data-cupo-plan class="text-xl font-semibold text-primario">{{ $grupos * $alumnos }}</output>
                     </div>
-                    <div>
-                        <p id="etiqueta-precio" class="text-sm text-texto-suave">{{ __('suscripcion.cotizacion.precio') }}</p>
-                        <output for="campo-grupos campo-alumnos campo-preguntas" aria-labelledby="etiqueta-precio" data-precio-plan class="text-3xl font-semibold text-primario">{{ __('suscripcion.precio', ['monto' => number_format($precioCentavos / 100, 2, '.', ',')]) }}</output>
-                        <span class="text-sm text-texto-suave">{{ __('suscripcion.cotizacion.moneda') }}</span>
+                    <div class="flex flex-wrap items-end gap-4">
+                        <div>
+                            <p id="etiqueta-precio" class="text-sm text-texto-suave">{{ __('suscripcion.cotizacion.precio') }}</p>
+                            <output for="campo-grupos campo-alumnos campo-preguntas" aria-labelledby="etiqueta-precio" data-precio-plan class="text-3xl font-semibold text-primario">{{ __('suscripcion.precio', ['monto' => number_format($precioCentavos / 100, 2, '.', ',')]) }}</output>
+                            <span class="text-sm text-texto-suave">{{ __('suscripcion.cotizacion.moneda') }}</span>
+                        </div>
+                        <x-boton type="submit" icono="credit-card" :formaction="route('panel.suscripcion.planes.pago')">
+                            {{ __('acciones.continuar_al_pago') }}
+                        </x-boton>
                     </div>
                 </div>
 

@@ -21,10 +21,12 @@ class CotizacionPlanRequest extends FormRequest
     /** @return array<string, list<string|In>> */
     public function rules(): array
     {
+        $presencia = $this->routeIs('panel.suscripcion.planes.pago') ? ['required'] : ['sometimes', 'required'];
+
         return [
-            'grupos' => ['sometimes', 'required', 'integer', 'between:1,'.CotizacionPlanService::MAX_GRUPOS],
-            'alumnos' => ['sometimes', 'required', 'integer', Rule::in(CotizacionPlanService::ALUMNOS_POR_GRUPO)],
-            'preguntas' => ['sometimes', 'required', 'integer', Rule::in(CotizacionPlanService::PREGUNTAS)],
+            'grupos' => [...$presencia, 'integer', 'between:1,'.CotizacionPlanService::MAX_GRUPOS],
+            'alumnos' => [...$presencia, 'integer', Rule::in(CotizacionPlanService::ALUMNOS_POR_GRUPO)],
+            'preguntas' => [...$presencia, 'integer', Rule::in(CotizacionPlanService::PREGUNTAS)],
         ];
     }
 }

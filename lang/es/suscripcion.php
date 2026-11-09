@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 return [
     'titulo' => 'Suscripción',
-    'descripcion' => 'Consulta tu plan, los planes disponibles y tus pagos.',
+    'descripcion' => 'Consulta tu plan y tus pagos, o crea un plan a tu medida.',
 
     'vigente' => [
         'encabezado' => 'Tu plan',
@@ -24,7 +24,7 @@ return [
     ],
 
     'planes' => [
-        'encabezado' => 'Planes disponibles',
+        'encabezado' => 'Crea tu plan',
         'descripcion' => 'Elige la capacidad que necesitas y consulta su precio mensual.',
         'registrados' => 'Paquetes registrados',
         'titulo' => 'Lista de planes',
@@ -49,6 +49,12 @@ return [
         'moneda' => 'MXN al mes',
         'leyenda' => 'Cotización simulada para el ambiente de pruebas.',
         'calcular' => 'Calcular precio',
+    ],
+
+    'resumen_pago' => [
+        'titulo' => 'Resumen de pago',
+        'descripcion' => 'Revisa la capacidad y el precio mensual de tu plan.',
+        'aviso' => 'La pasarela de pago está pendiente de integración. Este resumen es una cotización de prueba.',
     ],
 
     'pagos' => [

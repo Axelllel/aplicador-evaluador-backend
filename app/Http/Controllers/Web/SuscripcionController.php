@@ -58,21 +58,34 @@ class SuscripcionController extends Controller
     {
         $planes = $this->consultas->planes()->sortBy('precio')->values();
         $vigente = $this->planes->planVigente($planes, $this->consultas->pagos());
-        $grupos = $solicitud->integer('grupos', 1);
-        $alumnos = $solicitud->integer('alumnos', CotizacionPlanService::ALUMNOS_POR_GRUPO[0]);
-        $preguntas = $solicitud->integer('preguntas', CotizacionPlanService::PREGUNTAS[0]);
 
-        return view('suscripcion.planes', [
+        return view('suscripcion.planes', $this->cotizacion($solicitud, $cotizador) + [
             'planes' => $planes,
             'idDelPlanVigente' => $vigente !== null ? (int) $vigente['plan']['id'] : null,
-            'grupos' => $grupos,
-            'alumnos' => $alumnos,
-            'preguntas' => $preguntas,
             'opcionesDeGrupos' => range(1, CotizacionPlanService::MAX_GRUPOS),
             'opcionesDeAlumnos' => CotizacionPlanService::ALUMNOS_POR_GRUPO,
             'opcionesDePreguntas' => CotizacionPlanService::PREGUNTAS,
             'tarifasCentavos' => CotizacionPlanService::TARIFAS_CENTAVOS,
-            'precioCentavos' => $cotizador->centavos($grupos, $alumnos, $preguntas),
         ]);
+    }
+
+    public function resumenDePago(CotizacionPlanRequest $solicitud, CotizacionPlanService $cotizador): View
+    {
+        return view('suscripcion.pago', $this->cotizacion($solicitud, $cotizador));
+    }
+
+    /** @return array{grupos: int, alumnos: int, preguntas: int, precioCentavos: int} */
+    private function cotizacion(CotizacionPlanRequest $solicitud, CotizacionPlanService $cotizador): array
+    {
+        $grupos = $solicitud->integer('grupos', 1);
+        $alumnos = $solicitud->integer('alumnos', CotizacionPlanService::ALUMNOS_POR_GRUPO[0]);
+        $preguntas = $solicitud->integer('preguntas', CotizacionPlanService::PREGUNTAS[0]);
+
+        return [
+            'grupos' => $grupos,
+            'alumnos' => $alumnos,
+            'preguntas' => $preguntas,
+            'precioCentavos' => $cotizador->centavos($grupos, $alumnos, $preguntas),
+        ];
     }
 }

@@ -36,6 +36,8 @@ return [
     'cerrar' => 'Cerrar',
     'agregar' => 'Agregar',
     'ver_suscripcion' => 'Ver suscripción',
-    'ver_planes' => 'Ver planes disponibles',
+    'crear_plan' => 'Crea tu plan',
+    'continuar_al_pago' => 'Continuar al pago',
+    'editar_plan' => 'Editar mi plan',
     'volver_a_suscripcion' => 'Volver a Suscripción',
 ];

@@ -196,12 +196,12 @@ class PanelControllerTest extends TestCase
 
         $this->assertSame(
             [url('/suscripcion/planes')],
-            $this->consultar($respuesta->getContent(), '//main//a[normalize-space(.)="Ver planes disponibles"]/@href'),
+            $this->consultar($respuesta->getContent(), '//main//a[normalize-space(.)="Crea tu plan"]/@href'),
         );
 
         $catalogo = $this->get('/suscripcion/planes')
             ->assertOk()
-            ->assertSee('Planes disponibles')
+            ->assertSee('Crea tu plan')
             ->assertSee('Plan básico')
             ->assertSee('Plan profesional')
             ->assertSee('Tu plan');
@@ -228,6 +228,10 @@ class PanelControllerTest extends TestCase
         $this->assertSame(array_map('strval', range(1, 10)), $this->consultar($inicial->getContent(), '//select[@name="grupos"]/option/@value'));
         $this->assertSame(['15', '20', '25', '30'], $this->consultar($inicial->getContent(), '//select[@name="alumnos"]/option/@value'));
         $this->assertSame(['100', '150', '200'], $this->consultar($inicial->getContent(), '//select[@name="preguntas"]/option/@value'));
+        $this->assertSame(
+            [url('/suscripcion/planes/pago')],
+            $this->consultar($inicial->getContent(), '//form[@data-configurador-plan]//button[normalize-space(.)="Continuar al pago"]/@formaction'),
+        );
 
         $this->get('/suscripcion/planes?grupos=3&alumnos=25&preguntas=150')->assertOk()->assertSee('$181.00');
         $this->get('/suscripcion/planes?grupos=10&alumnos=30&preguntas=200')->assertOk()->assertSee('$405.00');
@@ -238,6 +242,30 @@ class PanelControllerTest extends TestCase
         $this->getJson('/suscripcion/planes?grupos=11&alumnos=16&preguntas=250')
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['grupos', 'alumnos', 'preguntas']);
+    }
+
+    public function test_el_resumen_de_pago_recalcula_el_precio_y_permite_editar_la_seleccion(): void
+    {
+        $seleccion = ['grupos' => 3, 'alumnos' => 25, 'preguntas' => 150];
+        $pago = $this->get('/suscripcion/planes/pago?'.http_build_query($seleccion + ['precio' => 1]))
+            ->assertOk()
+            ->assertSee('Resumen de pago')
+            ->assertSeeInOrder(['Grupos activos', '3', 'Alumnos por grupo', '25', 'Preguntas en el banco', '150'])
+            ->assertSee('$181.00')
+            ->assertSee('La pasarela de pago está pendiente de integración.');
+
+        $this->assertSame(
+            [route('panel.suscripcion.planes', $seleccion)],
+            $this->consultar($pago->getContent(), '//main//a[normalize-space(.)="Editar mi plan"]/@href'),
+        );
+        $this->assertSame([], $this->api->llamadas);
+    }
+
+    public function test_el_resumen_de_pago_requiere_una_seleccion_completa_y_valida(): void
+    {
+        $this->getJson('/suscripcion/planes/pago?grupos=11&preguntas=150')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['grupos', 'alumnos']);
     }
 
     public function test_un_pago_vencido_cuenta_como_sin_plan(): void

@@ -31,7 +31,7 @@
                 </p>
             @endif
 
-            <x-boton variante="secundario" :href="route('panel.suscripcion.planes')">{{ __('acciones.ver_planes') }}</x-boton>
+            <x-boton variante="secundario" :href="route('panel.suscripcion.planes')">{{ __('acciones.crear_plan') }}</x-boton>
         </x-tarjeta>
     </section>
 
