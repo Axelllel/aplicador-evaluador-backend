@@ -32,6 +32,11 @@ class StudentPortalController extends Controller
         return [$student['grupo_id'] => $student] + $request->session()->get('bbb.groups', []);
     }
 
+    private function currentGroup(Request $request, array $student): array
+    {
+        return $this->groups($request, $student)[$request->session()->get('bbb.selected_group')] ?? $student;
+    }
+
     private function groupForRequest(Request $request, array $student): ?array
     {
         $data = $request->validate(['grupo' => ['sometimes', 'nullable', 'integer', 'min:1']]);
@@ -50,7 +55,7 @@ class StudentPortalController extends Controller
         }
 
         try {
-            $rows = DB::select('SELECT * FROM public.fn_historial_portal_alumno(CAST(? AS bigint), CAST(? AS bigint))', [
+            $rows = DB::select('SELECT * FROM public.fn_entregas_portal_alumno(CAST(? AS bigint), CAST(? AS bigint))', [
                 $student['alumno_id'], $attemptId,
             ]);
             $completed = [];
@@ -61,6 +66,7 @@ class StudentPortalController extends Controller
                     'grupo_id' => (int) $row->grupo_id,
                     'nombre' => $row->nombre,
                     'materia' => $row->materia,
+                    'resultado_visible' => $row->resultado_visible,
                     'fecha_inicio' => $row->fecha_inicio,
                     'fecha_entrega' => $row->fecha_entrega,
                     'token_sesion' => $row->token_sesion,
@@ -121,6 +127,12 @@ class StudentPortalController extends Controller
                 'calificacion' => $result['calificacion'] ?? null,
                 'escala' => $result['escala'] ?? null,
                 'estado' => $result['estado'] ?? null,
+                'estado_filtro' => match (true) {
+                    ($result['estado'] ?? null) === 'final' => 'revision_completada',
+                    ($attempt['resultado_visible'] ?? null) === 'oculto' => 'sin_publicar',
+                    !isset($attempt['resultado_visible']) && !isset($result['estado']) => 'sin_publicar',
+                    default => 'en_revision',
+                },
             ];
         }, $completed);
     }
@@ -164,7 +176,7 @@ class StudentPortalController extends Controller
         }
         $data = $response->getData(true)['data'];
         $request->session()->regenerate();
-        $request->session()->forget(['bbb.attempt', 'bbb.completed_attempts', 'bbb.groups']);
+        $request->session()->forget(['bbb.attempt', 'bbb.completed_attempts', 'bbb.groups', 'bbb.selected_group']);
         $request->session()->put('bbb.student', [
             'alumno_id' => (int) $data['alumno_id'],
             'grupo_id' => (int) $data['grupo_id'],
@@ -211,6 +223,7 @@ class StudentPortalController extends Controller
         } else {
             $request->session()->put('bbb.groups.'.$profile['grupo_id'], $profile);
         }
+        $request->session()->put('bbb.selected_group', $profile['grupo_id']);
 
         return response()->json(['data' => [
             'alumno_id' => $student['alumno_id'],
@@ -238,7 +251,8 @@ class StudentPortalController extends Controller
             return redirect()->route('student.entry');
         }
         $groups = $this->groups($request, $student);
-        $student = $this->groupForRequest($request, $student) ?? $student;
+        $student = $this->groupForRequest($request, $student) ?? $this->currentGroup($request, $student);
+        $request->session()->put('bbb.selected_group', $student['grupo_id']);
 
         try {
             $exams = $this->examsForStudent($student);
@@ -285,7 +299,7 @@ class StudentPortalController extends Controller
     {
         $student = $this->student($request);
         if (!$student) return response()->json(['message'=>'Primero ingresa a un grupo.'], 401);
-        $student = $this->groupForRequest($request, $student) ?? $student;
+        $student = $this->groupForRequest($request, $student) ?? $this->currentGroup($request, $student);
         $previous = $this->attempt($request);
         if ($previous && !$previous['finished']) {
             return response()->json(['message' => 'Entrega el examen en curso antes de iniciar otro.'], 409);
@@ -425,7 +439,10 @@ class StudentPortalController extends Controller
         if (!$student) return redirect()->route('student.entry');
 
         $groups = $this->groups($request, $student);
-        $filter = $this->groupForRequest($request, $student);
+        $student = $this->groupForRequest($request, $student) ?? $this->currentGroup($request, $student);
+        $request->session()->put('bbb.selected_group', $student['grupo_id']);
+        $data = $request->validate(['estado' => ['sometimes', 'nullable', 'in:en_revision,revision_completada,sin_publicar']]);
+        $status = $data['estado'] ?? null;
         if ($request->has('intento')) {
             $attempt = $this->selectedResult($request);
             $resultGroup = $groups[$attempt['grupo_id']] ?? [
@@ -433,17 +450,13 @@ class StudentPortalController extends Controller
                 'materia' => $attempt['materia'] ?? $student['materia'],
             ];
 
-            return view('student.grades', compact('student', 'groups', 'attempt', 'filter', 'resultGroup'));
+            return view('student.grades', compact('student', 'groups', 'attempt', 'status', 'resultGroup'));
         }
 
-        $completed = $this->completedAttempts($request);
-        if ($filter) {
-            $completed = array_filter($completed, fn ($item) => $item['grupo_id'] === $filter['grupo_id']);
-            $student = $filter;
-        }
+        $completed = array_filter($this->completedAttempts($request), fn ($item) => $item['grupo_id'] === $student['grupo_id']);
         $results = $this->resultCards($completed, $groups);
 
-        return view('student.grade-list', compact('student', 'groups', 'filter', 'results'));
+        return view('student.grade-list', compact('student', 'groups', 'status', 'results'));
     }
 
     public function result(Request $request): JsonResponse

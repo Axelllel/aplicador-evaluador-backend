@@ -45,7 +45,7 @@
     <div class="mt-6 grid gap-3">
         @foreach ($groups as $group)
             <a class="block rounded-xl border border-[var(--sh-border)] bg-[var(--sh-pale)] p-5 hover:border-blue-400"
-               href="{{ route('student.home', ['grupo' => $group['grupo_id']]) }}#bbb-pending"
+               href="{{ $activePage === 'grades' ? route('student.grades', ['grupo' => $group['grupo_id']]) : route('student.home', ['grupo' => $group['grupo_id']]).'#bbb-pending' }}"
                @if ($group['grupo_id'] === $student['grupo_id']) aria-current="true" @endif>
                 @if ($group['grupo_id'] === $student['grupo_id'])
                     <span class="ei-state ei-state-available"><span aria-hidden="true"></span> Grupo actual</span>

@@ -38,6 +38,7 @@ if (root) {
   const dialog = id => { const d=$(id); if (d && !d.open) d.showModal(); };
   const close = id => { if ($(id)?.open) $(id).close(); };
   if (urls.screen === 'home' || urls.screen === 'grades') {
+    $('bbb-grades-status')?.addEventListener('change', event => event.currentTarget.form.requestSubmit());
     const menu=$('bbb-menu-toggle'), side=$('student-navigation');
     if (menu && side) {
       const setMenu = open => {

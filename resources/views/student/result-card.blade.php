@@ -1,7 +1,7 @@
-<a class="sh-exam-card sh-done" href="{{ route('student.grades', ['intento' => $result['intento_id'], 'grupo' => $groupFilter ?? null]) }}">
+<a class="sh-exam-card sh-done" href="{{ route('student.grades', ['intento' => $result['intento_id'], 'grupo' => $groupFilter ?? null, 'estado' => $statusFilter ?? null]) }}">
     <div class="sh-exam-top">
         <span class="sh-subject-icon"><x-icon name="document-text" /></span>
-        <span class="sh-badge sh-badge-done">✓ Completado</span>
+        <span class="sh-badge {{ isset($statusLabel) && $result['estado_filtro'] !== 'revision_completada' ? 'sg-badge-review' : 'sh-badge-done' }}">{{ $statusLabel ?? '✓ Completado' }}</span>
     </div>
     <div class="sh-exam-body">
         <p class="sh-subject-name">{{ $result['materia'] }} · Grupo #{{ $result['grupo_id'] }}</p>
