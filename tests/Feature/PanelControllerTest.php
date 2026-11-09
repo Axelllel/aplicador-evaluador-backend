@@ -82,7 +82,7 @@ class PanelControllerTest extends TestCase
         $respuesta = $this->get('/panel')->assertOk()->assertSee('(página actual)');
 
         $this->assertSame(['Panel'], $this->consultar($respuesta->getContent(), '//aside//a[@aria-current="page"]/span[1]'));
-        $this->assertStringContainsString('border-white', $respuesta->getContent());
+        $this->assertStringContainsString('tp-nav-active', $respuesta->getContent());
         $this->assertStringContainsString('font-semibold', $respuesta->getContent());
 
         $grupos = $this->get('/grupos')->assertOk();
@@ -134,7 +134,8 @@ class PanelControllerTest extends TestCase
             ->assertSee('Límite alcanzado')
             ->assertSee('Cerca del límite')
             ->assertSee('Dentro del límite')
-            ->assertSee('Alcanzaste el límite de grupos de tu plan. Actualiza tu suscripción para crear más.');
+            ->assertSee('Alcanzaste el límite de grupos de tu plan. Actualiza tu suscripción para crear más.')
+            ->assertDontSee('Ver suscripción');
     }
 
     public function test_el_consumo_de_grupos_solo_cuenta_los_grupos_activos(): void
@@ -152,14 +153,49 @@ class PanelControllerTest extends TestCase
     {
         $this->prepararLecturas(['pagos' => []]);
 
-        $this->get('/panel')
+        $respuesta = $this->get('/panel')
             ->assertOk()
             ->assertSee('Tu cuenta no tiene un plan activo o tu pago ya venció. Revisa tu suscripción para continuar.')
             ->assertSee('Sin plan activo')
-            ->assertSee('Ver suscripción')
             ->assertDontSee('Resumen del plan');
 
+        $this->assertSame([], $this->consultar($respuesta->getContent(), '//*[@data-alerta]//a'));
+        $this->assertSame(
+            [route('panel.suscripcion')],
+            $this->consultar($respuesta->getContent(), '//section[@aria-labelledby="titulo-sin-plan"]//a/@href'),
+        );
         $this->assertSame([], $this->api->llamadasA('GET', '/teacher/groups/1/students'));
+    }
+
+    public function test_suscripcion_enlaza_al_catalogo_de_planes_disponibles(): void
+    {
+        $this->prepararLecturas();
+
+        $respuesta = $this->get('/suscripcion')->assertOk()->assertSee('Tus pagos');
+
+        $this->assertSame(
+            [url('/suscripcion/planes')],
+            $this->consultar($respuesta->getContent(), '//main//a[normalize-space(.)="Ver planes disponibles"]/@href'),
+        );
+
+        $catalogo = $this->get('/suscripcion/planes')
+            ->assertOk()
+            ->assertSee('Planes disponibles')
+            ->assertSee('Plan básico')
+            ->assertSee('Plan profesional')
+            ->assertSee('Tu plan');
+
+        $this->assertSame(
+            [route('panel.suscripcion')],
+            $this->consultar($catalogo->getContent(), '//main//a[normalize-space(.)="Volver a Suscripción"]/@href'),
+        );
+    }
+
+    public function test_el_catalogo_muestra_el_estado_vacio_si_no_hay_planes(): void
+    {
+        $this->prepararLecturas(['planes' => [], 'pagos' => []]);
+
+        $this->get('/suscripcion/planes')->assertOk()->assertSee('Aún no hay planes disponibles.');
     }
 
     public function test_un_pago_vencido_cuenta_como_sin_plan(): void
@@ -223,18 +259,21 @@ class PanelControllerTest extends TestCase
         $this->get('/panel')->assertOk()->assertSee('Aún no tienes exámenes.');
     }
 
-    public function test_la_barra_superior_tiene_el_logotipo_de_40_px_y_el_menu_de_cuenta(): void
+    public function test_la_barra_superior_tiene_el_logotipo_compartido_y_el_menu_de_cuenta(): void
     {
         $this->prepararLecturas();
 
         $this->get('/panel')
             ->assertOk()
-            ->assertSee('style="height: 40px"', false)
-            ->assertSee('h-16', false)
-            ->assertSee('w-64', false)
+            ->assertSee('images/bigbitbyte-logo.png', false)
+            ->assertSee('width="35"', false)
+            ->assertSee('height="35"', false)
+            ->assertSee('tp-header', false)
+            ->assertSee('tp-sidebar', false)
             ->assertSee('data-menu-alternar', false)
             ->assertSee('aria-controls="menu-lateral"', false)
-            ->assertSee('id="menu-cuenta"', false);
+            ->assertSee('id="menu-cuenta"', false)
+            ->assertSee('id="tp-theme-toggle"', false);
     }
 
     public function test_una_falla_de_la_api_muestra_una_pagina_amable_sin_detalles_tecnicos(): void

@@ -25,6 +25,7 @@ return [
 
     'planes' => [
         'encabezado' => 'Planes disponibles',
+        'descripcion' => 'Compara los precios y límites de cada plan.',
         'titulo' => 'Lista de planes',
         'vacia' => 'Aún no hay planes disponibles.',
         'plan_actual' => 'Tu plan',

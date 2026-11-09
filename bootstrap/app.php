@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Render: conservar HTTPS tras el proxy inverso.
+        $middleware->trustProxies(at: '*');
         // Protege el panel web: sin token de acceso en la sesión redirige al inicio de sesión.
         $middleware->alias([
             'panel.sesion' => RequiereSesionPanel::class,

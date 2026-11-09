@@ -24,6 +24,7 @@ use App\Http\Controllers\Web\RegistroController;
 use App\Http\Controllers\Web\ResultadoController;
 use App\Http\Controllers\Web\SesionController;
 use App\Http\Controllers\Web\SuscripcionController;
+use App\Http\Controllers\Web\StudentPortalController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
@@ -63,6 +64,7 @@ Route::middleware('panel.sesion')->group(function (): void {
         ->whereNumber('examen')->name('panel.examenes.preguntas.store');
 
     Route::get('/suscripcion', [SuscripcionController::class, 'index'])->name('panel.suscripcion');
+    Route::get('/suscripcion/planes', [SuscripcionController::class, 'catalogo'])->name('panel.suscripcion.planes');
 
     // Resultados: tabla de intentos por examen, detalle de un intento y calificación (manual y automática).
     Route::get('/resultados', [ResultadoController::class, 'index'])->name('panel.resultados');
@@ -79,3 +81,19 @@ Route::middleware('panel.sesion')->group(function (): void {
 
 // Guía de estilo: el controlador responde 404 fuera de APP_ENV=local.
 Route::get('/guia-estilo', [GuiaEstiloController::class, 'index'])->name('guia-estilo');
+
+// Portal del alumno (preservado desde staging).
+Route::prefix('alumno')->name('student.')->group(function () {
+    Route::get('/ingreso', [StudentPortalController::class, 'entry'])->name('entry');
+    Route::post('/validar-folio', [StudentPortalController::class, 'validateFolio'])->name('validate-folio')->middleware('throttle:10,1');
+    Route::post('/ingresar', [StudentPortalController::class, 'join'])->name('join')->middleware('throttle:5,1');
+    Route::get('/inicio', [StudentPortalController::class, 'home'])->name('home');
+    Route::post('/examen/iniciar', [StudentPortalController::class, 'start'])->name('start')->middleware('throttle:5,1');
+    Route::get('/examen', [StudentPortalController::class, 'exam'])->name('exam');
+    Route::post('/api/preguntas', [StudentPortalController::class, 'questions'])->name('questions');
+    Route::post('/api/respuesta', [StudentPortalController::class, 'answer'])->name('answer');
+    Route::post('/api/entrega', [StudentPortalController::class, 'finish'])->name('finish')->middleware('throttle:5,1');
+    Route::get('/calificaciones', [StudentPortalController::class, 'grades'])->name('grades');
+    Route::post('/api/resultado', [StudentPortalController::class, 'result'])->name('result');
+    Route::post('/salir', [StudentPortalController::class, 'leave'])->name('leave');
+});

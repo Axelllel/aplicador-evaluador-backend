@@ -36,4 +36,6 @@ return [
     'cerrar' => 'Cerrar',
     'agregar' => 'Agregar',
     'ver_suscripcion' => 'Ver suscripción',
+    'ver_planes' => 'Ver planes disponibles',
+    'volver_a_suscripcion' => 'Volver a Suscripción',
 ];

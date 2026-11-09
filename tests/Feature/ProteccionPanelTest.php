@@ -34,6 +34,7 @@ class ProteccionPanelTest extends TestCase
         '/resultados/1/intentos/1',
         '/estadisticas',
         '/suscripcion',
+        '/suscripcion/planes',
     ];
 
     protected function setUp(): void
