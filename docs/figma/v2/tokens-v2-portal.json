@@ -1,0 +1,81 @@
+{
+  "$descripcion": "Tokens v2 del estilo nuevo (portal del alumno y panel docente restilizado). Fuente: resources/css/student-ui.css y app.css de la rama staging del backend de Axel (8 nov 2026). Reemplaza a tokens.json (COD-WEB 6.14) como referencia visual para Figma. Dos modos: claro y oscuro.",
+  "color": {
+    "claro": {
+      "fondo":        { "value": "#F6F8FC", "type": "color", "description": "Fondo de página (--sh-bg)" },
+      "panel":        { "value": "#FFFFFF", "type": "color", "description": "Tarjetas, cabecera y barra lateral (--sh-panel)" },
+      "texto":        { "value": "#1F2937", "type": "color", "description": "Texto principal (--sh-text)" },
+      "texto-suave":  { "value": "#8490A3", "type": "color", "description": "Etiquetas y apoyo (--sh-muted)" },
+      "borde":        { "value": "#E7ECF3", "type": "color", "description": "Bordes y separadores (--sh-border)" },
+      "pale":         { "value": "#EFF6FF", "type": "color", "description": "Ítem activo, hover y avatar (--sh-pale)" },
+      "azul":         { "value": "#3B82F6", "type": "color", "description": "Primario: botones, enlaces activos, marca (--sh-blue)" }
+    },
+    "oscuro": {
+      "fondo":        { "value": "#0C1523", "type": "color" },
+      "panel":        { "value": "#162337", "type": "color" },
+      "texto":        { "value": "#E9EFF8", "type": "color" },
+      "texto-suave":  { "value": "#9AACC3", "type": "color" },
+      "borde":        { "value": "#2E4159", "type": "color" },
+      "pale":         { "value": "#1B304D", "type": "color" },
+      "azul":         { "value": "#3B82F6", "type": "color" }
+    },
+    "apoyo": {
+      "azul-claro":   { "value": "#60A5FA", "type": "color", "description": "Foco, punto del portal, serie secundaria" },
+      "azul-barra-1": { "value": "#C9E0FE", "type": "color", "description": "Decoración de tarjeta de cifra" },
+      "azul-barra-2": { "value": "#A6CCFB", "type": "color" },
+      "icono-azul":   { "value": "#EDF5FF", "type": "color", "description": "Fondo de ícono de cifra (con #3B82F6)" },
+      "icono-verde":  { "value": "#EBF8F2", "type": "color", "description": "Fondo de ícono de cifra (con #35A17C)" },
+      "icono-morado": { "value": "#F2EFFE", "type": "color", "description": "Fondo de ícono de cifra (con #8B75D3)" },
+      "exito":        { "value": "#2E7D32", "type": "color" },
+      "aviso":        { "value": "#B45309", "type": "color" },
+      "error":        { "value": "#B3261E", "type": "color" }
+    },
+    "degradados-examen": {
+      "tecnologia":   { "value": "linear-gradient(115deg, #3B82F6, #6BA9FB)", "type": "color" },
+      "matematicas":  { "value": "linear-gradient(115deg, #4E81D4, #84B4F3)", "type": "color" },
+      "ciencias":     { "value": "linear-gradient(115deg, #3F8DC7, #7CBFE6)", "type": "color" }
+    }
+  },
+  "fontFamilies": {
+    "cuerpo":  { "value": "DM Sans", "type": "fontFamilies", "description": "Texto general (400, 500, 600, 700)" },
+    "titulos": { "value": "Manrope", "type": "fontFamilies", "description": "Marca, títulos, cifras y tarjetas (700, 750, 800)" }
+  },
+  "typography": {
+    "titulo-pagina":   { "value": { "fontFamily": "DM Sans", "fontSize": "30", "fontWeight": "800", "letterSpacing": "-1.2" }, "type": "typography" },
+    "cifra":           { "value": { "fontFamily": "Manrope", "fontSize": "28", "fontWeight": "800", "letterSpacing": "-1" }, "type": "typography" },
+    "marca":           { "value": { "fontFamily": "Manrope", "fontSize": "22", "fontWeight": "800", "letterSpacing": "-1" }, "type": "typography" },
+    "titulo-seccion":  { "value": { "fontFamily": "Manrope", "fontSize": "16", "fontWeight": "700", "letterSpacing": "-0.35" }, "type": "typography" },
+    "titulo-tarjeta":  { "value": { "fontFamily": "Manrope", "fontSize": "13", "fontWeight": "700", "letterSpacing": "-0.25" }, "type": "typography" },
+    "menu":            { "value": { "fontFamily": "DM Sans", "fontSize": "12", "fontWeight": "500" }, "type": "typography" },
+    "apoyo":           { "value": { "fontFamily": "DM Sans", "fontSize": "10", "fontWeight": "400" }, "type": "typography" },
+    "insignia":        { "value": { "fontFamily": "DM Sans", "fontSize": "8", "fontWeight": "500" }, "type": "typography" }
+  },
+  "sizing": {
+    "cabecera":        { "value": "76",   "type": "sizing" },
+    "barra-lateral":   { "value": "235",  "type": "sizing" },
+    "contenido-max":   { "value": "1160", "type": "sizing" },
+    "item-menu":       { "value": "45",   "type": "sizing" },
+    "boton-icono":     { "value": "34",   "type": "sizing" },
+    "avatar":          { "value": "35",   "type": "sizing" },
+    "icono-cifra":     { "value": "43",   "type": "sizing" }
+  },
+  "borderRadius": {
+    "campo-boton": { "value": "8",  "type": "borderRadius" },
+    "tarjeta":     { "value": "11", "type": "borderRadius" },
+    "panel":       { "value": "12", "type": "borderRadius" },
+    "insignia":    { "value": "5",  "type": "borderRadius" }
+  },
+  "spacing": {
+    "rejilla":     { "value": "18", "type": "spacing", "description": "Entre tarjetas de cifras y de exámenes (3 columnas)" },
+    "contenido":   { "value": "40", "type": "spacing", "description": "Margen lateral del contenido" }
+  },
+  "efectos": {
+    "tarjeta-reposo": { "value": "0 2px 3px #192A4402", "type": "boxShadow" },
+    "tarjeta-hover":  { "value": "0 5px 18px #22395912", "type": "boxShadow" },
+    "foco":           { "value": "outline 3px #60A5FA, offset 2px", "type": "other" }
+  },
+  "$notas": [
+    "Contraste: #8490A3 sobre blanco da alrededor de 3:1; el manual COD-WEB pide 4.5:1 para texto. Revisarlo con Axel antes de dejarlo como definitivo.",
+    "DM Sans y Manrope se cargan hoy desde Google Fonts; COD-WEB 6.15 pide no cargar fuentes externas."
+  ]
+}
