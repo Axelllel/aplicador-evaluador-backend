@@ -51,11 +51,45 @@ if (root) {
         }
       }));
     }
+    const details = $('bbb-exam-details');
+    if (details) {
+      const localDate = new Intl.DateTimeFormat('es-MX', {dateStyle: 'medium', timeStyle: 'short'});
+      const pass = details.querySelector('[data-exam-pass]');
+      const existing = $('bbb-exam-details-existing');
+      root.querySelectorAll('[data-exam-details]').forEach(card => card.addEventListener('click', () => {
+        const {examDetails, examName, examAvailable, examOpens, examCloses, examDuration, examQuestions} = card.dataset;
+        const available = examAvailable === '1';
+        const state = $('bbb-exam-details-state');
+        $('bbb-exam-details-title').textContent = examName;
+        state.textContent = available ? 'Disponible' : 'Próximamente';
+        state.parentElement.classList.toggle('ei-state-available', available);
+        $('bbb-exam-details-upcoming').hidden = available;
+        if (existing) existing.hidden = !available;
+        if (pass) {
+          pass.dataset.examPass = examDetails;
+          pass.hidden = !available;
+        }
+
+        $('bbb-exam-details-facts').hidden = !examOpens;
+        if (examOpens) {
+          const seconds = Number(examDuration);
+          const parts = [];
+          if (seconds >= 60) parts.push(`${Math.floor(seconds / 60)} min`);
+          if (seconds % 60) parts.push(`${seconds % 60} s`);
+          $('bbb-exam-details-duration').textContent = parts.join(' ') || 'Sin duración estimada';
+          $('bbb-exam-details-questions').textContent = examQuestions;
+          $('bbb-exam-details-schedule').textContent = `${localDate.format(new Date(examOpens))} — ${localDate.format(new Date(examCloses))}`;
+        }
+        dialog('bbb-exam-details');
+        details.scrollTop = 0;
+      }));
+    }
     const launch=$('bbb-instr-go');
     let selectedExam = '';
     root.querySelectorAll('[data-exam-pass]').forEach(button => button.addEventListener('click', () => {
       selectedExam = button.dataset.examPass;
       $('bbb-grant-error').hidden = true;
+      close('bbb-exam-details');
       dialog('bbb-instructions');
     }));
     $('bbb-close-grant')?.addEventListener('click',()=>close('bbb-instructions'));

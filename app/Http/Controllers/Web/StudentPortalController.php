@@ -79,9 +79,7 @@ class StudentPortalController extends Controller
         }
 
         try {
-            $exams = DB::select('SELECT * FROM public.fn_examenes_portal_alumno(?, ?)', [
-                $student['alumno_id'], $student['grupo_id'],
-            ]);
+            $exams = $this->examsForStudent($student);
         } catch (QueryException $exception) {
             report($exception);
             $exams = null;
@@ -94,6 +92,22 @@ class StudentPortalController extends Controller
         ));
 
         return view('student.home', compact('student', 'attempt', 'pendingExams'));
+    }
+
+    private function examsForStudent(array $student): array
+    {
+        $params = [$student['alumno_id'], $student['grupo_id']];
+
+        try {
+            return DB::select('SELECT * FROM public.fn_examenes_portal_alumno_detalles(?, ?)', $params);
+        } catch (QueryException $exception) {
+            if (($exception->errorInfo[0] ?? null) !== '42883') {
+                throw $exception;
+            }
+
+            // Permite desplegar la vista antes de aplicar la migración en Supabase.
+            return DB::select('SELECT * FROM public.fn_examenes_portal_alumno(?, ?)', $params);
+        }
     }
 
     public function start(Request $request): JsonResponse

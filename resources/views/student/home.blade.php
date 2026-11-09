@@ -111,23 +111,24 @@
                     </a>
                 @endif
                 @foreach ($pendingExams ?? [] as $exam)
-                    <article class="sh-exam-card sh-dashboard-exam">
-                        <div class="sh-exam-top">
+                    <button class="sh-exam-card text-left" type="button" aria-haspopup="dialog"
+                            data-exam-details="{{ $exam->examen_id }}" data-exam-name="{{ $exam->nombre }}"
+                            data-exam-available="{{ (int) $exam->disponible }}"
+                            @isset($exam->fecha_apertura)
+                                data-exam-opens="{{ \Carbon\CarbonImmutable::parse($exam->fecha_apertura)->toIso8601String() }}"
+                                data-exam-closes="{{ \Carbon\CarbonImmutable::parse($exam->fecha_cierre)->toIso8601String() }}"
+                                data-exam-duration="{{ $exam->duracion_segundos }}" data-exam-questions="{{ $exam->total_preguntas }}"
+                            @endisset>
+                        <span class="sh-exam-top">
                             <span class="sh-subject-icon"><x-icon name="document-text" /></span>
                             <span class="sh-badge {{ $exam->disponible ? 'sh-badge-available' : '' }}">{{ $exam->disponible ? 'Disponible' : 'Próximamente' }}</span>
-                        </div>
-                        <div class="sh-exam-body">
-                            <p class="sh-subject-name">{{ $student['materia'] }}</p>
-                            <h3>{{ $exam->nombre }}</h3>
-                            <div class="sh-exam-bottom">
-                                @if ($exam->disponible && !$attempt)
-                                    <button class="bbb-status" type="button" data-exam-pass="{{ $exam->examen_id }}">Ingresar pase →</button>
-                                @else
-                                    <span class="bbb-mini-note">{{ $exam->disponible ? 'Requiere pase individual' : 'Se habilita al abrir el examen' }}</span>
-                                @endif
-                            </div>
-                        </div>
-                    </article>
+                        </span>
+                        <span class="sh-exam-body block">
+                            <span class="sh-subject-name block">{{ $student['materia'] }}</span>
+                            <span class="block text-[13px] font-bold">{{ $exam->nombre }}</span>
+                            <span class="sh-exam-bottom"><span class="bbb-status">Ver detalles →</span></span>
+                        </span>
+                    </button>
                 @endforeach
                 @if ($pendingExams === null)
                     <div class="bbb-empty sh-dashboard-empty">No se pudieron consultar los exámenes. Recarga la página para volver a intentarlo.</div>
@@ -149,10 +150,14 @@
     </div>
 </main>
 
+@if ($pendingExams)
+    @include('student.exam-details')
+@endif
+
 @if (!$attempt)
-    <dialog class="bbb-modal" id="bbb-instructions">
+    <dialog class="bbb-modal m-auto" id="bbb-instructions" aria-labelledby="bbb-pass-title">
         <div class="bbb-modal-content">
-            <div class="bbb-modal-header"><h2>Iniciar examen</h2><button type="button" id="bbb-close-grant" aria-label="Cerrar">×</button></div>
+            <div class="bbb-modal-header"><h2 id="bbb-pass-title">Iniciar examen</h2><button type="button" id="bbb-close-grant" aria-label="Cerrar">×</button></div>
             <p>Introduce el pase individual entregado por tu docente. El examen debe estar publicado y dentro de su horario de aplicación.</p>
             <label for="bbb-grant-input">Pase de examen</label>
             <textarea id="bbb-grant-input" rows="4" class="bbb-question-edit" autocomplete="off" spellcheck="false" placeholder="Pega aquí el pase proporcionado por tu docente"></textarea>
