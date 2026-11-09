@@ -118,7 +118,7 @@
 .tp-section-heading h2 {font-family:'Manrope','DM Sans',sans-serif;font-size:19px;font-weight:800;letter-spacing:-.5px;color:var(--tp-text);}
 .tp-section-heading p:last-child {font-size:11px;color:var(--tp-muted);margin-top:5px;}
 .tp-groups .tp-group-card {background:var(--tp-card);border:1px solid var(--tp-border);border-radius:14px;padding:24px;box-shadow:0 4px 15px #1b376208;color:var(--tp-text);}
-.tp-groups .tp-group-card .bg-white {background:var(--tp-card);}
+.tp-groups .tp-group-card .bg-white:not([data-qr-grupo]) {background:var(--tp-card);}
 .tp-groups .tp-group-card label {font-size:12px;font-weight:650;color:var(--tp-text);}
 .tp-groups .tp-group-card input {border-color:var(--tp-border);background:var(--tp-card);color:var(--tp-text);font-size:13px;}
 .tp-groups .tp-group-card input:focus {border-color:var(--tp-blue);box-shadow:0 0 0 3px #3b82f619;outline:none;}
@@ -151,4 +151,140 @@
 }
 @media(prefers-reduced-motion:reduce){
  .tp-shell,.tp-shell * {transition:none!important;}
+}
+
+
+/* =========================================================
+   TARJETAS, CONTROLES Y TABLAS DOCENTES · BigBitByte
+   Componenentes compartidos con los tonos del portal alumno.
+   Se aplica SOLO dentro de #teacher-panel, no al estudiante.
+   ========================================================= */
+
+/* Unifica todos los recuadros (incluidos estados vacíos) con
+   las superficies del estudiante, en modo claro y oscuro. */
+.tp-shell .tp-main .tp-card,
+.tp-shell .tp-main .bg-superficie {
+  background: var(--tp-card);
+  color: var(--tp-text);
+  border: 1px solid var(--tp-border);
+  border-radius: 14px;
+  box-shadow: 0 4px 18px #1b37620b;
+}
+.tp-shell.tp-dark .tp-main .tp-card,
+.tp-shell.tp-dark .tp-main .bg-superficie {
+  box-shadow: 0 5px 22px #00000016;
+}
+
+/* Tarjetas que usan bg-white: tablas, gráficas y etiquetas.
+   El QR real es la única excepción: exige fondo blanco. */
+.tp-shell .tp-main .bg-white:not([data-qr-grupo]) {
+  background-color: var(--tp-card);
+  color: var(--tp-text);
+}
+.tp-shell .tp-main [data-qr-grupo] {
+  background-color: #fff;
+  color: #1f2937;
+  border-radius: 10px;
+}
+
+/* Evita texto blanco sobre tarjetas claras o texto oscuro sobre
+   tarjetas oscuras, sin alterar los avisos ni su texto blanco. */
+.tp-shell .tp-main .text-primario { color: var(--tp-text); }
+.tp-shell .tp-main .text-texto-suave { color: var(--tp-muted); }
+.tp-shell .tp-main .border-borde { border-color: var(--tp-border); }
+.tp-shell .tp-main :is(h2,h3).text-primario {
+  color: var(--tp-text);
+  font-family: 'Manrope', 'DM Sans', system-ui, sans-serif;
+  letter-spacing: -.45px;
+}
+
+/* Formularios en el mismo lenguaje visual del alumno. */
+.tp-shell .tp-main :is(input, select, textarea) {
+  background-color: var(--tp-card);
+  color: var(--tp-text);
+  border: 1px solid var(--tp-border);
+  border-radius: 9px;
+  font-size: 13px;
+}
+.tp-shell .tp-main :is(input, select, textarea)::placeholder {
+  color: var(--tp-muted);
+  opacity: .9;
+}
+.tp-shell .tp-main :is(input, select, textarea):focus {
+  border-color: var(--tp-blue);
+  outline: 2px solid #60a5fa;
+  outline-offset: 1px;
+}
+.tp-shell .tp-main :is(input, select, textarea)[aria-invalid="true"] {
+  border-color: #dc4960;
+}
+.tp-shell .tp-main select option { background: var(--tp-card); color: var(--tp-text); }
+.tp-shell .tp-main label { color: var(--tp-text); font-size: 12px; font-weight: 600; }
+
+/* Botones: principal azul, secundario sobre fondo suave.
+   Mantiene los href, POST, tipos y data-* originales. */
+.tp-shell .tp-main :is(button,a).bg-primario {
+  background: var(--tp-blue);
+  color: #fff;
+  border-color: var(--tp-blue);
+  border-radius: 9px;
+}
+.tp-shell .tp-main :is(button,a).bg-primario:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+.tp-shell .tp-main :is(button,a).border-primario:not(.bg-primario) {
+  color: var(--tp-blue);
+  background: var(--tp-pale);
+  border-color: var(--tp-border);
+  border-radius: 9px;
+}
+.tp-shell .tp-main :is(button,a).border-primario:not(.bg-primario):hover {
+  background: var(--tp-card);
+  border-color: #93c5fd;
+}
+.tp-shell .tp-main .bg-primario:not(thead) {
+  background-color: var(--tp-blue);
+}
+
+/* Tablas: fondos consistentes en los dos temas. */
+.tp-shell .tp-main table:not(.sr-only) {
+  background: var(--tp-card);
+  color: var(--tp-text);
+  border-color: var(--tp-border);
+  font-size: 12px;
+}
+.tp-shell .tp-main table thead.bg-primario {
+  background: var(--tp-pale);
+  color: var(--tp-text);
+}
+.tp-shell .tp-main table :is(th,td) { border-color: var(--tp-border); }
+.tp-shell .tp-main table tbody tr { background: var(--tp-card); }
+.tp-shell .tp-main table tbody tr:hover { background: var(--tp-pale); }
+
+/* Insignias de estado sobre fondo oscuro con contraste legible. */
+.tp-shell.tp-dark .tp-main .text-exito { color: #63d7a2; }
+.tp-shell.tp-dark .tp-main .text-aviso { color: #f6c26d; }
+.tp-shell.tp-dark .tp-main .text-error { color: #ff8f9d; }
+.tp-shell.tp-dark .tp-main .border-exito { border-color: #63d7a2; }
+.tp-shell.tp-dark .tp-main .border-aviso { border-color: #f6c26d; }
+.tp-shell.tp-dark .tp-main .border-error { border-color: #ff8f9d; }
+
+/* Ejes y etiquetas de gráficas SVG en modo oscuro. */
+.tp-shell.tp-dark .tp-main svg .fill-primario { fill: var(--tp-text); }
+.tp-shell.tp-dark .tp-main svg .fill-texto-suave { fill: var(--tp-muted); }
+.tp-shell.tp-dark .tp-main svg .stroke-primario { stroke: var(--tp-text); }
+.tp-shell.tp-dark .tp-main svg .stroke-borde { stroke: var(--tp-border); }
+
+/* Área de paginación, íconos y campos restantes. */
+.tp-shell .tp-main nav a.text-primario:hover {
+  color: var(--tp-blue);
+  background: var(--tp-pale);
+}
+.tp-shell .tp-main [aria-current="page"].bg-primario {
+  background: var(--tp-blue);
+  color: #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp-shell .tp-main .tp-card { transition: none; }
 }
