@@ -12,5 +12,6 @@
     alt="{{ __('panel.logo.alt') }}"
     width="{{ $alto }}"
     height="{{ $alto }}"
+    style="width: {{ $alto }}px; height: {{ $alto }}px"
     {{ $attributes->class(['w-auto max-w-none shrink-0 object-contain']) }}
 >

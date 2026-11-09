@@ -82,7 +82,7 @@ class PanelControllerTest extends TestCase
         $respuesta = $this->get('/panel')->assertOk()->assertSee('(página actual)');
 
         $this->assertSame(['Panel'], $this->consultar($respuesta->getContent(), '//aside//a[@aria-current="page"]/span[1]'));
-        $this->assertStringContainsString('border-white', $respuesta->getContent());
+        $this->assertStringContainsString('tp-nav-active', $respuesta->getContent());
         $this->assertStringContainsString('font-semibold', $respuesta->getContent());
 
         $grupos = $this->get('/grupos')->assertOk();
@@ -223,18 +223,21 @@ class PanelControllerTest extends TestCase
         $this->get('/panel')->assertOk()->assertSee('Aún no tienes exámenes.');
     }
 
-    public function test_la_barra_superior_tiene_el_logotipo_de_40_px_y_el_menu_de_cuenta(): void
+    public function test_la_barra_superior_tiene_el_logotipo_compartido_y_el_menu_de_cuenta(): void
     {
         $this->prepararLecturas();
 
         $this->get('/panel')
             ->assertOk()
-            ->assertSee('style="height: 40px"', false)
-            ->assertSee('h-16', false)
-            ->assertSee('w-64', false)
+            ->assertSee('images/bigbitbyte-logo.png', false)
+            ->assertSee('width="35"', false)
+            ->assertSee('height="35"', false)
+            ->assertSee('tp-header', false)
+            ->assertSee('tp-sidebar', false)
             ->assertSee('data-menu-alternar', false)
             ->assertSee('aria-controls="menu-lateral"', false)
-            ->assertSee('id="menu-cuenta"', false);
+            ->assertSee('id="menu-cuenta"', false)
+            ->assertSee('id="tp-theme-toggle"', false);
     }
 
     public function test_una_falla_de_la_api_muestra_una_pagina_amable_sin_detalles_tecnicos(): void
