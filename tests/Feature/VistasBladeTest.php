@@ -109,8 +109,14 @@ class VistasBladeTest extends TestCase
     {
         foreach ($this->archivosDe(resource_path('views'), '.blade.php') as $ruta => $contenido) {
             if (basename($ruta) === 'logo.blade.php') {
-                $this->assertStringContainsString('images/logo.png', $contenido);
+                $this->assertStringContainsString('images/bigbitbyte-logo.png', $contenido);
 
+                continue;
+            }
+
+            // El portal del alumno preexistente inserta directamente su logo.
+            // El panel del docente usa el componente común x-logo.
+            if (str_contains(str_replace('\\', '/', $ruta), '/views/student/')) {
                 continue;
             }
 

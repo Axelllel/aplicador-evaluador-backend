@@ -60,7 +60,9 @@ class SesionControllerTest extends TestCase
     {
         $this->get('/login')
             ->assertOk()
-            ->assertSee('style="height: 42px"', false)
+            ->assertSee('width="42"', false)
+            ->assertSee('height="42"', false)
+            ->assertSee('images/bigbitbyte-logo.png', false)
             ->assertSee('alt="Logotipo de BigBitByte: un cubo con tres letras B"', false)
             ->assertSee('Portal del docente')
             ->assertSee('student-entry.css')
