@@ -130,7 +130,8 @@ class PanelControllerTest extends TestCase
             ->assertOk()
             ->assertSee('5 de 5')
             ->assertSee('186 de 200')
-            ->assertSee('85 de 150')
+            ->assertSee('Alumnos en el grupo más numeroso')
+            ->assertSee('17 de 150')
             ->assertSee('Límite alcanzado')
             ->assertSee('Cerca del límite')
             ->assertSee('Dentro del límite')
@@ -147,6 +148,26 @@ class PanelControllerTest extends TestCase
         $this->get('/panel')->assertOk()->assertSee('2 de 5')->assertDontSee('Alcanzaste el límite de grupos');
 
         $this->assertCount(0, $this->api->llamadasA('GET', '/teacher/groups/3/students'), 'No se cuentan alumnos de grupos inactivos.');
+    }
+
+    public function test_el_limite_de_alumnos_se_evalua_por_grupo_y_no_por_la_suma(): void
+    {
+        $planes = $this->planesDeEjemplo();
+        $planes[0]['max_alumnos'] = 30;
+        $this->prepararLecturas(['planes' => $planes]);
+        $this->api->responder('GET', '/teacher/groups/2/students', ['data' => array_fill(0, 22, ['id' => 1])]);
+
+        $this->get('/panel')
+            ->assertOk()
+            ->assertSee('22 de 30')
+            ->assertDontSee('Alcanzaste el límite de alumnos en al menos un grupo.');
+
+        $this->api->responder('GET', '/teacher/groups/2/students', ['data' => array_fill(0, 30, ['id' => 1])]);
+
+        $this->get('/panel')
+            ->assertOk()
+            ->assertSee('30 de 30')
+            ->assertSee('Alcanzaste el límite de alumnos en al menos un grupo.');
     }
 
     public function test_sin_plan_activo_el_panel_muestra_la_advertencia_y_no_las_tarjetas(): void
@@ -196,6 +217,27 @@ class PanelControllerTest extends TestCase
         $this->prepararLecturas(['planes' => [], 'pagos' => []]);
 
         $this->get('/suscripcion/planes')->assertOk()->assertSee('Aún no hay planes disponibles.');
+    }
+
+    public function test_el_docente_puede_cotizar_su_plan_aunque_no_tenga_un_plan_activo(): void
+    {
+        $this->prepararLecturas(['pagos' => []]);
+
+        $inicial = $this->get('/suscripcion/planes')->assertOk()->assertSee('Configura tu plan')->assertSee('$115.00');
+
+        $this->assertSame(array_map('strval', range(1, 10)), $this->consultar($inicial->getContent(), '//select[@name="grupos"]/option/@value'));
+        $this->assertSame(['15', '20', '25', '30'], $this->consultar($inicial->getContent(), '//select[@name="alumnos"]/option/@value'));
+        $this->assertSame(['100', '150', '200'], $this->consultar($inicial->getContent(), '//select[@name="preguntas"]/option/@value'));
+
+        $this->get('/suscripcion/planes?grupos=3&alumnos=25&preguntas=150')->assertOk()->assertSee('$181.00');
+        $this->get('/suscripcion/planes?grupos=10&alumnos=30&preguntas=200')->assertOk()->assertSee('$405.00');
+    }
+
+    public function test_la_cotizacion_rechaza_capacidades_fuera_de_las_opciones(): void
+    {
+        $this->getJson('/suscripcion/planes?grupos=11&alumnos=16&preguntas=250')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['grupos', 'alumnos', 'preguntas']);
     }
 
     public function test_un_pago_vencido_cuenta_como_sin_plan(): void

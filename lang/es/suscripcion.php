@@ -25,7 +25,8 @@ return [
 
     'planes' => [
         'encabezado' => 'Planes disponibles',
-        'descripcion' => 'Compara los precios y límites de cada plan.',
+        'descripcion' => 'Elige la capacidad que necesitas y consulta su precio mensual.',
+        'registrados' => 'Paquetes registrados',
         'titulo' => 'Lista de planes',
         'vacia' => 'Aún no hay planes disponibles.',
         'plan_actual' => 'Tu plan',
@@ -33,9 +34,21 @@ return [
             'plan' => 'Plan',
             'grupos' => 'Grupos',
             'preguntas' => 'Preguntas',
-            'alumnos' => 'Alumnos',
+            'alumnos' => 'Alumnos por grupo',
             'precio' => 'Precio',
         ],
+    ],
+
+    'cotizacion' => [
+        'encabezado' => 'Configura tu plan',
+        'grupos' => 'Grupos activos',
+        'alumnos' => 'Alumnos por grupo',
+        'preguntas' => 'Preguntas en el banco',
+        'capacidad' => 'Cupo total de alumnos',
+        'precio' => 'Precio mensual estimado',
+        'moneda' => 'MXN al mes',
+        'leyenda' => 'Cotización simulada para el ambiente de pruebas.',
+        'calcular' => 'Calcular precio',
     ],
 
     'pagos' => [

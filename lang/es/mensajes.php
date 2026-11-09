@@ -47,7 +47,7 @@ return [
     'aviso' => [
         'limite_grupos' => 'Alcanzaste el límite de grupos de tu plan. Actualiza tu suscripción para crear más.',
         'limite_preguntas' => 'Alcanzaste el límite de preguntas de tu plan. Actualiza tu suscripción para crear más.',
-        'limite_alumnos' => 'Alcanzaste el límite de alumnos de tu plan. Actualiza tu suscripción para registrar más.',
+        'limite_alumnos' => 'Alcanzaste el límite de alumnos en al menos un grupo. Actualiza tu suscripción para ampliar su cupo.',
         'limite_generico' => 'Alcanzaste el límite de tu plan. Actualiza tu suscripción para continuar.',
         'sin_plan' => 'Tu cuenta no tiene un plan activo o tu pago ya venció. Revisa tu suscripción para continuar.',
         'demasiados_intentos' => 'Hiciste demasiados intentos seguidos. Espera un minuto e inténtalo de nuevo.',
