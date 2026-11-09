@@ -46,13 +46,13 @@
         </div>
     </div>
     <p class="ei-availability" id="bbb-exam-details-upcoming" hidden>Podrás iniciar cuando abra el examen.</p>
-    @if ($attempt)
-        <p class="ei-availability" id="bbb-exam-details-existing" hidden>Ya tienes un examen iniciado o entregado en esta sesión.</p>
+    @if ($activeAttempt)
+        <p class="ei-availability" id="bbb-exam-details-existing" hidden>Entrega el examen en curso antes de iniciar otro.</p>
     @endif
     <p class="bbb-warn" id="bbb-start-error" role="alert" hidden></p>
     <form class="ei-actions" method="dialog">
         <button class="ei-cancel" type="submit">Cerrar</button>
-        @unless ($attempt)
+        @unless ($activeAttempt)
             <button class="ei-start" type="button" id="bbb-start-exam" hidden>Iniciar examen →</button>
         @endunless
     </form>

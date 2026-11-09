@@ -10,7 +10,7 @@
         <div class="sh-page-heading sg-detail-heading">
             <div>
                 <p class="sh-welcome-label">{{ $student['materia'] }}</p>
-                <h1 id="bbb-result-exam-name">{{ $attempt ? 'Examen #'.$attempt['examen_id'] : 'Mis calificaciones' }}</h1>
+                <h1 id="bbb-result-exam-name">{{ $attempt ? ($attempt['nombre'] ?? 'Examen #'.$attempt['examen_id']) : 'Mis calificaciones' }}</h1>
                 <p>Grupo #{{ $student['grupo_id'] }} <span id="bbb-result-date" hidden></span></p>
             </div>
             @if ($attempt && $attempt['finished'])

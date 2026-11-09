@@ -21,10 +21,8 @@
                 <h2>Un paso más hacia<br>lo que puedes lograr.</h2>
                 <p>Consulta los exámenes de tu grupo e inicia cuando estén disponibles.</p>
                 <div class="sh-feature-bottom">
-                    @if ($attempt)
-                        <a class="bbb-primary" href="{{ $attempt['finished'] ? route('student.grades') : route('student.exam') }}">
-                            {{ $attempt['finished'] ? 'Consultar mi resultado' : 'Continuar mi examen' }} →
-                        </a>
+                    @if ($activeAttempt)
+                        <a class="bbb-primary" href="{{ route('student.exam') }}">Continuar mi examen →</a>
                     @else
                         <a class="bbb-primary" href="#bbb-pending">Ver mis exámenes →</a>
                     @endif
@@ -54,7 +52,7 @@
             </div>
             <div class="sh-stat-card">
                 <div class="sh-stat-icon sh-stat-green"><x-icon name="check" /></div>
-                <div><p>Entregados</p><strong>{{ (int) ($attempt['finished'] ?? false) }}</strong><span>Exámenes entregados en esta sesión</span></div>
+                <div><p>Entregados</p><strong>{{ $completedCount }}</strong><span>Exámenes entregados en esta sesión</span></div>
                 <div class="sh-stat-decoration sh-green-bars" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
             </div>
             <div class="sh-stat-card">
@@ -65,16 +63,16 @@
 
         <section class="sh-exam-section" id="bbb-pending" tabindex="-1">
             <div class="sh-section-heading">
-                <div><h2>Mis exámenes</h2><p>Selecciona un examen para consultar sus detalles e iniciarlo dentro de su horario.</p></div>
+                <div><h2>Exámenes pendientes</h2><p>Selecciona un examen para consultar sus detalles e iniciarlo dentro de su horario.</p></div>
             </div>
             <div class="sh-exam-grid">
-                @if ($attempt)
-                    <a class="sh-exam-card" href="{{ $attempt['finished'] ? route('student.grades') : route('student.exam') }}">
-                        <div class="sh-exam-top"><span class="sh-subject-icon"><x-icon name="document-text" /></span><span class="sh-badge">{{ $attempt['finished'] ? 'Entregado' : 'En curso' }}</span></div>
+                @if ($activeAttempt)
+                    <a class="sh-exam-card" href="{{ route('student.exam') }}">
+                        <div class="sh-exam-top"><span class="sh-subject-icon"><x-icon name="document-text" /></span><span class="sh-badge">En curso</span></div>
                         <div class="sh-exam-body">
                             <p class="sh-subject-name">{{ $student['materia'] }}</p>
-                            <h3>Examen #{{ $attempt['examen_id'] }}</h3>
-                            <div class="sh-exam-bottom"><span class="bbb-status">{{ $attempt['finished'] ? 'Ver resultado' : 'Continuar' }} →</span></div>
+                            <h3>{{ $activeAttempt['nombre'] ?? 'Examen #'.$activeAttempt['examen_id'] }}</h3>
+                            <div class="sh-exam-bottom"><span class="bbb-status">Continuar →</span></div>
                         </div>
                     </a>
                 @endif
@@ -100,9 +98,57 @@
                 @endforeach
                 @if ($pendingExams === null)
                     <div class="bbb-empty sh-dashboard-empty">No se pudieron consultar los exámenes. Recarga la página para volver a intentarlo.</div>
-                @elseif (!$pendingExams && !$attempt)
+                @elseif (!$pendingExams && !$activeAttempt)
                     <div class="bbb-empty sh-dashboard-empty">No hay exámenes disponibles ni próximos para este grupo.</div>
                 @endif
+            </div>
+        </section>
+
+        <section class="sh-exam-section sh-recent-section" aria-labelledby="bbb-recent-title">
+            <div class="sh-section-heading">
+                <div>
+                    <h2 id="bbb-recent-title">Terminados recientemente <span>{{ count($recentResults) }}</span></h2>
+                    <p>Cada logro es parte de tu progreso.</p>
+                </div>
+                @if ($recentResults)
+                    <a class="sh-text-button" href="{{ route('student.grades') }}">Ver calificaciones →</a>
+                @endif
+            </div>
+            <div class="sh-exam-grid">
+                @forelse ($recentResults as $result)
+                    <a class="sh-exam-card sh-done" href="{{ route('student.grades', ['intento' => $result['intento_id']]) }}">
+                        <div class="sh-exam-top">
+                            <span class="sh-subject-icon"><x-icon name="document-text" /></span>
+                            <span class="sh-badge sh-badge-done">✓ Completado</span>
+                        </div>
+                        <div class="sh-exam-body">
+                            <p class="sh-subject-name">{{ $student['materia'] }}</p>
+                            <h3>{{ $result['nombre'] }}</h3>
+                            @if ($result['fecha_entrega'])
+                                @php
+                                    $delivered = \Carbon\CarbonImmutable::parse($result['fecha_entrega']);
+                                    $minutes = (int) \Carbon\CarbonImmutable::parse($result['fecha_inicio'])->diffInMinutes($delivered, true);
+                                @endphp
+                                <div class="sh-exam-meta">
+                                    <span><time datetime="{{ $delivered->toIso8601String() }}">{{ $delivered->locale('es_MX')->isoFormat('D MMM YYYY') }}</time></span>
+                                    <span>{{ $minutes ?: 'Menos de 1' }} min empleados</span>
+                                </div>
+                            @endif
+                            <div class="sh-exam-bottom">
+                                @if ($result['calificacion'] !== null)
+                                    <span class="sh-grade"><strong>{{ $result['calificacion'] }}</strong><span>/ {{ $result['escala'] === '0-10' ? '10' : '100' }}</span></span>
+                                    @if ($result['estado'] === 'aproximado')
+                                        <span class="sg-provisional-label">Provisional</span>
+                                    @endif
+                                @else
+                                    <span class="sh-question-count">Resultado pendiente</span>
+                                @endif
+                            </div>
+                        </div>
+                    </a>
+                @empty
+                    <div class="bbb-empty sh-dashboard-empty">Los exámenes que entregues aparecerán aquí.</div>
+                @endforelse
             </div>
         </section>
 
