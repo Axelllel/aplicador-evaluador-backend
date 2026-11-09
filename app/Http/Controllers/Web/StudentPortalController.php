@@ -154,18 +154,54 @@ class StudentPortalController extends Controller
         return view('student.exam', ['student'=>$this->student($request),'attempt'=>$attempt]);
     }
 
-    private function invoke(Request $request, string $method, bool $mustBeOpen = true): JsonResponse
+    private function invoke(Request $request, string $method, bool $mustBeOpen = true, ?string $query = null): JsonResponse
     {
         $attempt = $this->attempt($request);
         if (!$this->student($request) || !$attempt) return response()->json(['message'=>'Sesión de examen no disponible.'],401);
         if ($mustBeOpen && $attempt['finished']) return response()->json(['message'=>'Examen ya entregado.'],403);
         $request->merge(['token_sesion'=>$attempt['token_sesion']]);
+        if ($query !== null) {
+            try {
+                $row = DB::selectOne($query, [$attempt['token_sesion']]);
+
+                return response()->json(['data' => json_decode($row->data, true)]);
+            } catch (QueryException $exception) {
+                $state = $exception->errorInfo[0] ?? null;
+                if ($state === 'P0001') {
+                    return response()->json(['message' => 'El examen o el intento ya no está disponible.'], 403);
+                }
+                if ($state !== '42883') {
+                    report($exception);
+
+                    return response()->json(['message' => 'No se pudo consultar el examen. Inténtalo de nuevo.'], 503);
+                }
+            }
+        }
         return app(StudentExamController::class)->{$method}($request);
     }
 
     public function questions(Request $request): JsonResponse
     {
-        return $this->invoke($request, 'questions');
+        $response = $this->invoke($request, 'questions', query: 'SELECT public.fn_preguntas_portal_alumno(CAST(? AS uuid)) AS data');
+        if ($response->getStatusCode() !== 200) {
+            return $response;
+        }
+
+        $data = $response->getData(true)['data'];
+        foreach ($data['preguntas'] as &$question) {
+            $options = $question['opciones'];
+            if ($question['tipo'] !== 'relacion_columnas' || !is_array($options)
+                || !array_is_list($options) || !isset($options[0]['izquierda'], $options[0]['derecha'])) {
+                continue;
+            }
+
+            $choices = array_values(array_unique(array_column($options, 'derecha')));
+            sort($choices, SORT_NATURAL | SORT_FLAG_CASE);
+            $question['opciones'] = ['izquierda' => array_column($options, 'izquierda'), 'derecha' => $choices];
+        }
+        unset($question);
+
+        return response()->json(['data' => $data]);
     }
 
     public function answer(Request $request): JsonResponse
@@ -195,7 +231,7 @@ class StudentPortalController extends Controller
         $attempt=$this->attempt($request);
         if (!$attempt || !$attempt['finished']) return response()->json(['message'=>'El examen aún no ha sido entregado.'],403);
         // La funcion de la API oculta notas por decisión del docente.
-        return $this->invoke($request, 'result', false);
+        return $this->invoke($request, 'result', false, 'SELECT public.fn_revision_portal_alumno(CAST(? AS uuid)) AS data');
     }
 
     public function leave(Request $request): RedirectResponse

@@ -4,7 +4,7 @@
 @vite(['resources/css/student-ui.css','resources/js/student-ui.js'])
 </head><body>
 <div class="student-home" id="bbb-student-app"
- data-screen="@yield('screen')" data-started="{{ $attempt['fecha_inicio'] ?? '' }}"
+ data-screen="@yield('screen')" data-started="{{ $attempt['fecha_inicio'] ?? '' }}" data-attempt="{{ $attempt['intento_id'] ?? '' }}"
  data-home="{{ route('student.home') }}" data-exam="{{ route('student.exam') }}" data-grades="{{ route('student.grades') }}"
  data-start="{{ route('student.start') }}" data-questions="{{ route('student.questions') }}" data-answer="{{ route('student.answer') }}" data-finish="{{ route('student.finish') }}" data-result="{{ route('student.result') }}">
 @yield('body')
