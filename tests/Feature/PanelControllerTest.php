@@ -250,23 +250,24 @@ class PanelControllerTest extends TestCase
         $pago = $this->get('/suscripcion/planes/pago?'.http_build_query($seleccion + ['precio' => 1]))
             ->assertOk()
             ->assertSee('Resumen de pago')
-            ->assertSee('Selecciona un método de pago')
+            ->assertSee('Pago en línea pendiente')
             ->assertSeeInOrder(['Grupos activos', '3', 'Alumnos por grupo', '25', 'Preguntas en el banco', '150'])
             ->assertSee('$181.00')
-            ->assertSee('La pasarela de pago está pendiente de integración.');
+            ->assertSee('Tarjeta de crédito o débito')
+            ->assertSee('Transferencia SPEI');
 
         $this->assertSame(
             [route('panel.suscripcion.planes', $seleccion)],
             $this->consultar($pago->getContent(), '//main//a[normalize-space(.)="Editar mi plan"]/@href'),
         );
         $this->assertSame(
-            ['tarjeta', 'spei'],
-            $this->consultar($pago->getContent(), '//input[@type="radio" and @name="metodo"]/@value'),
+            [route('panel.suscripcion.planes.pago.revisar')],
+            $this->consultar($pago->getContent(), '//main//form/@action'),
         );
-        $this->assertSame(['demo_numero', 'demo_cvv'], $this->consultar(
-            $pago->getContent(),
-            '//input[@disabled and (@name="demo_numero" or @name="demo_cvv")]/@name',
-        ));
+        $this->assertSame(
+            ['titular', 'correo_facturacion'],
+            $this->consultar($pago->getContent(), '//main//form//input[@required]/@name'),
+        );
         $this->assertSame([], $this->api->llamadas);
     }
 
@@ -277,33 +278,39 @@ class PanelControllerTest extends TestCase
             ->assertJsonValidationErrors(['grupos', 'alumnos']);
     }
 
-    public function test_cada_metodo_muestra_su_resultado_simulado_sin_registrar_un_pago(): void
+    public function test_el_resumen_no_acepta_solicitudes_de_cobro(): void
     {
-        $seleccion = ['grupos' => 3, 'alumnos' => 25, 'preguntas' => 150, 'precio' => 1];
-        $resultados = [
-            'tarjeta' => 'Simulación con tarjeta completada',
-            'spei' => 'SPEI-DEMO',
-        ];
-
-        foreach ($resultados as $metodo => $resultado) {
-            $this->post('/suscripcion/planes/pago', $seleccion + ['metodo' => $metodo])
-                ->assertOk()
-                ->assertSee($resultado)
-                ->assertSee('$181.00');
-        }
+        $this->postJson('/suscripcion/planes/pago', ['metodo' => 'tarjeta', 'grupos' => 3, 'alumnos' => 25, 'preguntas' => 150])
+            ->assertStatus(405);
 
         $this->assertSame([], $this->api->llamadas);
     }
 
-    public function test_la_simulacion_rechaza_metodos_y_capacidades_invalidos(): void
+    public function test_la_revision_de_pago_requiere_titular_y_correo_validos(): void
     {
-        $this->postJson('/suscripcion/planes/pago', ['metodo' => 'institucional', 'grupos' => 3, 'alumnos' => 25, 'preguntas' => 150])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('metodo');
+        $seleccion = ['grupos' => 3, 'alumnos' => 25, 'preguntas' => 150];
 
-        $this->postJson('/suscripcion/planes/pago', ['metodo' => 'spei', 'grupos' => 11, 'preguntas' => 150])
+        $this->postJson('/suscripcion/planes/pago/datos', $seleccion)
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['grupos', 'alumnos']);
+            ->assertJsonValidationErrors(['titular', 'correo_facturacion']);
+
+        $this->postJson('/suscripcion/planes/pago/datos', $seleccion + ['titular' => 'Laura Méndez', 'correo_facturacion' => 'correo-invalido'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('correo_facturacion');
+    }
+
+    public function test_revisar_los_datos_no_registra_un_pago(): void
+    {
+        $this->post('/suscripcion/planes/pago/datos', [
+            'grupos' => 3, 'alumnos' => 25, 'preguntas' => 150,
+            'titular' => 'Laura Méndez', 'correo_facturacion' => 'laura@example.com',
+        ])
+            ->assertOk()
+            ->assertSee('Datos de facturación completos.')
+            ->assertSee('Pago en línea pendiente')
+            ->assertSee('$181.00');
+
+        $this->assertSame([], $this->api->llamadas);
     }
 
     public function test_un_pago_vencido_cuenta_como_sin_plan(): void

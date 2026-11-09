@@ -221,16 +221,6 @@
 .tp-shell .tp-main select option { background: var(--tp-card); color: var(--tp-text); }
 .tp-shell .tp-main label { color: var(--tp-text); font-size: 12px; font-weight: 600; }
 
-/* Selector de métodos del simulador de pago. */
-.tp-pago-opcion:has(input:checked) {
-  background-color: var(--tp-pale);
-  border-color: var(--tp-blue);
-}
-.tp-pago-opcion input { accent-color: var(--tp-blue); }
-.tp-pago-formulario:not(:has(input[value="tarjeta"]:checked)) .tp-pago-tarjeta {
-  display: none;
-}
-
 /* Botones: principal azul, secundario sobre fondo suave.
    Mantiene los href, POST, tipos y data-* originales. */
 .tp-shell .tp-main :is(button,a).bg-primario {

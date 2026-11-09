@@ -56,7 +56,7 @@ class ProteccionPanelTest extends TestCase
 
     public function test_sin_sesion_los_formularios_del_panel_redirigen_al_login(): void
     {
-        foreach (['/grupos', '/banco-de-preguntas', '/examenes', '/examenes/1/apartados', '/examenes/1/preguntas', '/examenes/1/publicar', '/suscripcion/planes/pago'] as $ruta) {
+        foreach (['/grupos', '/banco-de-preguntas', '/examenes', '/examenes/1/apartados', '/examenes/1/preguntas', '/examenes/1/publicar', '/suscripcion/planes/pago/datos'] as $ruta) {
             $this->post($ruta, [])->assertRedirect(route('login'));
         }
 
