@@ -106,6 +106,12 @@ class ConsultasPanelService
         return $this->lista('/teacher/groups/'.$grupoId.'/students')->count();
     }
 
+    /** Alumnos inscritos con estado de PIN e intentos del grupo para la emisión segura de credenciales. */
+    public function estudiantesConCredencial(int $grupoId): Collection
+    {
+        return $this->lista('/teacher/groups/'.$grupoId.'/students');
+    }
+
     /**
      * Resultados de un examen: sus datos y, por intento, el alumno, el estado y la nota (solo cuando todas las
      * preguntas están calificadas); null si el examen no existe o no es del docente.

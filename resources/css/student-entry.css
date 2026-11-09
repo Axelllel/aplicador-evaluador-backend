@@ -157,6 +157,14 @@ form label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 9
 .portal.dark .entry-message { color: #ffd4d4; background: #431e2b; border-color: #894256; }
 .success-box { border: 1px solid var(--line); background: var(--pale); border-radius: 12px; padding: 16px; margin: 18px 0; font-size: 14px; }
 .success-box strong { display:block; font-size: 18px; margin-top: 8px; }
+.entry-mode-switch { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:4px; margin:-10px 0 22px; border:1px solid var(--line); border-radius:10px; background:var(--pale); }
+.entry-mode-switch button { min-height:38px; border-radius:7px; color:var(--muted); font-size:11px; font-weight:600; }
+.entry-mode-switch button.active { color:var(--blue); background:var(--card); box-shadow:0 1px 4px #1f293714; }
+.success-code { display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px; margin:18px 0; border:1px solid #3b82f655; border-radius:12px; background:var(--pale); text-align:center; }
+.success-code > span { color:var(--muted); font-size:11px; }
+.success-code > strong { color:var(--blue); font-size:25px; letter-spacing:4px; font-variant-numeric:tabular-nums; }
+.success-code button { color:var(--blue); font-size:11px; font-weight:650; }
+.success-code small { color:var(--muted); font-size:10px; line-height:1.6; }
 .modal video { width:100%; min-height:180px; max-height:250px; background:#0c1523; border-radius:12px; margin-top:18px; }
 .modal .scanner-message {font-size:12px; line-height:1.5; margin-top:12px; color:var(--muted); text-align:center}
 @media(max-width:600px){.brand-row {gap:8px}.brand-logo{width:36px;height:36px}}

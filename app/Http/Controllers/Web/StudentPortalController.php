@@ -171,7 +171,7 @@ class StudentPortalController extends Controller
 
         // Reutiliza exactamente la funcion / validacion de la API ya probada.
         $response = app(StudentJoinController::class)->store($request);
-        if ($response->getStatusCode() !== 201) {
+        if (!in_array($response->getStatusCode(), [200, 201], true)) {
             return $response;
         }
         $data = $response->getData(true)['data'];
@@ -181,7 +181,7 @@ class StudentPortalController extends Controller
             'alumno_id' => (int) $data['alumno_id'],
             'grupo_id' => (int) $data['grupo_id'],
             'materia' => (string) $data['materia'],
-            'nombre' => (string) $request->input('nombre'),
+            'nombre' => (string) $data['nombre'],
             'folio_codigo' => mb_strtoupper((string) $request->input('folio_codigo')),
         ]);
         $payload = $response->getData(true);

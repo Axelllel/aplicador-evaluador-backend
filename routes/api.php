@@ -49,6 +49,8 @@ Route::middleware(VerifySupabaseToken::class)->group(function () {
         ->whereNumber(['examenId', 'examenPreguntaId']);
 
     Route::get('/v1/teacher/groups/{grupoId}/students', [TeacherStudentController::class,'index'])->whereNumber('grupoId');
+    Route::post('/v1/teacher/groups/{grupoId}/students/{alumnoId}/credential', [TeacherStudentController::class,'issueCredential'])
+        ->whereNumber(['grupoId', 'alumnoId']);
     Route::post('/v1/teacher/exams/{examenId}/students/{alumnoId}/grant', [TeacherStudentController::class,'authorization'])
         ->whereNumber('examenId')->whereNumber('alumnoId');
     Route::get('/v1/teacher/exams/{examenId}/attempts', [TeacherResultsController::class,'attempts'])->whereNumber('examenId');

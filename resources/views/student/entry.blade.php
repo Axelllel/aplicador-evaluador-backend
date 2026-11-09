@@ -39,7 +39,7 @@ Nota: No crea cuentas ni autoriza intentos de examen.
                 <div class="steps" aria-label="Proceso de ingreso en dos pasos">
                     <div class="step active" id="step-indicator-1"><span class="step-number">1</span><span>Tu grupo</span></div>
                     <div class="step-line" id="step-indicator-line"></div>
-                    <div class="step" id="step-indicator-2"><span class="step-number">2</span><span>Tu nombre</span></div>
+                    <div class="step" id="step-indicator-2"><span class="step-number">2</span><span>Tu acceso</span></div>
                 </div>
                 <div class="card-content" id="entry-step-one">
                     <div class="welcome-icon" aria-hidden="true">▤</div>
@@ -63,7 +63,7 @@ Nota: No crea cuentas ni autoriza intentos de examen.
                 </div>
                 <div class="card-content" id="entry-step-two" hidden>
                     <div class="welcome-icon" aria-hidden="true">♙</div>
-                    <div class="heading-block"><h1>Identifícate</h1><p>Estamos a un paso de empezar.</p></div>
+                    <div class="heading-block"><h1>Identifícate</h1><p>Usa tu código para conservar tu perfil y tus resultados.</p></div>
                     <div class="group-info">
                         <div class="group-icon" aria-hidden="true">▤</div>
                         <div>
@@ -73,24 +73,41 @@ Nota: No crea cuentas ni autoriza intentos de examen.
                         </div>
                         <span class="verified" aria-hidden="true">✓</span>
                     </div>
+                    <div class="entry-mode-switch" role="group" aria-label="Tipo de ingreso">
+                        <button type="button" id="mode-new" class="active" aria-pressed="true">Primera vez</button>
+                        <button type="button" id="mode-returning" aria-pressed="false">Ya tengo código</button>
+                    </div>
                     <form id="student-form" novalidate>
-                        <label for="student-name">Nombre completo <span class="required">*</span></label>
-                        <div class="input-wrap name-input" id="name-wrap"><input id="student-name" name="nombre" placeholder="Escribe tu nombre y apellidos" autocomplete="name" maxlength="150" value="{{ $enrolledStudent['nombre'] ?? '' }}" @readonly($enrolledStudent) required></div>
-                        <p class="field-hint">{{ $enrolledStudent ? 'Usaremos el nombre de tu sesión para agregarte al grupo.' : 'Así te reconocerá tu docente en el grupo.' }}</p>
+                        <div id="new-student-fields">
+                            <label for="student-name">Nombre completo <span class="required">*</span></label>
+                            <div class="input-wrap name-input" id="name-wrap"><input id="student-name" name="nombre" placeholder="Escribe tu nombre y apellidos" autocomplete="name" maxlength="150" value="{{ $enrolledStudent['nombre'] ?? '' }}" @readonly($enrolledStudent)></div>
+                            <p class="field-hint">Crearemos tu perfil y un código único para tus siguientes ingresos.</p>
+                        </div>
+                        <div id="returning-student-fields" hidden>
+                            <label for="student-code">Código de acceso</label>
+                            <div class="input-wrap name-input" id="code-wrap"><input id="student-code" name="codigo_acceso" placeholder="Ej. ABCD27" autocomplete="one-time-code" maxlength="6" autocapitalize="characters" spellcheck="false"></div>
+                            <p class="field-hint">Escribe el código de 4 letras y 2 números que guardaste.</p>
+                        </div>
                         <p role="alert" class="entry-message" id="name-feedback" hidden></p>
                         <button class="primary-button" type="submit" id="join-button">Unirme al grupo &nbsp; →</button>
                     </form>
                     <button type="button" class="back-button" id="back-button">← &nbsp; Volver</button>
-                    <p class="transition-status">Sin cuentas. Sin contraseñas.</p>
+                    <p class="transition-status" id="transition-status">Tu código es personal. Guárdalo para volver a ingresar.</p>
                 </div>
                 <div class="card-content" id="entry-step-success" hidden>
                     <div class="welcome-icon success-icon" aria-hidden="true">✓</div>
                     <div class="heading-block success-heading">
                         <span class="success-label">INSCRIPCIÓN COMPLETADA</span>
                         <h1 id="success-title">¡Todo listo!</h1>
-                        <p>Tu inscripción al grupo fue registrada.</p>
+                        <p id="success-description">Tu inscripción al grupo fue registrada.</p>
                     </div>
                     <div class="success-box"><span>Materia registrada</span><strong id="success-subject"></strong></div>
+                    <div class="success-code" id="success-code-box" hidden>
+                        <span>Tu código personal</span>
+                        <strong id="success-code"></strong>
+                        <button type="button" id="copy-code">Copiar código</button>
+                        <small>Guárdalo ahora. Por seguridad no volveremos a mostrarlo.</small>
+                    </div>
                     <p class="prototype-note">Ya puedes consultar los exámenes de tu grupo e iniciar los que estén disponibles.</p>
                     <a class="primary-button" id="success-home" style="display:block;text-align:center;text-decoration:none;margin-top:14px" href="{{ route('student.home') }}">Ir al portal del estudiante →</a>
                     <button class="secondary-button" type="button" id="reset-button">Volver al ingreso</button>
@@ -114,8 +131,8 @@ Nota: No crea cuentas ni autoriza intentos de examen.
         <button type="button" class="icon-button close-button" id="close-help" aria-label="Cerrar">✕</button>
         <div class="welcome-icon">?</div>
         <h2>Vamos paso a paso</h2>
-        <p>1. Solicita el folio o QR a tu docente.<br>2. Escribe tu nombre completo.<br>3. Únete al grupo.</p>
-        <div class="help-note">No necesitas correo, contraseña ni crear una cuenta.</div>
+        <p>1. Solicita el folio o QR a tu docente.<br>2. Si es tu primera vez, registra tu nombre y guarda tu código.<br>3. En tus siguientes ingresos, usa el folio y tu código personal.</p>
+        <div class="help-note">El código permite recuperar el mismo perfil y conservar tus resultados.</div>
         <button class="primary-button" type="button" id="help-ok">Entendido</button>
     </dialog>
 </div>

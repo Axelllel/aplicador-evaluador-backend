@@ -72,4 +72,34 @@ class GrupoController extends Controller
             'grupos',
         );
     }
+
+    public function students(int $grupoId): View
+    {
+        $grupo = $this->consultas->grupos()->firstWhere('id', $grupoId);
+        abort_if($grupo === null, 404);
+
+        return view('grupos.alumnos', [
+            'grupo' => $grupo,
+            'alumnos' => $this->consultas->estudiantesConCredencial($grupoId),
+        ]);
+    }
+
+    public function issueCredential(int $grupoId, int $alumnoId): RedirectResponse
+    {
+        $respuesta = $this->api->post("/teacher/groups/{$grupoId}/students/{$alumnoId}/credential");
+        if (!$respuesta->exitosa()) {
+            return $this->redirigirSegunRespuesta(
+                $respuesta,
+                redirect()->route('panel.grupos.alumnos', $grupoId),
+                '',
+                null,
+                'No se pudo generar el código. Inténtalo de nuevo.',
+            );
+        }
+
+        return redirect()->route('panel.grupos.alumnos', $grupoId)->with('codigo_alumno', [
+            'alumno_id' => $alumnoId,
+            'codigo' => (string) $respuesta->dato('codigo_acceso'),
+        ]);
+    }
 }
