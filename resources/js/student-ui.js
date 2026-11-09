@@ -1,4 +1,6 @@
 /** BigBitByte Portal estudiantil. Las operaciones reales pasan por Laravel + Supabase. */
+import { createStudentQrScanner } from './student-qr';
+
 const root = document.getElementById('bbb-student-app');
 if (root) {
   const $ = id => document.getElementById(id);
@@ -56,6 +58,86 @@ if (root) {
       }));
     }
     $('bbb-groups-open')?.addEventListener('click', () => dialog('bbb-groups-dialog'));
+    const groupDialog = $('bbb-join-group-dialog');
+    if (groupDialog) {
+      const form = $('bbb-join-group-form');
+      const input = $('bbb-join-folio');
+      const scan = $('bbb-join-scan');
+      const status = $('bbb-join-scan-status');
+      const error = $('bbb-join-group-error');
+      const submit = $('bbb-join-confirm');
+      const scanner = createStudentQrScanner($('bbb-join-video'));
+      const stop = () => {
+        scanner.stop();
+        scan.setAttribute('aria-pressed', 'false');
+      };
+
+      root.querySelectorAll('[data-open-join-group]').forEach(button => button.addEventListener('click', () => {
+        form.reset();
+        status.textContent = '';
+        error.hidden = true;
+        dialog('bbb-join-group-dialog');
+      }));
+      groupDialog.addEventListener('close', stop);
+      groupDialog.addEventListener('cancel', event => {
+        if (submit.disabled) event.preventDefault();
+      });
+      groupDialog.querySelector('form[method="dialog"]').addEventListener('submit', event => {
+        if (submit.disabled) event.preventDefault();
+      });
+      scan.setAttribute('aria-pressed', 'false');
+      scan.addEventListener('click', () => {
+        if (scan.getAttribute('aria-pressed') === 'true') {
+          stop();
+          status.textContent = '';
+          return;
+        }
+        scan.setAttribute('aria-pressed', 'true');
+        error.hidden = true;
+        void scanner.start({
+          onStatus: message => { status.textContent = message; },
+          onError: message => {
+            scan.setAttribute('aria-pressed', 'false');
+            status.textContent = message;
+          },
+          onCode: code => {
+            stop();
+            const folio = code.trim().toUpperCase();
+            if (!/^[A-Z0-9]{4,20}$/.test(folio)) {
+              status.textContent = 'El código QR no contiene un folio válido.';
+              return;
+            }
+            input.value = folio;
+            status.textContent = 'Folio leído. Pulsa «Agregar grupo» para continuar.';
+            submit.focus();
+          },
+        });
+      });
+
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (submit.disabled) return;
+        stop();
+        error.hidden = true;
+        status.textContent = '';
+        submit.disabled = scan.disabled = true;
+        submit.textContent = 'Agregando grupo…';
+        try {
+          const data = await request(urls.joinGroup, {folio_codigo: input.value.trim().toUpperCase()});
+          location.assign(data.home_url || urls.home);
+        } catch (failure) {
+          const messages = {
+            402: 'El grupo alcanzó su cupo. Consulta a tu docente.',
+            404: 'No encontramos un grupo activo con ese folio.',
+            419: 'Tu sesión expiró. Vuelve a ingresar al portal.',
+          };
+          error.textContent = messages[failure.status] || failure.message;
+          error.hidden = false;
+          submit.disabled = scan.disabled = false;
+          submit.textContent = 'Agregar grupo →';
+        }
+      });
+    }
   }
   if (urls.screen === 'home') {
     const details = $('bbb-exam-details');

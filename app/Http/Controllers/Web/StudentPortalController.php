@@ -42,8 +42,40 @@ class StudentPortalController extends Controller
         return $this->groups($request, $student)[(int) $data['grupo']] ?? abort(404);
     }
 
-    private function completedAttempts(Request $request): array
+    private function completedAttempts(Request $request, ?int $attemptId = null): array
     {
+        $student = $this->student($request);
+        if (!$student) {
+            return [];
+        }
+
+        try {
+            $rows = DB::select('SELECT * FROM public.fn_historial_portal_alumno(CAST(? AS bigint), CAST(? AS bigint))', [
+                $student['alumno_id'], $attemptId,
+            ]);
+            $completed = [];
+            foreach ($rows as $row) {
+                $completed[(int) $row->intento_id] = [
+                    'intento_id' => (int) $row->intento_id,
+                    'examen_id' => (int) $row->examen_id,
+                    'grupo_id' => (int) $row->grupo_id,
+                    'nombre' => $row->nombre,
+                    'materia' => $row->materia,
+                    'fecha_inicio' => $row->fecha_inicio,
+                    'fecha_entrega' => $row->fecha_entrega,
+                    'token_sesion' => $row->token_sesion,
+                    'finished' => true,
+                ];
+            }
+
+            return $completed;
+        } catch (QueryException $exception) {
+            if (($exception->errorInfo[0] ?? null) !== '42883') {
+                report($exception);
+            }
+        }
+
+        // Compatibilidad durante el despliegue de la función de historial.
         $completed = $request->session()->get('bbb.completed_attempts', []);
         $current = $this->attempt($request);
         if ($current && $current['finished']) {
@@ -51,7 +83,7 @@ class StudentPortalController extends Controller
         }
 
         return array_map(
-            fn (array $attempt) => $attempt + ['grupo_id' => $this->student($request)['grupo_id'] ?? null],
+            fn (array $attempt) => $attempt + ['grupo_id' => $student['grupo_id']],
             array_reverse($completed, true),
         );
     }
@@ -82,7 +114,7 @@ class StudentPortalController extends Controller
             return [
                 'intento_id' => $attempt['intento_id'],
                 'grupo_id' => $attempt['grupo_id'],
-                'materia' => $groups[$attempt['grupo_id']]['materia'] ?? null,
+                'materia' => $attempt['materia'] ?? $groups[$attempt['grupo_id']]['materia'] ?? null,
                 'nombre' => $attempt['nombre'] ?? $result['nombre'] ?? 'Examen #'.$attempt['examen_id'],
                 'fecha_inicio' => $attempt['fecha_inicio'],
                 'fecha_entrega' => $attempt['fecha_entrega'] ?? $result['fecha_entrega'] ?? null,
@@ -187,6 +219,16 @@ class StudentPortalController extends Controller
             'estado' => 'inscrito',
             'home_url' => route('student.home', ['grupo' => $profile['grupo_id']]),
         ]], 201);
+    }
+
+    public function joinGroup(Request $request): JsonResponse
+    {
+        $student = $this->student($request);
+        if (!$student) {
+            return response()->json(['message' => 'Tu sesión del alumno expiró. Vuelve a ingresar al portal.'], 401);
+        }
+
+        return $this->joinAdditionalGroup($request, $student);
     }
 
     public function home(Request $request): View|RedirectResponse
@@ -386,9 +428,12 @@ class StudentPortalController extends Controller
         $filter = $this->groupForRequest($request, $student);
         if ($request->has('intento')) {
             $attempt = $this->selectedResult($request);
-            $student = $groups[$attempt['grupo_id']] ?? abort(404);
+            $resultGroup = $groups[$attempt['grupo_id']] ?? [
+                'grupo_id' => $attempt['grupo_id'],
+                'materia' => $attempt['materia'] ?? $student['materia'],
+            ];
 
-            return view('student.grades', compact('student', 'groups', 'attempt', 'filter'));
+            return view('student.grades', compact('student', 'groups', 'attempt', 'filter', 'resultGroup'));
         }
 
         $completed = $this->completedAttempts($request);
@@ -414,14 +459,14 @@ class StudentPortalController extends Controller
 
     private function selectedResult(Request $request): ?array
     {
-        $completed = $this->completedAttempts($request);
         if (!$request->has('intento')) {
+            $completed = $this->completedAttempts($request);
             return reset($completed) ?: null;
         }
 
         $data = $request->validate(['intento' => ['required', 'integer', 'min:1']]);
 
-        return $completed[(int) $data['intento']] ?? abort(404);
+        return $this->completedAttempts($request, (int) $data['intento'])[(int) $data['intento']] ?? abort(404);
     }
 
     public function leave(Request $request): RedirectResponse

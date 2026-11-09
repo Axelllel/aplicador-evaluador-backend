@@ -9,9 +9,9 @@
         <a class="sg-back-link" href="{{ route('student.grades', $filter ? ['grupo' => $filter['grupo_id']] : []) }}">← Mis evaluaciones</a>
         <div class="sh-page-heading sg-detail-heading">
             <div>
-                <p class="sh-welcome-label">{{ $student['materia'] }}</p>
+                <p class="sh-welcome-label">{{ $resultGroup['materia'] }}</p>
                 <h1 id="bbb-result-exam-name">{{ $attempt ? ($attempt['nombre'] ?? 'Examen #'.$attempt['examen_id']) : 'Mis calificaciones' }}</h1>
-                <p>Grupo #{{ $student['grupo_id'] }} <span id="bbb-result-date" hidden></span></p>
+                <p>Grupo #{{ $resultGroup['grupo_id'] }} <span id="bbb-result-date" hidden></span></p>
             </div>
             @if ($attempt && $attempt['finished'])
                 <span class="sg-review-chip" id="bbb-result-status">Consultando</span>

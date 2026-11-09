@@ -22,7 +22,7 @@
         <a class="sh-nav-item" href="{{ $activePage === 'home' ? '' : route('student.home', ['grupo' => $student['grupo_id']]) }}#bbb-pending">▤ &nbsp; Exámenes por materia</a>
         <a class="sh-nav-item {{ $activePage === 'grades' ? 'sh-nav-active' : '' }}" href="{{ route('student.grades') }}" @if ($activePage === 'grades') aria-current="page" @endif>▥ &nbsp; Calificaciones</a>
         <button class="sh-nav-item" id="bbb-groups-open" type="button" aria-haspopup="dialog" aria-controls="bbb-groups-dialog"><x-icon name="user-group" /> Mis grupos</button>
-        <a class="sh-nav-item sh-nav-join" href="{{ route('student.entry') }}">＋ &nbsp; Unirse a un grupo</a>
+        <button class="sh-nav-item sh-nav-join" type="button" data-open-join-group aria-haspopup="dialog" aria-controls="bbb-join-group-dialog"><x-icon name="plus" /> Unirse a un grupo</button>
     </nav>
     <div class="sh-sidebar-group">
         <div class="sh-sidebar-group-icon" aria-hidden="true">▦</div>
@@ -60,7 +60,7 @@
         @endforeach
     </div>
 
-    <a class="sh-dialog-action" href="{{ route('student.entry') }}"><x-icon name="plus" /> Unirse a un grupo</a>
+    <button class="sh-dialog-action" type="button" data-open-join-group aria-haspopup="dialog" aria-controls="bbb-join-group-dialog"><x-icon name="plus" /> Unirse a un grupo</button>
     @if ($activePage === 'home')
         <form method="dialog">
             <button class="sh-dialog-action sh-dialog-secondary" type="submit">Volver al inicio →</button>
@@ -68,4 +68,23 @@
     @else
         <a class="sh-dialog-action sh-dialog-secondary" href="{{ route('student.home', ['grupo' => $student['grupo_id']]) }}">Volver al inicio →</a>
     @endif
+</dialog>
+
+<dialog class="sh-dialog overflow-y-auto" id="bbb-join-group-dialog" aria-labelledby="bbb-join-group-title">
+    <form method="dialog">
+        <button class="sh-icon-button sh-dialog-close" type="submit" aria-label="Cerrar"><x-icon name="x-mark" /></button>
+    </form>
+    <div class="sh-dialog-icon"><x-icon name="user-group" /></div>
+    <h2 id="bbb-join-group-title">Unirse a un grupo</h2>
+    <form id="bbb-join-group-form" class="mt-5">
+        <label for="bbb-join-folio" class="mb-2 block text-xs font-semibold">Folio del grupo</label>
+        <input id="bbb-join-folio" name="folio_codigo" class="w-full rounded-lg border border-[var(--sh-border)] bg-[var(--sh-panel)] px-3 py-2.5 text-sm"
+               type="text" pattern="[A-Za-z0-9]{4,20}" minlength="4" maxlength="20" placeholder="Escribe el folio de tu docente"
+               autocapitalize="characters" autocomplete="off" spellcheck="false" required autofocus>
+        <button class="sh-dialog-action sh-dialog-secondary" id="bbb-join-scan" type="button"><x-icon name="qr-code" /> Escanear QR</button>
+        <video class="mt-3 w-full rounded-lg" id="bbb-join-video" autoplay playsinline muted hidden></video>
+        <p id="bbb-join-scan-status" class="mt-3 text-xs text-[var(--sh-muted)]" role="status"></p>
+        <p class="bbb-warn" id="bbb-join-group-error" role="alert" hidden></p>
+        <button class="sh-dialog-action disabled:opacity-60" id="bbb-join-confirm" type="submit">Agregar grupo →</button>
+    </form>
 </dialog>

@@ -4,12 +4,12 @@
  * Descripción: Interacciones del ingreso del alumno; usa API pública de Laravel.
  * No crea cuentas ni simula respuestas del servidor.
  */
+import { createStudentQrScanner } from './student-qr';
+
 const portal = document.getElementById('student-entry');
 if (portal) {
     const $ = (id) => document.getElementById(id);
     let folio = '';
-    let scanning = false;
-    let stream = null;
     const steps = [$('entry-step-one'), $('entry-step-two'), $('entry-step-success')];
     // Mensajes visibles junto al campo correspondiente (folio o nombre).
     const setMessage = (message) => {
@@ -159,52 +159,19 @@ if (portal) {
     $('close-help').addEventListener('click', closeHelp);
     $('help-ok').addEventListener('click', closeHelp);
 
-    const stopCamera = () => {
-        scanning = false;
-        if (stream) { stream.getTracks().forEach((track) => track.stop()); stream = null; }
-        $('qr-video').srcObject = null;
-    };
-    const closeQr = () => { stopCamera(); $('qr-dialog').close(); };
+    const scanner = createStudentQrScanner($('qr-video'));
+    const closeQr = () => $('qr-dialog').close();
     $('close-qr').addEventListener('click', closeQr);
     $('qr-cancel').addEventListener('click', closeQr);
-    $('qr-dialog').addEventListener('close', stopCamera);
-    $('scan-qr').addEventListener('click', async () => {
+    $('qr-dialog').addEventListener('close', scanner.stop);
+    $('scan-qr').addEventListener('click', () => {
         $('qr-dialog').showModal();
-        $('scanner-message').textContent = 'Preparando cámara…';
-        if (!navigator.mediaDevices?.getUserMedia || !('BarcodeDetector' in window)) {
-            $('scanner-message').textContent = 'Este navegador no permite escanear QR aquí. Puedes ingresar el folio manualmente.';
-            return;
-        }
-        try {
-            const formats = await window.BarcodeDetector.getSupportedFormats();
-            if (!formats.includes('qr_code')) throw new Error('QR no compatible');
-            const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-            const video = $('qr-video');
-            video.srcObject = stream;
-            video.hidden = false;
-            await video.play();
-            scanning = true;
-            $('scanner-message').textContent = 'Apunta al código QR de tu docente.';
-            const scan = async () => {
-                if (!scanning) return;
-                try {
-                    const codes = await detector.detect(video);
-                    if (codes.length > 0) {
-                        let raw = codes[0].rawValue.trim();
-                        // Un QR puede contener el folio directamente o en un enlace ?folio=...
-                        try { const url = new URL(raw); raw = url.searchParams.get('folio') || raw; } catch (_) { /* Folio directo. */ }
-                        closeQr();
-                        if (await acceptFolio(raw)) return;
-                    }
-                } catch (_) { /* Otro fotograma. */ }
-                if (scanning) requestAnimationFrame(scan);
-            };
-            requestAnimationFrame(scan);
-        } catch (_) {
-            stopCamera();
-            $('qr-video').hidden = true;
-            $('scanner-message').textContent = 'No fue posible usar la cámara. Ingresa el folio manualmente.';
-        }
+        void scanner.start({
+            onStatus: message => { $('scanner-message').textContent = message; },
+            onCode: code => {
+                closeQr();
+                void acceptFolio(code);
+            },
+        });
     });
 }

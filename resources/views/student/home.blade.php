@@ -110,9 +110,7 @@
                     <h2 id="bbb-recent-title">Terminados recientemente <span>{{ count($recentResults) }}</span></h2>
                     <p>Cada logro es parte de tu progreso.</p>
                 </div>
-                @if ($recentResults)
-                    <a class="sh-text-button" href="{{ route('student.grades', ['grupo' => $student['grupo_id']]) }}">Ver calificaciones →</a>
-                @endif
+                <a class="sh-text-button" href="{{ route('student.grades', $recentResults ? ['grupo' => $student['grupo_id']] : []) }}">Ver calificaciones →</a>
             </div>
             <div class="sh-exam-grid">
                 @forelse ($recentResults as $result)

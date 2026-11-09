@@ -93,6 +93,7 @@ Route::prefix('alumno')->name('student.')->group(function () {
     Route::get('/ingreso', [StudentPortalController::class, 'entry'])->name('entry');
     Route::post('/validar-folio', [StudentPortalController::class, 'validateFolio'])->name('validate-folio')->middleware('throttle:10,1');
     Route::post('/ingresar', [StudentPortalController::class, 'join'])->name('join')->middleware('throttle:5,1');
+    Route::post('/grupos', [StudentPortalController::class, 'joinGroup'])->name('groups.join')->middleware('throttle:5,1');
     Route::get('/inicio', [StudentPortalController::class, 'home'])->name('home');
     Route::post('/examen/iniciar', [StudentPortalController::class, 'start'])->name('start')->middleware('throttle:5,1');
     Route::get('/examen', [StudentPortalController::class, 'exam'])->name('exam');
