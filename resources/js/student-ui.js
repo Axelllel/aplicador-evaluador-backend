@@ -44,6 +44,10 @@ if (root) {
         menu.setAttribute('aria-expanded', String(open));
       };
       menu.addEventListener('click', () => setMenu(side.hidden));
+      $('bbb-menu-close')?.addEventListener('click', () => {
+        setMenu(false);
+        menu.focus();
+      });
       side.querySelectorAll('a[href^="#"]').forEach(link => link.addEventListener('click', () => {
         if (window.matchMedia('(max-width: 1050px)').matches) {
           setMenu(false);
@@ -51,12 +55,14 @@ if (root) {
         }
       }));
     }
+    $('bbb-groups-open')?.addEventListener('click', () => dialog('bbb-groups-dialog'));
   }
   if (urls.screen === 'home') {
     const details = $('bbb-exam-details');
     if (details) {
       const localDate = new Intl.DateTimeFormat('es-MX', {dateStyle: 'medium', timeStyle: 'short'});
-      const pass = details.querySelector('[data-exam-pass]');
+      const launch = $('bbb-start-exam');
+      const output = $('bbb-start-error');
       const existing = $('bbb-exam-details-existing');
       root.querySelectorAll('[data-exam-details]').forEach(card => card.addEventListener('click', () => {
         const {examDetails, examName, examAvailable, examOpens, examCloses, examDuration, examQuestions} = card.dataset;
@@ -67,9 +73,10 @@ if (root) {
         state.parentElement.classList.toggle('ei-state-available', available);
         $('bbb-exam-details-upcoming').hidden = available;
         if (existing) existing.hidden = !available;
-        if (pass) {
-          pass.dataset.examPass = examDetails;
-          pass.hidden = !available;
+        output.hidden = true;
+        if (launch) {
+          launch.dataset.examId = examDetails;
+          launch.hidden = !available;
         }
 
         $('bbb-exam-details-facts').hidden = !examOpens;
@@ -85,26 +92,28 @@ if (root) {
         dialog('bbb-exam-details');
         details.scrollTop = 0;
       }));
+      const keepOpenWhileStarting = event => {
+        if (launch?.disabled) event.preventDefault();
+      };
+      details.addEventListener('cancel', keepOpenWhileStarting);
+      details.addEventListener('submit', keepOpenWhileStarting);
+      launch?.addEventListener('click', async () => {
+        if (launch.disabled || !launch.dataset.examId) return;
+        output.hidden = true;
+        launch.disabled = true;
+        launch.textContent = 'Iniciando examen…';
+        try {
+          const data = await request(urls.start, {examen_id: launch.dataset.examId});
+          location.assign(data.url || urls.exam);
+        } catch (error) {
+          output.textContent = error.message;
+          output.hidden = false;
+          output.scrollIntoView({block:'nearest'});
+          launch.disabled = false;
+          launch.textContent = 'Iniciar examen →';
+        }
+      });
     }
-    const launch=$('bbb-instr-go');
-    let selectedExam = '';
-    root.querySelectorAll('[data-exam-pass]').forEach(button => button.addEventListener('click', () => {
-      selectedExam = button.dataset.examPass;
-      $('bbb-grant-error').hidden = true;
-      close('bbb-exam-details');
-      dialog('bbb-instructions');
-    }));
-    $('bbb-close-grant')?.addEventListener('click',()=>close('bbb-instructions'));
-    $('bbb-cancel-grant')?.addEventListener('click',()=>close('bbb-instructions'));
-    launch?.addEventListener('click',async()=>{
-      const pase=$('bbb-grant-input').value.trim(); const output=$('bbb-grant-error');
-      output.hidden=true;
-      if(!pase){output.textContent='Ingresa el pase de tu docente.';output.hidden=false;return;}
-      launch.disabled=true;launch.textContent='Verificando pase…';
-      const payload = selectedExam ? {pase, examen_id: selectedExam} : {pase};
-      try { const data=await request(urls.start,payload);location.assign(data.url || urls.exam); }
-      catch(e){output.textContent=e.message;output.hidden=false;launch.disabled=false;launch.textContent='Iniciar examen →';}
-    });
   }
   const typeNames={opcion_multiple:'Opción múltiple',relacion_columnas:'Relación de columnas',abierta:'Respuesta abierta',programacion:'Programación'};
   if (urls.screen === 'exam') {

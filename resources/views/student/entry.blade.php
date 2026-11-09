@@ -91,7 +91,7 @@ Nota: No crea cuentas ni autoriza intentos de examen.
                         <p>Tu inscripción al grupo fue registrada.</p>
                     </div>
                     <div class="success-box"><span>Materia registrada</span><strong id="success-subject"></strong></div>
-                    <p class="prototype-note">El ingreso quedó registrado en Supabase. Para iniciar un examen necesitarás el pase individual que entrega tu docente.</p>
+                    <p class="prototype-note">Ya puedes consultar los exámenes de tu grupo e iniciar los que estén disponibles.</p>
                     <a class="primary-button" style="display:block;text-align:center;text-decoration:none;margin-top:14px" href="{{ route('student.home') }}">Ir al portal del estudiante →</a>
                     <button class="secondary-button" type="button" id="reset-button">Volver al ingreso</button>
                 </div>

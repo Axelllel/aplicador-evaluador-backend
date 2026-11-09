@@ -19,14 +19,14 @@
             <div class="sh-feature-content">
                 <div class="sh-feature-label"><span></span> TU PRÓXIMO RETO</div>
                 <h2>Un paso más hacia<br>lo que puedes lograr.</h2>
-                <p>Para presentar un examen, utiliza el pase individual que te entregue tu docente.</p>
+                <p>Consulta los exámenes de tu grupo e inicia cuando estén disponibles.</p>
                 <div class="sh-feature-bottom">
                     @if ($attempt)
                         <a class="bbb-primary" href="{{ $attempt['finished'] ? route('student.grades') : route('student.exam') }}">
                             {{ $attempt['finished'] ? 'Consultar mi resultado' : 'Continuar mi examen' }} →
                         </a>
                     @else
-                        <button class="bbb-primary" data-exam-pass type="button">Ingresar pase de examen →</button>
+                        <a class="bbb-primary" href="#bbb-pending">Ver mis exámenes →</a>
                     @endif
                 </div>
             </div>
@@ -65,7 +65,7 @@
 
         <section class="sh-exam-section" id="bbb-pending" tabindex="-1">
             <div class="sh-section-heading">
-                <div><h2>Mis exámenes</h2><p>Exámenes del grupo actual. Para iniciar necesitas el pase de tu docente.</p></div>
+                <div><h2>Mis exámenes</h2><p>Selecciona un examen para consultar sus detalles e iniciarlo dentro de su horario.</p></div>
             </div>
             <div class="sh-exam-grid">
                 @if ($attempt)
@@ -106,15 +106,6 @@
             </div>
         </section>
 
-        <section class="sh-exam-section" id="bbb-groups" tabindex="-1">
-            <div class="sh-section-heading"><div><h2>Mis grupos</h2><p>Tu inscripción en esta sesión.</p></div></div>
-            <div class="sh-exam-grid">
-                <article class="sh-stat-card">
-                    <div class="sh-stat-icon sh-stat-blue"><x-icon name="user-group" /></div>
-                    <div><p>Grupo #{{ $student['grupo_id'] }}</p><h3>{{ $student['materia'] }}</h3><span>Grupo actual</span></div>
-                </article>
-            </div>
-        </section>
     </div>
 </main>
 
@@ -122,19 +113,4 @@
     @include('student.exam-details')
 @endif
 
-@if (!$attempt)
-    <dialog class="bbb-modal m-auto" id="bbb-instructions" aria-labelledby="bbb-pass-title">
-        <div class="bbb-modal-content">
-            <div class="bbb-modal-header"><h2 id="bbb-pass-title">Iniciar examen</h2><button type="button" id="bbb-close-grant" aria-label="Cerrar">×</button></div>
-            <p>Introduce el pase individual entregado por tu docente. El examen debe estar publicado y dentro de su horario de aplicación.</p>
-            <label for="bbb-grant-input">Pase de examen</label>
-            <textarea id="bbb-grant-input" rows="4" class="bbb-question-edit" autocomplete="off" spellcheck="false" placeholder="Pega aquí el pase proporcionado por tu docente"></textarea>
-            <p role="alert" id="bbb-grant-error" class="bbb-warn" hidden></p>
-            <div class="bbb-modal-actions">
-                <button class="bbb-secondary" type="button" id="bbb-cancel-grant">Cancelar</button>
-                <button class="bbb-primary" type="button" id="bbb-instr-go">Iniciar examen →</button>
-            </div>
-        </div>
-    </dialog>
-@endif
 @endsection

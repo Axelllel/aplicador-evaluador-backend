@@ -8,11 +8,9 @@ use App\Http\Controllers\Api\StudentExamController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
 use Illuminate\View\View;
-use Throwable;
 
 /** Portal Blade: no usa credenciales de docente ni SQL directo desde el navegador. */
 class StudentPortalController extends Controller
@@ -67,6 +65,7 @@ class StudentPortalController extends Controller
             'grupo_id' => (int) $data['grupo_id'],
             'materia' => (string) $data['materia'],
             'nombre' => (string) $request->input('nombre'),
+            'folio_codigo' => mb_strtoupper((string) $request->input('folio_codigo')),
         ]);
         return $response;
     }
@@ -115,34 +114,48 @@ class StudentPortalController extends Controller
         $student = $this->student($request);
         if (!$student) return response()->json(['message'=>'Primero ingresa a un grupo.'], 401);
         if ($this->attempt($request)) return response()->json(['message'=>'Ya tienes un examen iniciado o entregado en esta sesión.'], 409);
-        $data = $request->validate([
-            'pase' => ['required', 'string', 'max:4096'],
-            'examen_id' => ['sometimes', 'required', 'integer', 'min:1'],
-        ]);
+        $data = $request->validate(['examen_id' => ['required', 'integer', 'min:1']]);
+        $examId = (int) $data['examen_id'];
+
+        // Los identificadores del alumno y su grupo provienen de la sesión creada al validar el folio.
         try {
-            $grant = json_decode(Crypt::decryptString($data['pase']), true, 512, JSON_THROW_ON_ERROR);
-        } catch (Throwable $e) {
-            return response()->json(['message'=>'Pase inválido.'], 403);
+            $result = DB::selectOne(
+                <<<'SQL'
+                WITH examen_autorizado AS MATERIALIZED (
+                    SELECT examen_id
+                    FROM public.fn_examenes_portal_alumno(?, ?)
+                    WHERE examen_id = ? AND disponible
+                )
+                SELECT intento.*
+                FROM examen_autorizado e
+                CROSS JOIN LATERAL public.fn_iniciar_intento(e.examen_id, ?, 'web') intento
+                SQL,
+                [$student['alumno_id'], $student['grupo_id'], $examId, $student['alumno_id']],
+                false,
+            );
+        } catch (QueryException $exception) {
+            if (($exception->errorInfo[0] ?? null) === 'P0001') {
+                return response()->json(['message' => 'El examen no está disponible o ya tienes un intento registrado.'], 403);
+            }
+
+            report($exception);
+
+            return response()->json(['message' => 'No se pudo iniciar el examen. Inténtalo de nuevo.'], 503);
         }
-        // El pase debe estar emitido exactamente para el alumno de ESTA sesión.
-        if (!is_array($grant) || ($grant['student'] ?? null) !== $student['alumno_id']) {
-            return response()->json(['message'=>'El pase no corresponde a este alumno.'], 403);
+
+        if ($result === null) {
+            return response()->json(['message' => 'Este examen no está disponible para tu grupo.'], 403);
         }
-        if (isset($data['examen_id']) && ($grant['exam'] ?? null) !== (int) $data['examen_id']) {
-            return response()->json(['message' => 'El pase no corresponde al examen seleccionado.'], 403);
-        }
-        $request->merge(['plataforma'=>'web']);
-        $response = app(StudentExamController::class)->start($request);
-        if ($response->getStatusCode() !== 201) return $response;
-        $result = $response->getData(true)['data'];
+
         $request->session()->put('bbb.attempt', [
-            'intento_id'=>(int) $result['intento_id'],
-            'token_sesion'=>(string) $result['token_sesion'],
-            'examen_id'=>(int) $grant['exam'],
-            'fecha_inicio'=>(string) $result['fecha_inicio'],
-            'finished'=>false,
+            'intento_id' => (int) $result->intento_id,
+            'token_sesion' => (string) $result->token_sesion,
+            'examen_id' => $examId,
+            'fecha_inicio' => (string) $result->fecha_inicio,
+            'finished' => false,
         ]);
-        return response()->json(['data'=>['intento_id'=>(int)$result['intento_id'],'url'=>route('student.exam')]], 201);
+
+        return response()->json(['data' => ['intento_id' => (int) $result->intento_id, 'url' => route('student.exam')]], 201);
     }
 
     public function exam(Request $request): View|RedirectResponse

@@ -42,17 +42,18 @@
         <x-icon name="information-circle" />
         <div>
             <strong>El tiempo cuenta desde que inicias</strong>
-            <p>Ten a la mano el pase individual de tu docente y revisa la hora de cierre.</p>
+            <p>Revisa el horario de cierre antes de comenzar.</p>
         </div>
     </div>
-    <p class="ei-availability" id="bbb-exam-details-upcoming" hidden>Podrás ingresar el pase cuando abra el examen.</p>
+    <p class="ei-availability" id="bbb-exam-details-upcoming" hidden>Podrás iniciar cuando abra el examen.</p>
     @if ($attempt)
         <p class="ei-availability" id="bbb-exam-details-existing" hidden>Ya tienes un examen iniciado o entregado en esta sesión.</p>
     @endif
+    <p class="bbb-warn" id="bbb-start-error" role="alert" hidden></p>
     <form class="ei-actions" method="dialog">
         <button class="ei-cancel" type="submit">Cerrar</button>
         @unless ($attempt)
-            <button class="ei-start" type="button" data-exam-pass hidden>Ingresar pase →</button>
+            <button class="ei-start" type="button" id="bbb-start-exam" hidden>Iniciar examen →</button>
         @endunless
     </form>
 </dialog>
