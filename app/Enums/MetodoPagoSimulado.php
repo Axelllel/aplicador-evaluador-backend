@@ -8,5 +8,4 @@ enum MetodoPagoSimulado: string
 {
     case Tarjeta = 'tarjeta';
     case Spei = 'spei';
-    case Institucional = 'institucional';
 }

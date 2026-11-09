@@ -260,7 +260,7 @@ class PanelControllerTest extends TestCase
             $this->consultar($pago->getContent(), '//main//a[normalize-space(.)="Editar mi plan"]/@href'),
         );
         $this->assertSame(
-            ['tarjeta', 'spei', 'institucional'],
+            ['tarjeta', 'spei'],
             $this->consultar($pago->getContent(), '//input[@type="radio" and @name="metodo"]/@value'),
         );
         $this->assertSame(['demo_numero', 'demo_cvv'], $this->consultar(
@@ -283,7 +283,6 @@ class PanelControllerTest extends TestCase
         $resultados = [
             'tarjeta' => 'Simulación con tarjeta completada',
             'spei' => 'SPEI-DEMO',
-            'institucional' => 'Cotización institucional de prueba',
         ];
 
         foreach ($resultados as $metodo => $resultado) {
@@ -298,7 +297,7 @@ class PanelControllerTest extends TestCase
 
     public function test_la_simulacion_rechaza_metodos_y_capacidades_invalidos(): void
     {
-        $this->postJson('/suscripcion/planes/pago', ['metodo' => 'otro', 'grupos' => 3, 'alumnos' => 25, 'preguntas' => 150])
+        $this->postJson('/suscripcion/planes/pago', ['metodo' => 'institucional', 'grupos' => 3, 'alumnos' => 25, 'preguntas' => 150])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('metodo');
 
