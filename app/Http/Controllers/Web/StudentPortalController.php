@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\StudentJoinController;
 use App\Http\Controllers\Api\StudentExamController;
+use App\Services\CredencialAlumnoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -162,15 +163,14 @@ class StudentPortalController extends Controller
         return response()->json(['data' => ['valido' => true]], 200);
     }
 
-    public function join(Request $request): JsonResponse
+    public function join(Request $request, CredencialAlumnoService $credenciales): JsonResponse
     {
         $student = $this->student($request);
         if ($student) {
             return $this->joinAdditionalGroup($request, $student);
         }
 
-        // Reutiliza exactamente la funcion / validacion de la API ya probada.
-        $response = app(StudentJoinController::class)->store($request);
+        $response = app(StudentJoinController::class)->store($request, $credenciales);
         if (!in_array($response->getStatusCode(), [200, 201], true)) {
             return $response;
         }
