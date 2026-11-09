@@ -62,7 +62,7 @@ class ExamenesPanelService
                 'estado' => $estado,
                 'fecha' => CarbonImmutable::parse($examen['fecha_apertura'])->format(self::FORMATO_DE_FECHA),
                 'acciones' => $estado === 'borrador'
-                    ? ['abrir', 'publicar']
+                    ? ['abrir', 'publicar', 'eliminar']
                     : ['abrir', 'resultados', 'estadisticas'],
             ];
         })->values();

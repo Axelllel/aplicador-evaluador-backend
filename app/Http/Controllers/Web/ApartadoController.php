@@ -18,6 +18,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\RespondeConApi;
 use App\Http\Requests\ApartadoRequest;
 use App\Http\Requests\AsignarPreguntaRequest;
+use App\Http\Requests\PonderacionPreguntaRequest;
 use App\Services\ConsultasPanelService;
 use App\Services\ExamenesPanelService;
 use App\Services\PanelApiService;
@@ -124,6 +125,21 @@ class ApartadoController extends Controller
             __('mensajes.exito.pregunta_asignada'),
             null,
             __('mensajes.error.pregunta_no_asignada'),
+        );
+    }
+
+    public function actualizarPonderacion(PonderacionPreguntaRequest $solicitud, int $examen, int $examenPregunta): RedirectResponse
+    {
+        $respuesta = $this->api->patch('/teacher/exams/'.$examen.'/questions/'.$examenPregunta.'/weight', [
+            'ponderacion' => $solicitud->validated('nueva_ponderacion'),
+        ]);
+
+        return $this->redirigirSegunRespuesta(
+            $respuesta,
+            redirect()->route('panel.examenes.apartados', ['examen' => $examen]),
+            __('mensajes.exito.ponderacion_guardada'),
+            null,
+            __('mensajes.error.ponderacion_no_guardada'),
         );
     }
 }

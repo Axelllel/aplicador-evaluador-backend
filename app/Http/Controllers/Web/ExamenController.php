@@ -91,4 +91,15 @@ class ExamenController extends Controller
             __('mensajes.error.examen_no_publicado'),
         );
     }
+
+    public function eliminar(int $examen): RedirectResponse
+    {
+        return $this->redirigirSegunRespuesta(
+            $this->api->solicitar('DELETE', '/teacher/exams/'.$examen),
+            redirect()->route('panel.examenes'),
+            __('mensajes.exito.examen_eliminado'),
+            null,
+            __('mensajes.error.examen_no_eliminado'),
+        );
+    }
 }

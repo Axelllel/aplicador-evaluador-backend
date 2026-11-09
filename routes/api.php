@@ -37,6 +37,7 @@ Route::middleware(VerifySupabaseToken::class)->group(function () {
     Route::post('/v1/teacher/groups', [TeacherGroupController::class,'store']);
     Route::get('/v1/teacher/exams', [TeacherExamController::class,'index']);
     Route::post('/v1/teacher/exams', [TeacherExamController::class,'store']);
+    Route::delete('/v1/teacher/exams/{examenId}', [TeacherExamController::class,'destroy'])->whereNumber('examenId');
     Route::get('/v1/teacher/questions', [TeacherQuestionController::class,'index']);
     Route::post('/v1/teacher/questions', [TeacherQuestionController::class,'store']);
     Route::post('/v1/teacher/exams/{examenId}/publish', [TeacherExamPublishController::class,'publish'])->whereNumber('examenId');
@@ -44,6 +45,8 @@ Route::middleware(VerifySupabaseToken::class)->group(function () {
     Route::post('/v1/teacher/exams/{examenId}/sections', [TeacherExamSectionController::class,'store'])->whereNumber('examenId');
     Route::post('/v1/teacher/exams/{examenId}/sections/{apartadoId}/questions', [TeacherExamSectionController::class,'attachQuestion'])
         ->whereNumber('examenId')->whereNumber('apartadoId');
+    Route::patch('/v1/teacher/exams/{examenId}/questions/{examenPreguntaId}/weight', [TeacherExamSectionController::class,'updateWeight'])
+        ->whereNumber(['examenId', 'examenPreguntaId']);
 
     Route::get('/v1/teacher/groups/{grupoId}/students', [TeacherStudentController::class,'index'])->whereNumber('grupoId');
     Route::post('/v1/teacher/exams/{examenId}/students/{alumnoId}/grant', [TeacherStudentController::class,'authorization'])

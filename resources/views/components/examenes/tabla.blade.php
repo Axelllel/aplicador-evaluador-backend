@@ -24,8 +24,9 @@
         'cerrado' => 'primario',
     ];
 
-    $accionesDeLaPagina = collect($examenes->items())->flatMap(fn (array $examen): array => $examen['acciones']);
-    $hayEliminar = $accionesDeLaPagina->contains('eliminar');
+    $porEliminar = collect($examenes->items())
+        ->filter(fn (array $examen): bool => in_array('eliminar', $examen['acciones'], true))
+        ->unique('id');
     $porPublicar = collect($examenes->items())->filter(fn (array $examen): bool => isset($examen['id']) && in_array('publicar', $examen['acciones'], true));
 @endphp
 <div class="space-y-4">
@@ -42,7 +43,8 @@
                     <div class="flex gap-1">
                         @foreach ($examen['acciones'] as $accion)
                             @if ($accion === 'eliminar')
-                                <x-accion-tabla accion="eliminar" :contexto="$examen['nombre']" data-modal-abrir="{{ $idDeConfirmacion }}" />
+                                <x-accion-tabla accion="eliminar" :contexto="$examen['nombre']"
+                                    :data-modal-abrir="isset($examen['id']) ? $idDeConfirmacion.'-'.$examen['id'] : $idDeConfirmacion" />
                             @elseif ($accion === 'publicar' && isset($examen['id']))
                                 <x-accion-tabla accion="publicar" :contexto="$examen['nombre']" data-modal-abrir="confirmar-publicar-examen-{{ $examen['id'] }}" />
                             @elseif ($accion === 'abrir' && isset($examen['id']))
@@ -64,15 +66,19 @@
     {{ $examenes->links('pagination.panel') }}
 </div>
 
-@if ($hayEliminar)
+@foreach ($porEliminar as $examen)
     <x-confirmar
-        :id="$idDeConfirmacion"
+        :id="isset($examen['id']) ? $idDeConfirmacion.'-'.$examen['id'] : $idDeConfirmacion"
         :titulo="__('mensajes.confirmar.eliminar_examen.titulo')"
-        :mensaje="__('mensajes.confirmar.eliminar_examen.mensaje')"
+        :mensaje="isset($examen['id'])
+            ? __('mensajes.confirmar.eliminar_examen.mensaje_con_nombre', ['examen' => $examen['nombre']])
+            : __('mensajes.confirmar.eliminar_examen.mensaje')"
+        :destino="isset($examen['id']) ? route('panel.examenes.eliminar', ['examen' => $examen['id']]) : null"
+        metodo="DELETE"
         accion="eliminar"
         :peligro="true"
     />
-@endif
+@endforeach
 
 @foreach ($porPublicar as $examen)
     <x-confirmar

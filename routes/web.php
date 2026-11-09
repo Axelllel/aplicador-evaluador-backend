@@ -54,6 +54,8 @@ Route::middleware('panel.sesion')->group(function (): void {
 
     Route::get('/examenes', [ExamenController::class, 'index'])->name('panel.examenes');
     Route::post('/examenes', [ExamenController::class, 'store'])->name('panel.examenes.store');
+    Route::delete('/examenes/{examen}', [ExamenController::class, 'eliminar'])
+        ->whereNumber('examen')->name('panel.examenes.eliminar');
     Route::post('/examenes/{examen}/publicar', [ExamenController::class, 'publicar'])
         ->whereNumber('examen')->name('panel.examenes.publicar');
     Route::get('/examenes/{examen}/apartados', [ApartadoController::class, 'show'])
@@ -62,6 +64,8 @@ Route::middleware('panel.sesion')->group(function (): void {
         ->whereNumber('examen')->name('panel.examenes.apartados.store');
     Route::post('/examenes/{examen}/preguntas', [ApartadoController::class, 'asignarPregunta'])
         ->whereNumber('examen')->name('panel.examenes.preguntas.store');
+    Route::patch('/examenes/{examen}/preguntas/{examenPregunta}/ponderacion', [ApartadoController::class, 'actualizarPonderacion'])
+        ->whereNumber(['examen', 'examenPregunta'])->name('panel.examenes.preguntas.ponderacion');
 
     Route::get('/suscripcion', [SuscripcionController::class, 'index'])->name('panel.suscripcion');
     Route::get('/suscripcion/planes', [SuscripcionController::class, 'catalogo'])->name('panel.suscripcion.planes');

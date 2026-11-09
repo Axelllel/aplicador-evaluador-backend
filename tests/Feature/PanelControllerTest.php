@@ -364,7 +364,64 @@ class PanelControllerTest extends TestCase
             ->assertSee('¿Publicar este examen?')
             ->assertSee(route('panel.examenes.apartados', ['examen' => 1]), false)
             ->assertSee(route('panel.examenes.publicar', ['examen' => 1]), false)
-            ->assertDontSee('title="Eliminar"', false);
+            ->assertSee('data-modal-abrir="confirmar-eliminar-examen-1"', false)
+            ->assertSee('¿Eliminar «Examen 1»?')
+            ->assertSee('name="_method" value="DELETE"', false)
+            ->assertDontSee('data-modal-abrir="confirmar-eliminar-examen-2"', false);
+    }
+
+    public function test_eliminar_el_borrador_envia_su_id_a_la_api(): void
+    {
+        $this->api->responder('DELETE', '/teacher/exams/1');
+
+        $this->delete('/examenes/1')
+            ->assertRedirect(route('panel.examenes'))
+            ->assertSessionHas('exito', 'Examen eliminado correctamente.');
+
+        $this->assertCount(1, $this->api->llamadasA('DELETE', '/teacher/exams/1'));
+    }
+
+    public function test_el_formulario_de_ponderacion_solo_aparece_en_borradores(): void
+    {
+        $this->prepararLecturas();
+        $apartado = [
+            'id' => 12, 'tipo' => 'opcion_multiple', 'cantidad_preguntas' => 1,
+            'preguntas' => [[
+                'examen_pregunta_id' => 32, 'pregunta_id' => 1, 'enunciado' => 'Pregunta asignada',
+                'tiempo_segundos' => 30, 'ponderacion' => '70.00',
+            ]],
+        ];
+        $this->api->responder('GET', '/teacher/exams/1/sections', ['data' => [$apartado]])
+            ->responder('GET', '/teacher/exams/2/sections', ['data' => [$apartado]]);
+
+        $this->get('/examenes/1/apartados')
+            ->assertOk()
+            ->assertSee('Guardar ponderación')
+            ->assertSee(route('panel.examenes.preguntas.ponderacion', ['examen' => 1, 'examenPregunta' => 32]), false);
+
+        $this->get('/examenes/2/apartados')
+            ->assertOk()
+            ->assertSee('70 %')
+            ->assertDontSee('Guardar ponderación');
+    }
+
+    public function test_guardar_ponderacion_valida_el_porcentaje_y_actualiza_la_pregunta_asignada(): void
+    {
+        $ruta = '/examenes/1/preguntas/32/ponderacion';
+        $rutaApi = '/teacher/exams/1/questions/32/weight';
+
+        $this->from('/examenes/1/apartados')->patch($ruta, ['nueva_ponderacion' => '70.001'])
+            ->assertRedirect('/examenes/1/apartados')
+            ->assertSessionHasErrors('nueva_ponderacion');
+        $this->assertSame([], $this->api->llamadasA('PATCH', $rutaApi));
+
+        $this->api->responder('PATCH', $rutaApi);
+
+        $this->patch($ruta, ['nueva_ponderacion' => '70.25'])
+            ->assertRedirect('/examenes/1/apartados')
+            ->assertSessionHas('exito', 'Ponderación actualizada correctamente.');
+
+        $this->assertSame(['ponderacion' => '70.25'], $this->api->llamadasA('PATCH', $rutaApi)[0]['datos']);
     }
 
     public function test_sin_examenes_el_panel_invita_a_crear_el_primero(): void
