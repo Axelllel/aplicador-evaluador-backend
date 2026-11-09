@@ -19,18 +19,18 @@
                         <tr>
                             <th class="px-3 py-3 font-semibold">Alumno</th>
                             <th class="px-3 py-3 font-semibold">Registro</th>
-                            <th class="px-3 py-3 font-semibold">Exámenes entregados</th>
+                            <th class="px-3 py-3 font-semibold">Intentos registrados</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-linea">
                         @foreach ($alumnos as $alumno)
                             <tr>
                                 <td class="px-3 py-4">
-                                    <span class="block font-semibold text-primario">{{ $alumno->nombre }}</span>
-                                    <span class="text-xs text-secundario">Registro #{{ $alumno->id }}</span>
+                                    <span class="block font-semibold text-primario">{{ $alumno['nombre'] }}</span>
+                                    <span class="text-xs text-secundario">Registro #{{ $alumno['id'] }}</span>
                                 </td>
-                                <td class="px-3 py-4 text-secundario">{{ \Illuminate\Support\Carbon::parse($alumno->fecha_union)->format('d/m/Y') }}</td>
-                                <td class="px-3 py-4 text-secundario">{{ $alumno->intentos_en_grupo }}</td>
+                                <td class="px-3 py-4 text-secundario">{{ \Illuminate\Support\Carbon::parse($alumno['fecha_union'])->format('d/m/Y') }}</td>
+                                <td class="px-3 py-4 text-secundario">{{ $alumno['intentos_en_grupo'] }}</td>
                             </tr>
                         @endforeach
                     </tbody>
