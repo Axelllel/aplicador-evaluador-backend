@@ -27,7 +27,7 @@ use App\Http\Controllers\Web\SuscripcionController;
 use App\Http\Controllers\Web\StudentPortalController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/login');
+Route::view('/', 'auth.perfiles')->name('acceso');
 
 // Ruta de Axel para comprobar la autenticación con Supabase (se conserva).
 Route::get('/probar-auth', function () {

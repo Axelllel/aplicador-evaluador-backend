@@ -14,6 +14,15 @@ declare(strict_types=1);
 return [
     'titulo' => 'Iniciar sesión',
 
+    'perfiles' => [
+        'titulo' => 'Selecciona tu perfil',
+        'descripcion' => 'Elige cómo quieres ingresar a BigBitByte.',
+        'docente' => 'Docente',
+        'docente_ayuda' => 'Inicia sesión con tu cuenta.',
+        'alumno' => 'Alumno',
+        'alumno_ayuda' => 'Ingresa con el folio de tu grupo.',
+    ],
+
     'campos' => [
         'email' => 'Correo electrónico',
         'password' => 'Contraseña',
