@@ -153,7 +153,7 @@ if (portal) {
                 const messages = {
                     404: 'No encontramos un grupo activo con ese folio. Verifica el código o consulta a tu docente.',
                     402: 'Este grupo alcanzó el límite de estudiantes. Consulta a tu docente.',
-                    401: 'No reconocimos la combinación de folio y código. Verifícala o consulta a tu docente.',
+                    401: 'No reconocimos la combinación de folio y código. Revisa el código que guardaste al registrarte.',
                     422: 'No pudimos validar tus datos. Revisa el folio, nombre o código.',
                     429: 'Demasiados intentos. Espera un minuto antes de volver a intentar.',
                     419: 'Tu sesión expiró. Actualiza la página e inténtalo nuevamente.',

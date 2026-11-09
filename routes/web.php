@@ -50,8 +50,6 @@ Route::middleware('panel.sesion')->group(function (): void {
     Route::post('/grupos', [GrupoController::class, 'store'])->name('panel.grupos.store');
     Route::get('/grupos/{grupo}/alumnos', [GrupoController::class, 'students'])
         ->whereNumber('grupo')->name('panel.grupos.alumnos');
-    Route::post('/grupos/{grupo}/alumnos/{alumno}/codigo', [GrupoController::class, 'issueCredential'])
-        ->whereNumber(['grupo', 'alumno'])->name('panel.grupos.alumnos.codigo');
 
     Route::get('/banco-de-preguntas', [PreguntaController::class, 'index'])->name('panel.banco-de-preguntas');
     Route::post('/banco-de-preguntas', [PreguntaController::class, 'store'])->name('panel.banco-de-preguntas.store');

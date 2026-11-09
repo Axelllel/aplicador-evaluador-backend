@@ -103,11 +103,11 @@ class ConsultasPanelService
      */
     public function alumnosDelGrupo(int $grupoId): int
     {
-        return $this->lista('/teacher/groups/'.$grupoId.'/students')->count();
+        return $this->estudiantesDelGrupo($grupoId)->count();
     }
 
-    /** Alumnos inscritos con estado de PIN e intentos del grupo para la emisión segura de credenciales. */
-    public function estudiantesConCredencial(int $grupoId): Collection
+    /** Alumnos inscritos e intentos registrados en el grupo. */
+    public function estudiantesDelGrupo(int $grupoId): Collection
     {
         return $this->lista('/teacher/groups/'.$grupoId.'/students');
     }

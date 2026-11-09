@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\CredencialAlumnoService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,35 +27,6 @@ class TeacherStudentController extends Controller
         }
 
         return response()->json(['data' => $alumnos]);
-    }
-
-    public function issueCredential(Request $request, int $grupoId, int $alumnoId, CredencialAlumnoService $credenciales): JsonResponse
-    {
-        for ($intento = 0; $intento < 5; $intento++) {
-            $codigo = $credenciales->generarCodigo();
-            try {
-                DB::selectOne(
-                    'SELECT public.fn_asignar_credencial_alumno(CAST(? AS bigint), CAST(? AS bigint), CAST(? AS text)) AS asignada',
-                    [$grupoId, $alumnoId, $credenciales->hashCodigo($codigo)]
-                );
-                return response()->json([
-                    'data' => ['alumno_id' => $alumnoId, 'codigo_acceso' => $codigo],
-                    'message' => 'Código generado. Entrégalo al alumno ahora; solo se muestra una vez.',
-                ], 201);
-            } catch (QueryException $exception) {
-                $sqlState = $exception->errorInfo[0] ?? null;
-                if ($sqlState === '23505') {
-                    continue;
-                }
-                if ($sqlState === 'P1005') {
-                    return response()->json(['message' => 'Alumno no disponible en este grupo.'], 404);
-                }
-                report($exception);
-                return response()->json(['message' => 'No se pudo generar el código.'], 503);
-            }
-        }
-
-        return response()->json(['message' => 'No se pudo generar un código único. Inténtalo de nuevo.'], 503);
     }
 
     public function authorization(Request $request, int $examenId, int $alumnoId): JsonResponse

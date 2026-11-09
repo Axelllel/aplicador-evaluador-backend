@@ -109,7 +109,7 @@ class StudentJoinController extends Controller
             'P1002' => 'Folio inválido o grupo no disponible.',
             'P1001' => 'El grupo alcanzó su límite de alumnos.',
             'P1003' => 'Revisa el folio, tu nombre o el formato del código.',
-            'P1004' => 'No reconocimos la combinación de folio y código. Verifícala o consulta a tu docente.',
+            'P1004' => 'No reconocimos la combinación de folio y código. Revisa el código que guardaste al registrarte.',
         };
 
         return response()->json(['message' => $message], $status);
