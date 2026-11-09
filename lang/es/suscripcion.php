@@ -55,6 +55,39 @@ return [
         'titulo' => 'Resumen de pago',
         'descripcion' => 'Revisa la capacidad y el precio mensual de tu plan.',
         'aviso' => 'La pasarela de pago está pendiente de integración. Este resumen es una cotización de prueba.',
+        'seleccionar' => 'Selecciona un método de pago',
+        'ayuda' => 'Elige una opción para probar el flujo de pago o cotización.',
+        'continuar' => 'Continuar con la simulación',
+        'elegir_otro' => 'Elegir otro método',
+        'compra' => 'Resumen de compra',
+        'referencia_demo' => 'Referencia de demostración',
+        'tarjeta_demo' => [
+            'titular' => 'Nombre del titular',
+            'numero' => 'Número de tarjeta',
+            'vencimiento' => 'Vencimiento',
+            'cvv' => 'CVV',
+            'ayuda' => 'Los campos muestran datos ficticios para la demostración.',
+        ],
+        'metodos' => [
+            'tarjeta' => [
+                'titulo' => 'Tarjeta de crédito o débito',
+                'descripcion' => 'Pago de ejemplo con una tarjeta ficticia.',
+                'resultado' => 'Simulación con tarjeta completada',
+                'detalle' => 'Revisa el importe mensual en el resumen de compra.',
+            ],
+            'spei' => [
+                'titulo' => 'Transferencia SPEI',
+                'descripcion' => 'Consulta una referencia de ejemplo para una transferencia.',
+                'resultado' => 'Transferencia SPEI simulada',
+                'detalle' => 'La referencia es ficticia y sirve únicamente para la demostración.',
+            ],
+            'institucional' => [
+                'titulo' => 'Cotización institucional',
+                'descripcion' => 'Consulta el importe estimado para una escuela o institución.',
+                'resultado' => 'Cotización institucional de prueba',
+                'detalle' => 'El resumen de compra muestra la capacidad solicitada y su precio mensual estimado.',
+            ],
+        ],
     ],
 
     'pagos' => [

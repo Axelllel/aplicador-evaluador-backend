@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Web;
 
+use App\Enums\MetodoPagoSimulado;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CotizacionPlanRequest;
 use App\Services\ConsultasPanelService;
@@ -21,6 +22,7 @@ use App\Services\CotizacionPlanService;
 use App\Services\PaginadorPanel;
 use App\Services\PlanDocenteService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -71,7 +73,18 @@ class SuscripcionController extends Controller
 
     public function resumenDePago(CotizacionPlanRequest $solicitud, CotizacionPlanService $cotizador): View
     {
-        return view('suscripcion.pago', $this->cotizacion($solicitud, $cotizador));
+        return view('suscripcion.pago', $this->cotizacion($solicitud, $cotizador) + [
+            'metodos' => MetodoPagoSimulado::cases(),
+        ]);
+    }
+
+    public function simularPago(CotizacionPlanRequest $solicitud, CotizacionPlanService $cotizador): View
+    {
+        $datos = $solicitud->validate(['metodo' => ['required', Rule::enum(MetodoPagoSimulado::class)]]);
+
+        return view('suscripcion.pago', $this->cotizacion($solicitud, $cotizador) + [
+            'metodoSimulado' => MetodoPagoSimulado::from($datos['metodo']),
+        ]);
     }
 
     /** @return array{grupos: int, alumnos: int, preguntas: int, precioCentavos: int} */

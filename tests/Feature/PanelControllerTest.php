@@ -250,6 +250,7 @@ class PanelControllerTest extends TestCase
         $pago = $this->get('/suscripcion/planes/pago?'.http_build_query($seleccion + ['precio' => 1]))
             ->assertOk()
             ->assertSee('Resumen de pago')
+            ->assertSee('Selecciona un método de pago')
             ->assertSeeInOrder(['Grupos activos', '3', 'Alumnos por grupo', '25', 'Preguntas en el banco', '150'])
             ->assertSee('$181.00')
             ->assertSee('La pasarela de pago está pendiente de integración.');
@@ -258,12 +259,50 @@ class PanelControllerTest extends TestCase
             [route('panel.suscripcion.planes', $seleccion)],
             $this->consultar($pago->getContent(), '//main//a[normalize-space(.)="Editar mi plan"]/@href'),
         );
+        $this->assertSame(
+            ['tarjeta', 'spei', 'institucional'],
+            $this->consultar($pago->getContent(), '//input[@type="radio" and @name="metodo"]/@value'),
+        );
+        $this->assertSame(['demo_numero', 'demo_cvv'], $this->consultar(
+            $pago->getContent(),
+            '//input[@disabled and (@name="demo_numero" or @name="demo_cvv")]/@name',
+        ));
         $this->assertSame([], $this->api->llamadas);
     }
 
     public function test_el_resumen_de_pago_requiere_una_seleccion_completa_y_valida(): void
     {
         $this->getJson('/suscripcion/planes/pago?grupos=11&preguntas=150')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['grupos', 'alumnos']);
+    }
+
+    public function test_cada_metodo_muestra_su_resultado_simulado_sin_registrar_un_pago(): void
+    {
+        $seleccion = ['grupos' => 3, 'alumnos' => 25, 'preguntas' => 150, 'precio' => 1];
+        $resultados = [
+            'tarjeta' => 'Simulación con tarjeta completada',
+            'spei' => 'SPEI-DEMO',
+            'institucional' => 'Cotización institucional de prueba',
+        ];
+
+        foreach ($resultados as $metodo => $resultado) {
+            $this->post('/suscripcion/planes/pago', $seleccion + ['metodo' => $metodo])
+                ->assertOk()
+                ->assertSee($resultado)
+                ->assertSee('$181.00');
+        }
+
+        $this->assertSame([], $this->api->llamadas);
+    }
+
+    public function test_la_simulacion_rechaza_metodos_y_capacidades_invalidos(): void
+    {
+        $this->postJson('/suscripcion/planes/pago', ['metodo' => 'otro', 'grupos' => 3, 'alumnos' => 25, 'preguntas' => 150])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('metodo');
+
+        $this->postJson('/suscripcion/planes/pago', ['metodo' => 'spei', 'grupos' => 11, 'preguntas' => 150])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['grupos', 'alumnos']);
     }

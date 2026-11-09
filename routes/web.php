@@ -66,6 +66,7 @@ Route::middleware('panel.sesion')->group(function (): void {
     Route::get('/suscripcion', [SuscripcionController::class, 'index'])->name('panel.suscripcion');
     Route::get('/suscripcion/planes', [SuscripcionController::class, 'catalogo'])->name('panel.suscripcion.planes');
     Route::get('/suscripcion/planes/pago', [SuscripcionController::class, 'resumenDePago'])->name('panel.suscripcion.planes.pago');
+    Route::post('/suscripcion/planes/pago', [SuscripcionController::class, 'simularPago'])->name('panel.suscripcion.planes.pago.simular');
 
     // Resultados: tabla de intentos por examen, detalle de un intento y calificación (manual y automática).
     Route::get('/resultados', [ResultadoController::class, 'index'])->name('panel.resultados');
