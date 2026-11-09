@@ -17,13 +17,13 @@ use App\Http\Controllers\Api\SupabaseAccountController;
 use App\Http\Middleware\VerifySupabaseToken;
 
 // Auth: limites publicos; no exponer existencia de cuentas.
-Route::post('/v1/auth/login', [AuthController::class,'login'])->middleware('throttle:5,1');
-Route::post('/v1/auth/register', [SupabaseAccountController::class,'register'])->middleware('throttle:3,1');
-Route::post('/v1/auth/recover', [SupabaseAccountController::class,'recover'])->middleware('throttle:3,1');
-Route::post('/v1/grupos/unirse', [StudentJoinController::class,'store'])->middleware('throttle:5,1');
+Route::post('/v1/auth/login', [AuthController::class,'login'])->middleware('throttle:5,1,api-login');
+Route::post('/v1/auth/register', [SupabaseAccountController::class,'register'])->middleware('throttle:3,1,api-registro');
+Route::post('/v1/auth/recover', [SupabaseAccountController::class,'recover'])->middleware('throttle:3,1,api-recuperar');
+Route::post('/v1/grupos/unirse', [StudentJoinController::class,'store'])->middleware('throttle:5,1,api-unirse');
 
 // El folio NO da acceso al examen: el docente entrega un pase cifrado individual.
-Route::prefix('/v1/student/attempts')->middleware('throttle:30,1')->group(function () {
+Route::prefix('/v1/student/attempts')->middleware('throttle:30,1,api-intentos')->group(function () {
     Route::post('/start', [StudentExamController::class,'start']);
     Route::post('/questions', [StudentExamController::class,'questions']);
     Route::post('/answers', [StudentExamController::class,'answer']);
