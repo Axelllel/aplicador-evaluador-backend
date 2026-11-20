@@ -16,13 +16,14 @@
 <x-layouts.panel :titulo="__('preguntas.titulo')" :descripcion="__('preguntas.descripcion')">
     <div class="tp-workspace-toolbar">
         <div class="tp-context"><span class="tp-context-icon"><x-icon name="question-mark-circle" /></span><span>{{ __('workspace.bank.context') }}</span></div>
-        <x-boton icono="plus" href="#nueva-pregunta" data-open-editor>{{ __('preguntas.nueva.encabezado') }}</x-boton>
+        <div class="flex flex-wrap gap-3"><x-boton icono="question-mark-circle" href="#generar-con-ia" data-open-ai>{{ __('ia.titulo') }}</x-boton><x-boton variante="secundario" icono="plus" href="#nueva-pregunta" data-open-editor>{{ __('preguntas.nueva.encabezado') }}</x-boton></div>
     </div>
     <section aria-label="{{ __('workspace.bank.summary') }}" class="tp-metrics">
         <x-tarjeta class="tp-metric"><span class="tp-metric-icon"><x-icon name="clipboard-document" /></span><div><p>{{ __('workspace.bank.total') }}</p><strong>{{ $preguntas->total() }}</strong><span>{{ __('workspace.bank.current_view') }}</span></div></x-tarjeta>
         <x-tarjeta class="tp-metric"><span class="tp-metric-icon"><x-icon name="squares-2x2" /></span><div><p>{{ __('workspace.bank.formats') }}</p><strong>4</strong><span>{{ __('workspace.bank.formats_hint') }}</span></div></x-tarjeta>
         <x-tarjeta class="tp-metric tp-metric-note"><span class="tp-metric-icon"><x-icon name="check-circle" /></span><div><p>{{ __('workspace.bank.reusable') }}</p><span>{{ __('workspace.bank.reusable_hint') }}</span></div></x-tarjeta>
     </section>
+    @include('preguntas.ia')
     <section aria-labelledby="titulo-lista-de-preguntas" class="tp-library">
         <div class="tp-section-heading"><div><p class="tp-section-label">{{ __('workspace.bank.library') }}</p><h2 id="titulo-lista-de-preguntas">{{ __('preguntas.tabla.titulo') }}</h2><p>{{ __('workspace.bank.list_hint') }}</p></div><span class="tp-count">{{ $preguntas->total() }}</span></div>
         <form method="GET" action="{{ route('panel.banco-de-preguntas') }}" class="tp-filterbar">

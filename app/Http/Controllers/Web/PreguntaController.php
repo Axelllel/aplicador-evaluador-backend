@@ -20,8 +20,10 @@ use App\Http\Requests\PreguntaRequest;
 use App\Services\ConsultasPanelService;
 use App\Services\PaginadorPanel;
 use App\Services\PanelApiService;
+use App\Services\SesionPanelService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
@@ -56,7 +58,19 @@ class PreguntaController extends Controller
             'preguntas' => $this->paginador->paginar($preguntas, $solicitud->integer('page', 1)),
             'tipoFiltrado' => $tipo,
             'busqueda' => $busqueda,
+            'iaOperacion' => (string) Str::uuid(),
+            'iaBorradores' => $this->borradoresIa($solicitud),
         ]);
+    }
+
+    private function borradoresIa(Request $request): array
+    {
+        $drafts = $request->session()->get('ia_borradores', []);
+        if (($drafts['docente'] ?? null) !== (app(SesionPanelService::class)->docente()['id'] ?? null) || ($drafts['expira'] ?? 0) <= time()) {
+            return [];
+        }
+
+        return $drafts['preguntas'] ?? [];
     }
 
     /**

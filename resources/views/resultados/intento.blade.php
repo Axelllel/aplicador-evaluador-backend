@@ -123,6 +123,27 @@
                     @endif
                 </ul>
 
+                @if ((int) session('ia_respuesta', 0) === $respuesta['id'] && session('ia_error'))
+                    <x-alerta tipo="error" :autoocultar="false">{{ session('ia_error') }}</x-alerta>
+                @endif
+                @if (isset($respuesta['ia']))
+                    <aside class="tp-ai-proposal" aria-labelledby="ia-titulo-{{ $respuesta['id'] }}">
+                        <p class="tp-section-label">{{ __('ia.propuesta') }}</p>
+                        <h4 id="ia-titulo-{{ $respuesta['id'] }}">{{ isset($respuesta['ia']['puntaje']) ? __('ia.puntaje', ['nota' => $respuesta['ia']['puntaje']]) : __('ia.sin_puntaje') }}</h4>
+                        <p class="whitespace-pre-line">{{ $respuesta['ia']['justificacion'] ?? '' }}</p>
+                        @if ($respuesta['ia']['requiere_revision'] ?? false)<p class="font-semibold">{{ __('ia.revision') }}</p>@endif
+                        @if (! empty($respuesta['ia']['observaciones']))<ul class="list-disc pl-5">@foreach($respuesta['ia']['observaciones'] as $observacion)<li>{{ $observacion }}</li>@endforeach</ul>@endif
+                        <p class="tp-ai-caption">{{ __('ia.modelo', ['modelo' => $respuesta['ia']['modelo'] ?? '']) }}</p>
+                        <p class="font-semibold">{{ __('ia.aviso_docente') }}</p>
+                    </aside>
+                @elseif ($detalle['puede_calificar'] && ! $yaCalificada && in_array($respuesta['tipo'], ['abierta','programacion'], true) && $respuesta['respuesta'] !== null && $respuesta['modelo'] !== null)
+                    <form method="POST" action="{{ route('panel.ia.sugerir', ['examen' => $examenId, 'intento' => $intentoId, 'respuesta' => $respuesta['id']]) }}" class="space-y-2" data-submit-message="{{ __('ia.evaluando') }}">
+                        @csrf
+                        <x-boton type="submit" variante="secundario" icono="question-mark-circle">{{ __('ia.proponer') }}</x-boton>
+                        <p class="tp-ai-caption">{{ __('ia.calificacion_ayuda') }}</p>
+                    </form>
+                @endif
+
                 @if ($detalle['puede_calificar'])
                     <form
                         method="POST"
@@ -140,7 +161,7 @@
                             :etiqueta="__('resultados.intento.form.calificacion')"
                             :ayuda="__('resultados.intento.form.calificacion_ayuda')"
                             :error="$erroresDeLaRespuesta->first('calificacion')"
-                            :valor="$conError ? (string) old('calificacion', '') : (string) ($respuesta['calificacion_texto'] ?? '')"
+                            :valor="$conError ? (string) old('calificacion', '') : (string) ($respuesta['calificacion_texto'] ?? $respuesta['ia']['puntaje'] ?? '')"
                             min="0"
                             max="100"
                             step="0.01"
@@ -153,7 +174,7 @@
                             :etiqueta="$yaCalificada ? __('resultados.intento.form.motivo_obligatorio') : __('resultados.intento.form.motivo')"
                             :ayuda="$yaCalificada ? __('resultados.intento.form.motivo_ayuda_cambio') : __('resultados.intento.form.motivo_ayuda_nueva')"
                             :error="$erroresDeLaRespuesta->first('motivo')"
-                            :valor="$conError ? (string) old('motivo', '') : ''"
+                            :valor="$conError ? (string) old('motivo', '') : (isset($respuesta['ia']) && ! $yaCalificada ? __('ia.motivo', ['explicacion' => \Illuminate\Support\Str::limit($respuesta['ia']['justificacion'] ?? '', 1700)]) : '')"
                             :filas="2"
                             maxlength="2000"
                         />

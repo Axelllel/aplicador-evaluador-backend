@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Docente;
 use App\Services\DatabaseUserContext;
 use Closure;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -13,50 +14,63 @@ use Symfony\Component\HttpFoundation\Response;
 
 class VerifySupabaseToken
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, string $context = 'request'): Response
     {
         $token = $request->bearerToken();
 
-        if (!$token) {
+        if (! $token) {
             return response()->json([
-                'message' => 'Token de autenticación requerido.'
+                'message' => 'Token de autenticación requerido.',
             ], 401);
         }
 
         $url = config('services.supabase.url');
         $key = config('services.supabase.key');
 
-        if (!$url || !$key) {
+        if (! $url || ! $key) {
             return response()->json([
-                'message' => 'Servicio de autenticación no configurado.'
+                'message' => 'Servicio de autenticación no configurado.',
             ], 503);
         }
 
         try {
             $response = Http::withHeaders([
-                'apikey' => $key
+                'apikey' => $key,
             ])
                 ->withToken($token)
                 ->timeout(5)
-                ->get(rtrim($url, '/') . '/auth/v1/user');
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                ->get(rtrim($url, '/').'/auth/v1/user');
+        } catch (ConnectionException $e) {
             return response()->json([
-                'message' => 'Servicio de autenticación no disponible.'
+                'message' => 'Servicio de autenticación no disponible.',
             ], 503);
         }
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             return response()->json([
-                'message' => 'Token inválido o expirado.'
+                'message' => 'Token inválido o expirado.',
             ], 401);
         }
 
         $userId = $response->json('id');
 
-        if (!is_string($userId) || !Str::isUuid($userId)) {
+        if (! is_string($userId) || ! Str::isUuid($userId)) {
             return response()->json([
-                'message' => 'Identidad inválida.'
+                'message' => 'Identidad inválida.',
             ], 401);
+        }
+
+        if ($context === 'short') {
+            // La IA espera una red externa. Solo autenticar aquí; sus servicios abren
+            // transacciones RLS cortas para cada operación de base de datos.
+            $docente = app(DatabaseUserContext::class)->ejecutarConDocenteVerificado($userId, fn () => Docente::find($userId));
+            if (! $docente) {
+                return response()->json(['message' => 'Docente no registrado.'], 403);
+            }
+            Auth::setUser($docente);
+            $request->setUserResolver(fn () => $docente);
+
+            return $next($request);
         }
 
         // Mantener el contexto RLS durante toda la peticion protegida.
@@ -65,9 +79,9 @@ class VerifySupabaseToken
             ->ejecutarConDocenteVerificado($userId, function () use ($userId, $request, $next): Response {
                 $docente = Docente::find($userId);
 
-                if (!$docente) {
+                if (! $docente) {
                     return response()->json([
-                        'message' => 'Docente no registrado.'
+                        'message' => 'Docente no registrado.',
                     ], 403);
                 }
 
