@@ -76,6 +76,11 @@
                             <div class="flex flex-wrap justify-center gap-3">
                                 <x-boton
                                     variante="secundario"
+                                    :href="route('panel.grupos.alumnos', $grupo['id'])"
+                                    class="tp-secondary-action"
+                                >Ver alumnos</x-boton>
+                                <x-boton
+                                    variante="secundario"
                                     accion="descargar_qr"
                                     :href="$grupo['qr_descarga']"
                                     download="qr-{{ $grupo['folio_codigo'] }}.svg"

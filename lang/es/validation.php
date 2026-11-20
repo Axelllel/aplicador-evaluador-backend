@@ -110,6 +110,7 @@ return [
         'pregunta_id' => 'pregunta',
         'tiempo_segundos' => 'tiempo en segundos',
         'ponderacion' => 'ponderación',
+        'nueva_ponderacion' => 'ponderación',
         'calificacion' => 'calificación',
         'motivo' => 'motivo',
     ],

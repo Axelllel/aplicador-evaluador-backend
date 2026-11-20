@@ -15,9 +15,9 @@
         <header class="tp-header">
             <div class="tp-brand-area">
                 <button type="button" data-menu-alternar aria-controls="menu-lateral" aria-expanded="false"
-                        title="{{ __('panel.barra_superior.abrir_menu') }}" class="tp-icon-button tp-menu-button lg:hidden">
+                        title="{{ __('panel.menu.etiqueta') }}" class="tp-icon-button tp-menu-button">
                     <x-icon name="bars-3" />
-                    <span class="sr-only">{{ __('panel.barra_superior.abrir_menu') }}</span>
+                    <span class="sr-only">{{ __('panel.menu.etiqueta') }}</span>
                 </button>
                 <a href="{{ $rol->urlDeInicio() }}" class="tp-brand" title="{{ __('panel.barra_superior.ir_al_panel') }}">
                     <x-logo :alto="35" />
@@ -50,7 +50,7 @@
             </div>
         </header>
 
-        <aside id="menu-lateral" class="tp-sidebar fixed bottom-0 left-0 z-30 hidden overflow-y-auto lg:block">
+        <aside id="menu-lateral" class="tp-sidebar fixed bottom-0 left-0 z-30 overflow-y-auto" inert>
             <div class="tp-sidebar-caption">MI ESPACIO DOCENTE</div>
             <nav aria-label="{{ __('panel.menu.etiqueta') }}">
                 <ul class="tp-nav-list">

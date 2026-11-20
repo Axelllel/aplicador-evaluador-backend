@@ -50,9 +50,9 @@ class PanelController extends Controller
 
         if ($vigente !== null) {
             $gruposActivos = $grupos->where('activo', true);
-            $alumnos = $gruposActivos->sum(fn (array $grupo): int => $this->consultas->alumnosDelGrupo((int) $grupo['id']));
+            $alumnosDelGrupoMayor = $gruposActivos->max(fn (array $grupo): int => $this->consultas->alumnosDelGrupo((int) $grupo['id']));
 
-            $resumen = $this->planes->resumen($vigente['plan'], $gruposActivos->count(), $preguntas->count(), (int) $alumnos);
+            $resumen = $this->planes->resumen($vigente['plan'], $gruposActivos->count(), $preguntas->count(), (int) $alumnosDelGrupoMayor);
         }
 
         return view('teacher.dashboard', [

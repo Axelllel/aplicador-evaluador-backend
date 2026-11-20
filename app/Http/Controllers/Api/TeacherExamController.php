@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\ModificaExamenBorrador;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,8 @@ use Illuminate\Validation\Rule;
  */
 class TeacherExamController extends Controller
 {
+    use ModificaExamenBorrador;
+
     public function index(Request $request): JsonResponse
     {
         $datos = $request->validate([
@@ -111,6 +114,17 @@ class TeacherExamController extends Controller
                 'data' => ['id' => $nuevoId] + $nuevo,
                 'message' => 'Examen creado como borrador. Aun no esta publicado.',
             ], 201);
+        });
+    }
+
+    public function destroy(Request $request, int $examenId): JsonResponse
+    {
+        $docenteId = (string) $request->user()->getAuthIdentifier();
+
+        return $this->modificarBorrador($examenId, $docenteId, function () use ($examenId): JsonResponse {
+            DB::table('examen')->where('id', $examenId)->delete();
+
+            return response()->json(['data' => ['id' => $examenId]]);
         });
     }
 }

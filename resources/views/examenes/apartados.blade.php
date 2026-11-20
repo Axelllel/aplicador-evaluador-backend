@@ -57,6 +57,10 @@
         </x-tarjeta>
     </section>
 
+    @error('nueva_ponderacion')
+        <x-alerta tipo="error">{{ $message }}</x-alerta>
+    @enderror
+
     <section aria-labelledby="titulo-lista-de-apartados" class="space-y-4">
         <h2 id="titulo-lista-de-apartados" class="text-xl font-semibold text-primario">{{ __('examenes.apartados.lista') }}</h2>
 
@@ -80,7 +84,26 @@
                             <x-tabla.fila>
                                 <x-tabla.celda>{{ \Illuminate\Support\Str::limit($pregunta['enunciado'], 140) }}</x-tabla.celda>
                                 <x-tabla.celda>{{ __('examenes.apartados.tiempo', ['segundos' => $pregunta['tiempo_segundos']]) }}</x-tabla.celda>
-                                <x-tabla.celda>{{ rtrim(rtrim(number_format((float) $pregunta['ponderacion'], 2, '.', ''), '0'), '.') }} %</x-tabla.celda>
+                                <x-tabla.celda>
+                                    @if ($esBorrador)
+                                        <form method="POST" action="{{ route('panel.examenes.preguntas.ponderacion', ['examen' => $examen['id'], 'examenPregunta' => $pregunta['examen_pregunta_id']]) }}"
+                                              class="flex flex-wrap items-center gap-2">
+                                            @csrf
+                                            @method('PATCH')
+                                            <label for="ponderacion-{{ $pregunta['examen_pregunta_id'] }}" class="sr-only">
+                                                {{ __('examenes.apartados.editar_ponderacion', ['pregunta' => \Illuminate\Support\Str::limit($pregunta['enunciado'], 80)]) }}
+                                            </label>
+                                            <input id="ponderacion-{{ $pregunta['examen_pregunta_id'] }}" name="nueva_ponderacion" type="number"
+                                                   min="0.01" max="100" step="0.01" required value="{{ $pregunta['ponderacion'] }}"
+                                                   class="h-11 w-24 rounded-lg border border-borde bg-white px-3 text-primario">
+                                            <x-boton type="submit" variante="secundario">
+                                                {{ __('examenes.apartados.guardar_ponderacion') }}
+                                            </x-boton>
+                                        </form>
+                                    @else
+                                        {{ rtrim(rtrim(number_format((float) $pregunta['ponderacion'], 2, '.', ''), '0'), '.') }} %
+                                    @endif
+                                </x-tabla.celda>
                             </x-tabla.fila>
                         @endforeach
                     </x-tabla>

@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 return [
     'titulo' => 'Suscripción',
-    'descripcion' => 'Consulta tu plan, los planes disponibles y tus pagos.',
+    'descripcion' => 'Consulta tu plan y tus pagos, o crea un plan a tu medida.',
 
     'vigente' => [
         'encabezado' => 'Tu plan',
@@ -24,8 +24,9 @@ return [
     ],
 
     'planes' => [
-        'encabezado' => 'Planes disponibles',
-        'descripcion' => 'Compara los precios y límites de cada plan.',
+        'encabezado' => 'Crea tu plan',
+        'descripcion' => 'Elige la capacidad que necesitas y consulta su precio mensual.',
+        'registrados' => 'Paquetes registrados',
         'titulo' => 'Lista de planes',
         'vacia' => 'Aún no hay planes disponibles.',
         'plan_actual' => 'Tu plan',
@@ -33,8 +34,40 @@ return [
             'plan' => 'Plan',
             'grupos' => 'Grupos',
             'preguntas' => 'Preguntas',
-            'alumnos' => 'Alumnos',
+            'alumnos' => 'Alumnos por grupo',
             'precio' => 'Precio',
+        ],
+    ],
+
+    'cotizacion' => [
+        'encabezado' => 'Configura tu plan',
+        'grupos' => 'Grupos activos',
+        'alumnos' => 'Alumnos por grupo',
+        'preguntas' => 'Preguntas en el banco',
+        'capacidad' => 'Cupo total de alumnos',
+        'precio' => 'Precio mensual estimado',
+        'moneda' => 'MXN al mes',
+        'leyenda' => 'El importe estimado corresponde a la capacidad seleccionada.',
+        'calcular' => 'Calcular precio',
+    ],
+
+    'resumen_pago' => [
+        'titulo' => 'Resumen de pago',
+        'descripcion' => 'Revisa la capacidad y el precio mensual de tu plan.',
+        'estado' => 'Pago en línea pendiente',
+        'aviso' => 'El cobro en línea estará disponible cuando se habilite la pasarela de pago.',
+        'compra' => 'Resumen de compra',
+        'tarjeta' => [
+            'titular' => 'Nombre del titular',
+            'correo' => 'Correo de facturación',
+            'ayuda' => 'Completa los datos de facturación. La pasarela habilitará los campos de la tarjeta.',
+            'revisar' => 'Revisar datos',
+            'revisados' => 'Datos de facturación completos.',
+        ],
+        'spei_ayuda' => 'La referencia de transferencia estará disponible al habilitar el cobro.',
+        'metodos' => [
+            'tarjeta' => 'Tarjeta de crédito o débito',
+            'spei' => 'Transferencia SPEI',
         ],
     ],
 

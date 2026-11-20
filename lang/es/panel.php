@@ -83,7 +83,7 @@ return [
     'recursos' => [
         'grupos' => 'Grupos',
         'preguntas' => 'Preguntas',
-        'alumnos' => 'Alumnos',
+        'alumnos' => 'Alumnos en el grupo más numeroso',
     ],
 
     'resumen_administracion' => [

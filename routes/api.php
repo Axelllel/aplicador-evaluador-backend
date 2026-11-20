@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\StudentJoinController;
+use App\Http\Controllers\Api\StudentDashboardController;
 use App\Http\Controllers\Api\TeacherGroupController;
 use App\Http\Controllers\Api\TeacherExamController;
 use App\Http\Controllers\Api\TeacherQuestionController;
@@ -21,6 +22,7 @@ Route::post('/v1/auth/login', [AuthController::class,'login'])->middleware('thro
 Route::post('/v1/auth/register', [SupabaseAccountController::class,'register'])->middleware('throttle:3,1,api-registro');
 Route::post('/v1/auth/recover', [SupabaseAccountController::class,'recover'])->middleware('throttle:3,1,api-recuperar');
 Route::post('/v1/grupos/unirse', [StudentJoinController::class,'store'])->middleware('throttle:5,1,api-unirse');
+Route::post('/v1/student/dashboard', [StudentDashboardController::class, 'show'])->middleware('throttle:10,1,api-panel-movil');
 
 // El folio NO da acceso al examen: el docente entrega un pase cifrado individual.
 Route::prefix('/v1/student/attempts')->middleware('throttle:30,1,api-intentos')->group(function () {
@@ -37,6 +39,7 @@ Route::middleware(VerifySupabaseToken::class)->group(function () {
     Route::post('/v1/teacher/groups', [TeacherGroupController::class,'store']);
     Route::get('/v1/teacher/exams', [TeacherExamController::class,'index']);
     Route::post('/v1/teacher/exams', [TeacherExamController::class,'store']);
+    Route::delete('/v1/teacher/exams/{examenId}', [TeacherExamController::class,'destroy'])->whereNumber('examenId');
     Route::get('/v1/teacher/questions', [TeacherQuestionController::class,'index']);
     Route::post('/v1/teacher/questions', [TeacherQuestionController::class,'store']);
     Route::post('/v1/teacher/exams/{examenId}/publish', [TeacherExamPublishController::class,'publish'])->whereNumber('examenId');
@@ -44,6 +47,8 @@ Route::middleware(VerifySupabaseToken::class)->group(function () {
     Route::post('/v1/teacher/exams/{examenId}/sections', [TeacherExamSectionController::class,'store'])->whereNumber('examenId');
     Route::post('/v1/teacher/exams/{examenId}/sections/{apartadoId}/questions', [TeacherExamSectionController::class,'attachQuestion'])
         ->whereNumber('examenId')->whereNumber('apartadoId');
+    Route::patch('/v1/teacher/exams/{examenId}/questions/{examenPreguntaId}/weight', [TeacherExamSectionController::class,'updateWeight'])
+        ->whereNumber(['examenId', 'examenPreguntaId']);
 
     Route::get('/v1/teacher/groups/{grupoId}/students', [TeacherStudentController::class,'index'])->whereNumber('grupoId');
     Route::post('/v1/teacher/exams/{examenId}/students/{alumnoId}/grant', [TeacherStudentController::class,'authorization'])

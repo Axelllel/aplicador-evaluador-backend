@@ -130,7 +130,8 @@ class PanelControllerTest extends TestCase
             ->assertOk()
             ->assertSee('5 de 5')
             ->assertSee('186 de 200')
-            ->assertSee('85 de 150')
+            ->assertSee('Alumnos en el grupo más numeroso')
+            ->assertSee('17 de 150')
             ->assertSee('Límite alcanzado')
             ->assertSee('Cerca del límite')
             ->assertSee('Dentro del límite')
@@ -147,6 +148,26 @@ class PanelControllerTest extends TestCase
         $this->get('/panel')->assertOk()->assertSee('2 de 5')->assertDontSee('Alcanzaste el límite de grupos');
 
         $this->assertCount(0, $this->api->llamadasA('GET', '/teacher/groups/3/students'), 'No se cuentan alumnos de grupos inactivos.');
+    }
+
+    public function test_el_limite_de_alumnos_se_evalua_por_grupo_y_no_por_la_suma(): void
+    {
+        $planes = $this->planesDeEjemplo();
+        $planes[0]['max_alumnos'] = 30;
+        $this->prepararLecturas(['planes' => $planes]);
+        $this->api->responder('GET', '/teacher/groups/2/students', ['data' => array_fill(0, 22, ['id' => 1])]);
+
+        $this->get('/panel')
+            ->assertOk()
+            ->assertSee('22 de 30')
+            ->assertDontSee('Alcanzaste el límite de alumnos en al menos un grupo.');
+
+        $this->api->responder('GET', '/teacher/groups/2/students', ['data' => array_fill(0, 30, ['id' => 1])]);
+
+        $this->get('/panel')
+            ->assertOk()
+            ->assertSee('30 de 30')
+            ->assertSee('Alcanzaste el límite de alumnos en al menos un grupo.');
     }
 
     public function test_sin_plan_activo_el_panel_muestra_la_advertencia_y_no_las_tarjetas(): void
@@ -175,12 +196,12 @@ class PanelControllerTest extends TestCase
 
         $this->assertSame(
             [url('/suscripcion/planes')],
-            $this->consultar($respuesta->getContent(), '//main//a[normalize-space(.)="Ver planes disponibles"]/@href'),
+            $this->consultar($respuesta->getContent(), '//main//a[normalize-space(.)="Crea tu plan"]/@href'),
         );
 
         $catalogo = $this->get('/suscripcion/planes')
             ->assertOk()
-            ->assertSee('Planes disponibles')
+            ->assertSee('Crea tu plan')
             ->assertSee('Plan básico')
             ->assertSee('Plan profesional')
             ->assertSee('Tu plan');
@@ -196,6 +217,100 @@ class PanelControllerTest extends TestCase
         $this->prepararLecturas(['planes' => [], 'pagos' => []]);
 
         $this->get('/suscripcion/planes')->assertOk()->assertSee('Aún no hay planes disponibles.');
+    }
+
+    public function test_el_docente_puede_cotizar_su_plan_aunque_no_tenga_un_plan_activo(): void
+    {
+        $this->prepararLecturas(['pagos' => []]);
+
+        $inicial = $this->get('/suscripcion/planes')->assertOk()->assertSee('Configura tu plan')->assertSee('$115.00');
+
+        $this->assertSame(array_map('strval', range(1, 10)), $this->consultar($inicial->getContent(), '//select[@name="grupos"]/option/@value'));
+        $this->assertSame(['15', '20', '25', '30'], $this->consultar($inicial->getContent(), '//select[@name="alumnos"]/option/@value'));
+        $this->assertSame(['100', '150', '200'], $this->consultar($inicial->getContent(), '//select[@name="preguntas"]/option/@value'));
+        $this->assertSame(
+            [url('/suscripcion/planes/pago')],
+            $this->consultar($inicial->getContent(), '//form[@data-configurador-plan]//button[normalize-space(.)="Continuar al pago"]/@formaction'),
+        );
+
+        $this->get('/suscripcion/planes?grupos=3&alumnos=25&preguntas=150')->assertOk()->assertSee('$181.00');
+        $this->get('/suscripcion/planes?grupos=10&alumnos=30&preguntas=200')->assertOk()->assertSee('$405.00');
+    }
+
+    public function test_la_cotizacion_rechaza_capacidades_fuera_de_las_opciones(): void
+    {
+        $this->getJson('/suscripcion/planes?grupos=11&alumnos=16&preguntas=250')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['grupos', 'alumnos', 'preguntas']);
+    }
+
+    public function test_el_resumen_de_pago_recalcula_el_precio_y_permite_editar_la_seleccion(): void
+    {
+        $seleccion = ['grupos' => 3, 'alumnos' => 25, 'preguntas' => 150];
+        $pago = $this->get('/suscripcion/planes/pago?'.http_build_query($seleccion + ['precio' => 1]))
+            ->assertOk()
+            ->assertSee('Resumen de pago')
+            ->assertSee('Pago en línea pendiente')
+            ->assertSeeInOrder(['Grupos activos', '3', 'Alumnos por grupo', '25', 'Preguntas en el banco', '150'])
+            ->assertSee('$181.00')
+            ->assertSee('Tarjeta de crédito o débito')
+            ->assertSee('Transferencia SPEI');
+
+        $this->assertSame(
+            [route('panel.suscripcion.planes', $seleccion)],
+            $this->consultar($pago->getContent(), '//main//a[normalize-space(.)="Editar mi plan"]/@href'),
+        );
+        $this->assertSame(
+            [route('panel.suscripcion.planes.pago.revisar')],
+            $this->consultar($pago->getContent(), '//main//form/@action'),
+        );
+        $this->assertSame(
+            ['titular', 'correo_facturacion'],
+            $this->consultar($pago->getContent(), '//main//form//input[@required]/@name'),
+        );
+        $this->assertSame([], $this->api->llamadas);
+    }
+
+    public function test_el_resumen_de_pago_requiere_una_seleccion_completa_y_valida(): void
+    {
+        $this->getJson('/suscripcion/planes/pago?grupos=11&preguntas=150')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['grupos', 'alumnos']);
+    }
+
+    public function test_el_resumen_no_acepta_solicitudes_de_cobro(): void
+    {
+        $this->postJson('/suscripcion/planes/pago', ['metodo' => 'tarjeta', 'grupos' => 3, 'alumnos' => 25, 'preguntas' => 150])
+            ->assertStatus(405);
+
+        $this->assertSame([], $this->api->llamadas);
+    }
+
+    public function test_la_revision_de_pago_requiere_titular_y_correo_validos(): void
+    {
+        $seleccion = ['grupos' => 3, 'alumnos' => 25, 'preguntas' => 150];
+
+        $this->postJson('/suscripcion/planes/pago/datos', $seleccion)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['titular', 'correo_facturacion']);
+
+        $this->postJson('/suscripcion/planes/pago/datos', $seleccion + ['titular' => 'Laura Méndez', 'correo_facturacion' => 'correo-invalido'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('correo_facturacion');
+    }
+
+    public function test_revisar_los_datos_no_registra_un_pago(): void
+    {
+        $this->post('/suscripcion/planes/pago/datos', [
+            'grupos' => 3, 'alumnos' => 25, 'preguntas' => 150,
+            'titular' => 'Laura Méndez', 'correo_facturacion' => 'laura@example.com',
+        ])
+            ->assertOk()
+            ->assertSee('Datos de facturación completos.')
+            ->assertSee('Pago en línea pendiente')
+            ->assertSee('$181.00');
+
+        $this->assertSame([], $this->api->llamadas);
     }
 
     public function test_un_pago_vencido_cuenta_como_sin_plan(): void
@@ -249,7 +364,64 @@ class PanelControllerTest extends TestCase
             ->assertSee('¿Publicar este examen?')
             ->assertSee(route('panel.examenes.apartados', ['examen' => 1]), false)
             ->assertSee(route('panel.examenes.publicar', ['examen' => 1]), false)
-            ->assertDontSee('title="Eliminar"', false);
+            ->assertSee('data-modal-abrir="confirmar-eliminar-examen-1"', false)
+            ->assertSee('¿Eliminar «Examen 1»?')
+            ->assertSee('name="_method" value="DELETE"', false)
+            ->assertDontSee('data-modal-abrir="confirmar-eliminar-examen-2"', false);
+    }
+
+    public function test_eliminar_el_borrador_envia_su_id_a_la_api(): void
+    {
+        $this->api->responder('DELETE', '/teacher/exams/1');
+
+        $this->delete('/examenes/1')
+            ->assertRedirect(route('panel.examenes'))
+            ->assertSessionHas('exito', 'Examen eliminado correctamente.');
+
+        $this->assertCount(1, $this->api->llamadasA('DELETE', '/teacher/exams/1'));
+    }
+
+    public function test_el_formulario_de_ponderacion_solo_aparece_en_borradores(): void
+    {
+        $this->prepararLecturas();
+        $apartado = [
+            'id' => 12, 'tipo' => 'opcion_multiple', 'cantidad_preguntas' => 1,
+            'preguntas' => [[
+                'examen_pregunta_id' => 32, 'pregunta_id' => 1, 'enunciado' => 'Pregunta asignada',
+                'tiempo_segundos' => 30, 'ponderacion' => '70.00',
+            ]],
+        ];
+        $this->api->responder('GET', '/teacher/exams/1/sections', ['data' => [$apartado]])
+            ->responder('GET', '/teacher/exams/2/sections', ['data' => [$apartado]]);
+
+        $this->get('/examenes/1/apartados')
+            ->assertOk()
+            ->assertSee('Guardar ponderación')
+            ->assertSee(route('panel.examenes.preguntas.ponderacion', ['examen' => 1, 'examenPregunta' => 32]), false);
+
+        $this->get('/examenes/2/apartados')
+            ->assertOk()
+            ->assertSee('70 %')
+            ->assertDontSee('Guardar ponderación');
+    }
+
+    public function test_guardar_ponderacion_valida_el_porcentaje_y_actualiza_la_pregunta_asignada(): void
+    {
+        $ruta = '/examenes/1/preguntas/32/ponderacion';
+        $rutaApi = '/teacher/exams/1/questions/32/weight';
+
+        $this->from('/examenes/1/apartados')->patch($ruta, ['nueva_ponderacion' => '70.001'])
+            ->assertRedirect('/examenes/1/apartados')
+            ->assertSessionHasErrors('nueva_ponderacion');
+        $this->assertSame([], $this->api->llamadasA('PATCH', $rutaApi));
+
+        $this->api->responder('PATCH', $rutaApi);
+
+        $this->patch($ruta, ['nueva_ponderacion' => '70.25'])
+            ->assertRedirect('/examenes/1/apartados')
+            ->assertSessionHas('exito', 'Ponderación actualizada correctamente.');
+
+        $this->assertSame(['ponderacion' => '70.25'], $this->api->llamadasA('PATCH', $rutaApi)[0]['datos']);
     }
 
     public function test_sin_examenes_el_panel_invita_a_crear_el_primero(): void

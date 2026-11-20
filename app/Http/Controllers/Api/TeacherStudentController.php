@@ -8,18 +8,38 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Throwable;
 
 /** El docente autoriza explicitamente a un alumno para UN examen. */
 class TeacherStudentController extends Controller
 {
     public function index(Request $request, int $grupoId): JsonResponse
     {
-        $uid = (string) $request->user()->getAuthIdentifier();
-        $grupo = DB::table('grupo')->where('id', $grupoId)->where('docente_id', $uid)->first(['id', 'materia']);
-        if (!$grupo) return response()->json(['message' => 'Grupo no disponible.'], 404);
-        $alumnos = DB::table('alumno_grupo as ag')->join('alumno as a', 'a.id', '=', 'ag.alumno_id')
-            ->where('ag.grupo_id', $grupoId)->orderBy('a.id')->get(['a.id', 'a.nombre', 'ag.fecha_union']);
+        $esGrupoPropio = DB::table('grupo')
+            ->where('id', $grupoId)
+            ->where('docente_id', $request->user()->getAuthIdentifier())
+            ->exists();
+
+        if (! $esGrupoPropio) {
+            return response()->json(['message' => 'Grupo no disponible.'], 404);
+        }
+
+        $intentos = DB::table('intento_examen as i')
+            ->join('examen as e', 'e.id', '=', 'i.examen_id')
+            ->where('e.grupo_id', $grupoId)
+            ->groupBy('i.alumno_id')
+            ->select('i.alumno_id')
+            ->selectRaw('count(*) as total');
+
+        $alumnos = DB::table('alumno_grupo as ag')
+            ->join('alumno as a', 'a.id', '=', 'ag.alumno_id')
+            ->leftJoinSub($intentos, 'intentos', 'intentos.alumno_id', '=', 'a.id')
+            ->where('ag.grupo_id', $grupoId)
+            ->orderBy('a.nombre')
+            ->orderBy('a.id')
+            ->select('a.id', 'a.nombre', 'ag.fecha_union')
+            ->selectRaw('coalesce(intentos.total, 0) as intentos_en_grupo')
+            ->get();
+
         return response()->json(['data' => $alumnos]);
     }
 

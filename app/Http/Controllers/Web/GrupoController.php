@@ -72,4 +72,15 @@ class GrupoController extends Controller
             'grupos',
         );
     }
+
+    public function students(int $grupoId): View
+    {
+        $grupo = $this->consultas->grupos()->firstWhere('id', $grupoId);
+        abort_if($grupo === null, 404);
+
+        return view('grupos.alumnos', [
+            'grupo' => $grupo,
+            'alumnos' => $this->consultas->estudiantesDelGrupo($grupoId),
+        ]);
+    }
 }

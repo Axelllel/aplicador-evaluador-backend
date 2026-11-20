@@ -40,6 +40,16 @@ body{font-family:'DM Sans',Arial,sans-serif;margin:0;}
 .sh-icon-button:hover { color: var(--sh-blue); background: var(--sh-pale); }
 .sh-menu-button { color: #667890; }
 .sh-avatar { width: 35px; height: 35px; border-radius: 50%; background: var(--sh-pale); border: 1px solid #60a5fa33; display: grid; place-items: center; color: var(--sh-blue); font-size: 11px; font-weight: 650; }
+.sh-account { position: relative; }
+.sh-account-toggle { display: flex; align-items: center; gap: 8px; padding: 4px; border-radius: 9px; cursor: pointer; list-style: none; }
+.sh-account-toggle::-webkit-details-marker { display: none; }
+.sh-account-toggle:hover, .sh-account[open] .sh-account-toggle { background: var(--sh-pale); }
+.sh-account-toggle:focus-visible { outline: 2px solid var(--sh-blue); outline-offset: 2px; }
+.sh-account-toggle svg { width: 15px; height: 15px; color: var(--sh-muted); flex-shrink: 0; }
+.sh-account-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 650; }
+.sh-account-menu { position: absolute; right: 0; top: calc(100% + 8px); width: 190px; padding: 14px; border: 1px solid var(--sh-border); border-radius: 11px; background: var(--sh-panel); box-shadow: 0 12px 26px #0c15232b; }
+.sh-account-role { display: block; margin-bottom: 8px; font-size: 11px; color: var(--sh-muted); }
+.sh-account-menu button { width: 100%; }
 .sh-sidebar { width: 235px; position: fixed; top: 76px; bottom: 0; left: 0; z-index: 25; background: var(--sh-panel); border-right: 1px solid var(--sh-border); padding: 30px 17px 18px; display: flex; flex-direction: column; overflow-y: auto; }
 .sh-sidebar-caption { font-size: 9px; letter-spacing: 1.8px; font-weight: 600; color: var(--sh-muted); margin: 0 13px 18px; display: flex; justify-content: space-between; align-items: center; }
 .sh-nav-item { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 45px; border-radius: 8px; padding: 11px 13px; color: #78869a; font-size: 12px; font-weight: 500; margin-bottom: 5px; text-align: left; }
@@ -782,4 +792,16 @@ body{font-family:'DM Sans',Arial,sans-serif;margin:0;}
 .bbb-review-indicator{font-size:12px;color:var(--sh-muted);margin:12px 0}
 .sh-sidebar{transform:none}
 .bbb-disabled{opacity:.75}
+.sh-dashboard { padding-bottom: 24px; }
+.sh-dashboard-exam { cursor: default; }
+.sh-dashboard-empty { grid-column: 1 / -1; }
+@media (max-width: 640px) {
+  .sh-account-name { max-width: 80px; }
+  .sh-dashboard .sh-stat-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 400px) {
+  .sh-account-name { max-width: 42px; }
+  .sh-header-right { gap: 4px; }
+  .sh-account-toggle { gap: 4px; }
+}
 @media(max-width:740px){.bbb-list,.bbb-scores-grid{grid-template-columns:1fr}.bbb-modal-content{padding:23px 19px}.bbb-modal-facts{grid-template-columns:1fr}.bbb-match-row{grid-template-columns:1fr;gap:7px}.bbb-modal-actions{justify-content:stretch}.bbb-modal-actions>*{flex:1}.sh-sidebar{width:235px}.sh-main{padding:22px 18px}.bbb-top-controls .bbb-theme-label{display:none}}

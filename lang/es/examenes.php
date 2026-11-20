@@ -61,6 +61,8 @@ return [
         'ponderacion' => 'Ponderación asignada',
         'ponderacion_valor' => ':total de 100 %',
         'ponderacion_ayuda' => 'Para publicar, las ponderaciones de todas las preguntas deben sumar exactamente 100 %.',
+        'editar_ponderacion' => 'Ponderación de :pregunta en porcentaje',
+        'guardar_ponderacion' => 'Guardar ponderación',
         'lista' => 'Apartados del examen',
         'sin_apartados' => 'Este examen aún no tiene apartados. Agrega el primero con el formulario de abajo.',
         'sin_preguntas' => 'Sin preguntas asignadas.',

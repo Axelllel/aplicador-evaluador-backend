@@ -27,7 +27,7 @@ use App\Http\Controllers\Web\SuscripcionController;
 use App\Http\Controllers\Web\StudentPortalController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/login');
+Route::view('/', 'auth.perfiles')->name('acceso');
 
 // Ruta de Axel para comprobar la autenticación con Supabase (se conserva).
 Route::get('/probar-auth', function () {
@@ -48,12 +48,16 @@ Route::middleware('panel.sesion')->group(function (): void {
 
     Route::get('/grupos', [GrupoController::class, 'index'])->name('panel.grupos');
     Route::post('/grupos', [GrupoController::class, 'store'])->name('panel.grupos.store');
+    Route::get('/grupos/{grupo}/alumnos', [GrupoController::class, 'students'])
+        ->whereNumber('grupo')->name('panel.grupos.alumnos');
 
     Route::get('/banco-de-preguntas', [PreguntaController::class, 'index'])->name('panel.banco-de-preguntas');
     Route::post('/banco-de-preguntas', [PreguntaController::class, 'store'])->name('panel.banco-de-preguntas.store');
 
     Route::get('/examenes', [ExamenController::class, 'index'])->name('panel.examenes');
     Route::post('/examenes', [ExamenController::class, 'store'])->name('panel.examenes.store');
+    Route::delete('/examenes/{examen}', [ExamenController::class, 'eliminar'])
+        ->whereNumber('examen')->name('panel.examenes.eliminar');
     Route::post('/examenes/{examen}/publicar', [ExamenController::class, 'publicar'])
         ->whereNumber('examen')->name('panel.examenes.publicar');
     Route::get('/examenes/{examen}/apartados', [ApartadoController::class, 'show'])
@@ -62,9 +66,13 @@ Route::middleware('panel.sesion')->group(function (): void {
         ->whereNumber('examen')->name('panel.examenes.apartados.store');
     Route::post('/examenes/{examen}/preguntas', [ApartadoController::class, 'asignarPregunta'])
         ->whereNumber('examen')->name('panel.examenes.preguntas.store');
+    Route::patch('/examenes/{examen}/preguntas/{examenPregunta}/ponderacion', [ApartadoController::class, 'actualizarPonderacion'])
+        ->whereNumber(['examen', 'examenPregunta'])->name('panel.examenes.preguntas.ponderacion');
 
     Route::get('/suscripcion', [SuscripcionController::class, 'index'])->name('panel.suscripcion');
     Route::get('/suscripcion/planes', [SuscripcionController::class, 'catalogo'])->name('panel.suscripcion.planes');
+    Route::get('/suscripcion/planes/pago', [SuscripcionController::class, 'resumenDePago'])->name('panel.suscripcion.planes.pago');
+    Route::post('/suscripcion/planes/pago/datos', [SuscripcionController::class, 'revisarDatosDePago'])->name('panel.suscripcion.planes.pago.revisar');
 
     // Resultados: tabla de intentos por examen, detalle de un intento y calificación (manual y automática).
     Route::get('/resultados', [ResultadoController::class, 'index'])->name('panel.resultados');
@@ -87,6 +95,7 @@ Route::prefix('alumno')->name('student.')->group(function () {
     Route::get('/ingreso', [StudentPortalController::class, 'entry'])->name('entry');
     Route::post('/validar-folio', [StudentPortalController::class, 'validateFolio'])->name('validate-folio')->middleware('throttle:10,1,alumno-folio');
     Route::post('/ingresar', [StudentPortalController::class, 'join'])->name('join')->middleware('throttle:5,1,alumno-ingreso');
+    Route::post('/grupos', [StudentPortalController::class, 'joinGroup'])->name('groups.join')->middleware('throttle:5,1,alumno-grupos');
     Route::get('/inicio', [StudentPortalController::class, 'home'])->name('home');
     Route::post('/examen/iniciar', [StudentPortalController::class, 'start'])->name('start')->middleware('throttle:5,1,alumno-inicio');
     Route::get('/examen', [StudentPortalController::class, 'exam'])->name('exam');
