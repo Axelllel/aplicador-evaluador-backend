@@ -14,8 +14,10 @@ namespace Tests\Feature;
 
 use App\Http\Middleware\VerifySupabaseToken;
 use App\Services\CotizacionPlanService;
+use App\Services\SesionPanelService;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use PDO;
 use PDOException;
 use Tests\TestCase;
@@ -42,7 +44,7 @@ class PaymentSimulationDatabaseTest extends TestCase
         $admin = new PDO('pgsql:host=127.0.0.1;port='.(int) $port.';dbname=postgres', 'postgres');
         if (! self::$prepared) {
             $admin->exec('DROP DATABASE IF EXISTS bbb_payment_testing');
-            $admin->exec('CREATE DATABASE bbb_payment_testing');
+            $admin->exec("CREATE DATABASE bbb_payment_testing ENCODING 'UTF8' TEMPLATE template0");
         }
         $this->db = new PDO('pgsql:host=127.0.0.1;port='.(int) $port.';dbname=bbb_payment_testing', 'postgres');
         if (! self::$prepared) {
@@ -175,6 +177,37 @@ SQL);
         $this->getJson('/api/v1/teacher/payments')->assertOk()->assertJsonPath('data.0.es_plan_actual', true)
             ->assertJsonPath('data.0.proveedor_pago', 'simulador_bigbitbyte');
         $this->assertSame(1, (int) $this->db->query('SELECT count(*) FROM public.pago')->fetchColumn());
+        DB::disconnect('payment_testing');
+    }
+
+    public function test_web_activation_persists_the_selected_plan_and_displays_it_as_current(): void
+    {
+        $this->withoutVite();
+        config(['database.default' => 'payment_testing', 'services.payment_simulation.enabled' => true,
+            'services.supabase.url' => 'https://auth.example.test', 'services.supabase.key' => 'fake-public-key',
+            'database.connections.payment_testing' => ['driver' => 'pgsql', 'host' => '127.0.0.1', 'port' => (int) getenv('PAYMENT_TEST_PG_PORT'),
+                'database' => 'bbb_payment_testing', 'username' => 'postgres', 'password' => '', 'charset' => 'utf8', 'prefix' => '', 'sslmode' => 'disable']]);
+        DB::purge('payment_testing');
+        DB::statement('SET ROLE laravel_app');
+        Http::preventStrayRequests();
+        Http::fake(['auth.example.test/auth/v1/user' => Http::response(['id' => self::TEACHER])]);
+        $this->withSession([SesionPanelService::CLAVE => SesionPanelService::datosParaSesion([
+            'access_token' => 'fake-token', 'refresh_token' => 'fake-refresh', 'expires_in' => 3600,
+            'docente' => ['id' => self::TEACHER, 'nombre' => 'Prueba', 'correo' => 'prueba@example.test'],
+        ])]);
+
+        $this->post(route('panel.suscripcion.planes.pago.simular'), ['operacion_id' => self::OPERATION,
+            'grupos' => 3, 'alumnos' => 25, 'preguntas' => 150, 'metodo_pago' => 'tarjeta',
+            'titular' => 'Prueba', 'correo_facturacion' => 'prueba@example.test', 'numero_tarjeta' => '4242424242424242',
+            'cvv' => '123', 'vencimiento' => '12/39'])->assertRedirect(route('panel.suscripcion'))->assertSessionHasNoErrors()
+            ->assertSessionHas('pago_confirmado.grupos', 3);
+
+        $row = $this->db->query('SELECT d.estado_pago,p.max_grupos,p.max_alumnos,p.max_preguntas FROM public.docente d JOIN public.paquete p ON p.id=d.paquete_id')->fetch(PDO::FETCH_ASSOC);
+        $this->assertSame(['estado_pago' => 'activo', 'max_grupos' => 3, 'max_alumnos' => 25, 'max_preguntas' => 150], $row);
+        $this->assertSame(1, (int) $this->db->query("SELECT count(*) FROM public.pago WHERE estado='confirmado'")->fetchColumn());
+        $this->get(route('panel.suscripcion'))->assertOk()->assertSee('Plan activado exitosamente')->assertSee('3 grupos activos, 25 alumnos por grupo y 150 preguntas en el banco.')
+            ->assertViewHas('vigente', fn (array $plan): bool => $plan['plan']['max_grupos'] === 3);
+        Http::assertSent(fn ($request): bool => $request->hasHeader('Authorization', 'Bearer fake-token'));
         DB::disconnect('payment_testing');
     }
 

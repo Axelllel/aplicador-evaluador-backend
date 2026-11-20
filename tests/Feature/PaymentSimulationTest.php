@@ -46,7 +46,7 @@ class PaymentSimulationTest extends TestCase
         $this->conSesionDelPanel();
         $this->withSession(['_old_input' => ['numero_tarjeta' => '4242424242424242', 'cvv' => '123']])
             ->get('/suscripcion/planes/pago?grupos=3&alumnos=25&preguntas=150')
-            ->assertOk()->assertSee('Simular y activar mi plan')->assertSee('Transferencia SPEI')
+            ->assertOk()->assertSee('Activar plan')->assertDontSee('Simular y activar mi plan')->assertSee('Transferencia SPEI')
             ->assertSee('$181.00')->assertDontSee('value="4242424242424242"', false)->assertDontSee('value="123"', false);
     }
 
@@ -109,7 +109,7 @@ class PaymentSimulationTest extends TestCase
         $this->api->responder('POST', '/teacher/payments/simulate', ['data' => $this->receipt()], 201);
         $this->post(self::WEB, $this->card())->assertRedirect(route('panel.suscripcion'))
             ->assertSessionHas('pago_confirmado.grupos', 3)->assertSessionMissing('_old_input.numero_tarjeta')->assertSessionMissing('_old_input.cvv');
-        $this->get('/suscripcion')->assertOk()->assertSee('Pago simulado exitoso')->assertSee('3 grupos activos')->assertSee('SIM-'.self::OPERATION);
+        $this->get('/suscripcion')->assertOk()->assertSee('Plan activado exitosamente')->assertSee('3 grupos activos')->assertSee('SIM-'.self::OPERATION);
     }
 
     public function test_validation_errors_do_not_flash_payment_secrets(): void
@@ -140,7 +140,7 @@ class PaymentSimulationTest extends TestCase
         $exception = new QueryException('pgsql', 'select function', [], $cause);
         $this->mock(SimulacionPagoService::class)->shouldReceive('confirmar')->once()->andThrow($exception);
         $this->postJson(self::API, $this->card())->assertServiceUnavailable()
-            ->assertJsonPath('message', 'La simulación todavía no está habilitada en la base de datos. No se registró el pago.')
+            ->assertJsonPath('message', 'La activación de planes todavía no está habilitada en la base de datos. No se registró el pago.')
             ->assertJsonMissingPath('data.pago_id');
     }
 
