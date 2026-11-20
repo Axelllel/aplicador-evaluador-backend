@@ -512,3 +512,14 @@
 .tp-guest-workspace a.text-acento {color:var(--tp-blue);}
 .tp-registration-card button.bg-primario {background:var(--tp-blue);border-color:var(--tp-blue);}
 .tp-registration-card input[aria-invalid=true] {border-color:var(--color-error);}
+
+.tp-payment-methods {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.tp-payment-method {display:flex;align-items:center;gap:12px;padding:16px;border:1px solid var(--tp-border);border-radius:12px;cursor:pointer;min-height:72px;}
+.tp-payment-method:has(input:checked) {border-color:var(--tp-blue);background:var(--tp-pale);}
+.tp-payment-method svg {width:24px;height:24px;flex-shrink:0;color:var(--tp-blue);}
+.tp-payment-method input {accent-color:var(--tp-blue);}
+.tp-payment-help {font-size:14px;line-height:1.7;color:var(--tp-text);padding:14px 16px;border-radius:10px;background:var(--tp-pale);}
+.tp-payment-receipt {display:flex;flex-wrap:wrap;justify-content:space-between;gap:20px;border:1px solid var(--tp-border);border-radius:14px;padding:24px;background:var(--tp-card);}
+.tp-payment-receipt h2 {font-size:20px;font-weight:700;margin-bottom:8px;}
+.tp-payment-receipt p {font-size:14px;line-height:1.7;overflow-wrap:anywhere;}
+@media(width < 40rem) {.tp-payment-methods {grid-template-columns:1fr;}}

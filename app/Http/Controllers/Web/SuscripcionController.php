@@ -16,11 +16,15 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CotizacionPlanRequest;
+use App\Http\Requests\SimularPagoRequest;
 use App\Services\ConsultasPanelService;
 use App\Services\CotizacionPlanService;
 use App\Services\PaginadorPanel;
+use App\Services\PanelApiService;
 use App\Services\PlanDocenteService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
@@ -32,8 +36,7 @@ class SuscripcionController extends Controller
         private readonly ConsultasPanelService $consultas,
         private readonly PlanDocenteService $planes,
         private readonly PaginadorPanel $paginador,
-    ) {
-    }
+    ) {}
 
     /**
      * Muestra el plan vigente y la tabla de pagos (15 por página).
@@ -71,7 +74,7 @@ class SuscripcionController extends Controller
 
     public function resumenDePago(CotizacionPlanRequest $solicitud, CotizacionPlanService $cotizador): View
     {
-        return view('suscripcion.pago', $this->cotizacion($solicitud, $cotizador));
+        return view('suscripcion.pago', $this->cotizacion($solicitud, $cotizador) + ['operacionId' => (string) Str::uuid()]);
     }
 
     public function revisarDatosDePago(CotizacionPlanRequest $solicitud, CotizacionPlanService $cotizador): View
@@ -84,7 +87,21 @@ class SuscripcionController extends Controller
             'correo_facturacion' => __('suscripcion.resumen_pago.tarjeta.correo'),
         ]);
 
-        return view('suscripcion.pago', $this->cotizacion($solicitud, $cotizador) + ['datosRevisados' => $datos]);
+        return view('suscripcion.pago', $this->cotizacion($solicitud, $cotizador) + ['datosRevisados' => $datos, 'operacionId' => (string) Str::uuid()]);
+    }
+
+    public function simularPago(SimularPagoRequest $solicitud, PanelApiService $api): RedirectResponse
+    {
+        $respuesta = $api->post('/teacher/payments/simulate', $solicitud->validated());
+        if (in_array($respuesta->estado, [200, 201], true) && $respuesta->dato('simulado') === true && $respuesta->dato('pago_id')) {
+            return redirect()->route('panel.suscripcion')->with('pago_confirmado', $respuesta->datos());
+        }
+        $seleccion = $solicitud->only(['grupos', 'alumnos', 'preguntas']);
+        $mensaje = $respuesta->cuerpo['message'] ?? __('suscripcion.simulacion.error');
+
+        return redirect()->route('panel.suscripcion.planes.pago', $seleccion)
+            ->withInput($solicitud->except(['numero_tarjeta', 'cvv', 'clabe', '_token']))
+            ->withErrors($respuesta->errores())->with('error', $mensaje);
     }
 
     /** @return array{grupos: int, alumnos: int, preguntas: int, precioCentavos: int} */

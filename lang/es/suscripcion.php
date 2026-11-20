@@ -20,7 +20,7 @@ return [
         'encabezado' => 'Tu plan',
         'vigente_hasta' => 'Vigente hasta el :fecha',
         'sin_plan' => 'No tienes un plan activo.',
-        'sin_plan_ayuda' => 'Para activar tu cuenta, solicita un plan a soporte. Cuando se confirme tu pago podrás crear grupos, preguntas y exámenes.',
+        'sin_plan_ayuda' => 'Configura un plan y completa la simulación de pago para activar su capacidad.',
     ],
 
     'planes' => [
@@ -69,6 +69,33 @@ return [
             'tarjeta' => 'Tarjeta de crédito o débito',
             'spei' => 'Transferencia SPEI',
         ],
+    ],
+
+    'simulacion' => [
+        'etiqueta' => 'ENTORNO DE DEMOSTRACIÓN',
+        'titulo' => 'Completa tu pago de prueba',
+        'aviso' => 'Esta operación es simulada. Usa únicamente los datos de prueba indicados; no se cobrará dinero.',
+        'metodo' => 'Elige cómo simular el pago',
+        'datos_tarjeta' => 'Tarjeta de prueba',
+        'tarjeta_prueba' => 'Número: 4242 4242 4242 4242 · CVV: 123 · Vencimiento: un mes actual o futuro (MM/AA).',
+        'numero' => 'Número de tarjeta de prueba',
+        'vencimiento' => 'Vencimiento (MM/AA)',
+        'cvv' => 'CVV de prueba',
+        'datos_spei' => 'Transferencia de prueba',
+        'spei_prueba' => 'CLABE de prueba: 032180000118359719. El sistema generará la referencia y simulará su confirmación, sin hacer una transferencia bancaria.',
+        'banco' => 'Banco de prueba',
+        'elegir_banco' => 'Elige un banco de prueba',
+        'clabe' => 'CLABE de origen de prueba',
+        'capacidad' => 'El plan tendrá la capacidad total elegida durante un mes. No se crearán grupos automáticamente.',
+        'confirmar' => 'Simular y activar mi plan',
+        'procesando' => 'Confirmando simulación…',
+        'error' => 'No se pudo confirmar el pago simulado. Reintenta con la misma operación.',
+        'exito' => 'Pago simulado exitoso',
+        'detalle' => 'Tu plan permite :grupos grupos activos, :alumnos alumnos por grupo y :preguntas preguntas en el banco.',
+        'referencia' => 'Referencia: :referencia',
+        'monto' => 'Importe simulado: $:monto MXN',
+        'sin_cobro' => 'Simulación confirmada; no se realizó ningún cobro real.',
+        'historial' => 'Simulado',
     ],
 
     'pagos' => [
