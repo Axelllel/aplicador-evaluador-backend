@@ -59,6 +59,7 @@
 
     <main id="contenido" tabindex="-1">
         <div class="entry-layout">
+            <x-volver-perfiles />
             <div class="eyebrow"><span aria-hidden="true"></span>TU SIGUIENTE GRAN IDEA EMPIEZA AQUÍ</div>
 
             <section class="entry-card" aria-labelledby="teacher-login-title">

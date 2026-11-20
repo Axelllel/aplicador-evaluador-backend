@@ -17,6 +17,7 @@ return [
     'perfiles' => [
         'titulo' => 'Selecciona tu perfil',
         'descripcion' => 'Elige cómo quieres ingresar a BigBitByte.',
+        'volver' => 'Volver a seleccionar perfil',
         'docente' => 'Docente',
         'docente_ayuda' => 'Inicia sesión con tu cuenta.',
         'alumno' => 'Alumno',

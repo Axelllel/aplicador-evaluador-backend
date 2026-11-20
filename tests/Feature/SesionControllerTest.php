@@ -65,7 +65,7 @@ class SesionControllerTest extends TestCase
             ->assertSee('images/bigbitbyte-logo.png', false)
             ->assertSee('alt="Logotipo de BigBitByte: un cubo con tres letras B"', false)
             ->assertSee('Portal del docente')
-            ->assertSee('student-entry.css')
+            ->assertSee('class="entry-card"', false)
             ->assertSee('id="toggle-theme"', false);
     }
 
