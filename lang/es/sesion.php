@@ -42,4 +42,6 @@ return [
     'demostracion' => [
         'ver_guia_de_estilo' => 'Ver la guía de estilo',
     ],
+    'estado_ingresando' => 'Iniciando sesión…',
+
 ];

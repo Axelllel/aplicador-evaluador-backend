@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 return [
     'titulo' => 'Exámenes',
-    'descripcion' => 'Crea exámenes en borrador, arma sus apartados y publícalos cuando estén completos.',
+    'descripcion' => 'Crea exámenes en borrador, agrega preguntas y publícalos cuando estén completos.',
 
     'nuevo' => [
         'encabezado' => 'Nuevo examen',
@@ -54,7 +54,7 @@ return [
     ],
 
     'apartados' => [
-        'titulo' => 'Apartados: :examen',
+        'titulo' => 'Preguntas: :examen',
         'descripcion' => 'Grupo :grupo · Apertura :apertura · Cierre :cierre',
         'volver' => 'Volver a Exámenes',
         'publicado_aviso' => 'Este examen ya está publicado y no se puede modificar.',
@@ -63,13 +63,13 @@ return [
         'ponderacion_ayuda' => 'Para publicar, las ponderaciones de todas las preguntas deben sumar exactamente 100 %.',
         'editar_ponderacion' => 'Ponderación de :pregunta en porcentaje',
         'guardar_ponderacion' => 'Guardar ponderación',
-        'lista' => 'Apartados del examen',
-        'sin_apartados' => 'Este examen aún no tiene apartados. Agrega el primero con el formulario de abajo.',
+        'lista' => 'Preguntas del examen',
+        'sin_apartados' => 'Este examen aún no tiene preguntas. Elige una del banco para comenzar.',
         'sin_preguntas' => 'Sin preguntas asignadas.',
         'avance' => ':usadas de :cantidad preguntas',
         'tiempo' => ':segundos s',
         'tabla' => [
-            'titulo' => 'Preguntas del apartado',
+            'titulo' => 'Preguntas del examen',
             'columnas' => [
                 'pregunta' => 'Pregunta',
                 'tiempo' => 'Tiempo',
@@ -97,4 +97,20 @@ return [
         'opcion_apartado' => ':tipo · :usadas de :cantidad',
         'opcion_pregunta' => '[:tipo] :enunciado',
     ],
+    'composicion' => [
+        'etiqueta' => 'CONSTRUYE TU EVALUACIÓN',
+        'ayuda' => 'Elige una pregunta, indica su tiempo y asigna la ponderación. La organización por tipo es automática.',
+        'filtro' => 'Filtrar preguntas por tipo',
+        'tipo_automatico' => 'El tipo se detecta a partir de la pregunta elegida.',
+        'nota' => 'La pregunta se añadirá al examen con el valor que indiques.',
+        'agregar' => 'Agregar al examen',
+        'cantidad' => '{1} :count pregunta|[2,*] :count preguntas',
+        'completa' => 'La ponderación está completa: 100 %. Ya puedes revisar y publicar.',
+        'completa_previa' => 'Al guardar esta pregunta completarás el 100 %.',
+        'sin_tipo' => 'No hay preguntas disponibles de este tipo. Elige otro tipo o agrega una en el banco.',
+        'falta' => 'Falta asignar :valor % para completar el examen.',
+        'exceso' => 'La ponderación excede el total por :valor %. Ajusta los porcentajes antes de publicar.',
+        'total_previo' => 'Total al agregar esta pregunta: :valor %.',
+    ],
+
 ];

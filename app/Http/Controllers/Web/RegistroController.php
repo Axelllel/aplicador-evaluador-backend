@@ -29,8 +29,7 @@ class RegistroController extends Controller
     public function __construct(
         private readonly PanelApiService $api,
         private readonly SesionPanelService $sesion,
-    ) {
-    }
+    ) {}
 
     /**
      * Muestra el formulario de registro.
@@ -51,20 +50,19 @@ class RegistroController extends Controller
     {
         $respuesta = $this->api->publico('/auth/register', $solicitud->datosParaLaApi());
 
-        // 201: cuenta y perfil creados. 202: Supabase pide confirmar el correo o el perfil se sincroniza después.
         if ($respuesta->estado === 201 || $respuesta->estado === 202) {
-            $destino = redirect()->route('login');
-
-            if ($respuesta->estado === 202) {
-                return $destino->with('aviso', __('registro.pendiente'));
+            $estado = $respuesta->dato('registration_status');
+            if (! in_array($estado, ['confirmation_required', 'profile_pending', 'ready', 'pending'], true)) {
+                $estado = 'pending';
             }
 
-            return $destino
-                ->with('exito', __('registro.creada'))
-                ->with('aviso', __('registro.sin_plan'));
+            return redirect()->route('login')->with('registro_estado', [
+                'estado' => $estado,
+                'correo_solicitado' => $respuesta->dato('confirmation_email_requested') === true,
+            ])->withInput(['email' => $solicitud->validated('email')]);
         }
 
-        $vuelta = redirect()->route('registro')->withInput();
+        $vuelta = redirect()->route('registro')->withInput($solicitud->only(['nombre', 'email', 'telefono']));
 
         return match (true) {
             $respuesta->esDeValidacion() && $respuesta->errores() !== [] => $vuelta->withErrors($respuesta->errores()),

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\ModificaExamenBorrador;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,16 +14,20 @@ use Illuminate\Support\Facades\DB;
  */
 class TeacherExamPublishController extends Controller
 {
+    use ModificaExamenBorrador;
+
     public function publish(Request $request, int $examenId): JsonResponse
     {
+        $request->validate(['composicion_automatica' => ['sometimes', 'boolean']]);
+        $automatica = $request->boolean('composicion_automatica');
         $docenteId = (string) $request->user()->getAuthIdentifier();
 
-        return DB::transaction(function () use ($examenId, $docenteId): JsonResponse {
+        return DB::transaction(function () use ($examenId, $docenteId, $automatica): JsonResponse {
             // Mismo candado usado al agregar apartados y reactivos.
             // Evita publicar al mismo tiempo que se modifica el contenido.
             DB::selectOne(
                 'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
-                ['bbb-exam-' . $examenId]
+                ['bbb-exam-'.$examenId]
             );
 
             $examen = DB::table('examen as e')
@@ -34,7 +39,7 @@ class TeacherExamPublishController extends Controller
                     'e.fecha_apertura', 'e.fecha_cierre', 'g.activo',
                 ]);
 
-            if (!$examen) {
+            if (! $examen) {
                 return response()->json(['message' => 'Examen no disponible.'], 404);
             }
 
@@ -45,7 +50,11 @@ class TeacherExamPublishController extends Controller
                 ], 200);
             }
 
-            if (!$examen->activo) {
+            if ($automatica && DB::table('intento_examen')->where('examen_id', $examenId)->exists()) {
+                return response()->json(['message' => 'No se puede reorganizar un examen con intentos.'], 409);
+            }
+
+            if (! $examen->activo) {
                 return response()->json(['message' => 'El grupo esta inactivo.'], 403);
             }
 
@@ -62,11 +71,11 @@ class TeacherExamPublishController extends Controller
                 ->whereRaw('pg.fecha_fin_vigencia > CURRENT_TIMESTAMP')
                 ->exists();
 
-            if (!$suscripcionVigente) {
+            if (! $suscripcionVigente) {
                 return response()->json(['message' => 'Suscripcion no vigente.'], 403);
             }
 
-            if (!DB::table('examen')
+            if (! DB::table('examen')
                 ->where('id', $examenId)
                 ->whereRaw('fecha_cierre > CURRENT_TIMESTAMP')
                 ->exists()) {
@@ -81,7 +90,7 @@ class TeacherExamPublishController extends Controller
 
             if ($apartados->isEmpty()) {
                 return response()->json([
-                    'message' => 'El examen necesita al menos un apartado.',
+                    'message' => $automatica ? 'El examen necesita al menos una pregunta.' : 'El examen necesita al menos un apartado.',
                 ], 422);
             }
 
@@ -100,9 +109,9 @@ class TeacherExamPublishController extends Controller
 
             foreach ($apartados as $apartado) {
                 $delApartado = $preguntas->where('apartado_id', $apartado->id);
-                if ($delApartado->count() !== (int) $apartado->cantidad_preguntas) {
+                if (! $automatica && $delApartado->count() !== (int) $apartado->cantidad_preguntas) {
                     return response()->json([
-                        'message' => 'El apartado ' . $apartado->id . ' no tiene la cantidad requerida de preguntas.',
+                        'message' => 'El apartado '.$apartado->id.' no tiene la cantidad requerida de preguntas.',
                     ], 422);
                 }
 
@@ -132,7 +141,7 @@ class TeacherExamPublishController extends Controller
                     // Al menos dos opciones para preguntas de opcion multiple.
                     if ($pregunta->tipo === 'opcion_multiple') {
                         $opciones = json_decode((string) $pregunta->opciones, true);
-                        if (!is_array($opciones) || count($opciones) < 2) {
+                        if (! is_array($opciones) || count($opciones) < 2) {
                             return response()->json([
                                 'message' => 'Una pregunta de opcion multiple no tiene suficientes opciones.',
                             ], 422);
@@ -156,6 +165,11 @@ class TeacherExamPublishController extends Controller
                     'message' => 'La ponderacion total de las preguntas debe sumar 100.00%.',
                     'details' => ['ponderacion_actual' => number_format($ponderacionCentimos / 100, 2, '.', '')],
                 ], 422);
+            }
+
+            if ($automatica) {
+                $this->sincronizarApartados($examenId);
+                $apartados = $apartados->filter(fn (object $apartado): bool => $preguntas->where('apartado_id', $apartado->id)->isNotEmpty());
             }
 
             // El UPDATE corre bajo laravel_app + RLS y dentro de la transaccion.

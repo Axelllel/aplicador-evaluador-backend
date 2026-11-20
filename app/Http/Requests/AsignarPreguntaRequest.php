@@ -37,7 +37,7 @@ class AsignarPreguntaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'apartado_id' => ['required', 'integer', 'min:1'],
+            'apartado_id' => ['nullable', 'integer', 'min:1'],
             'pregunta_id' => ['required', 'integer', 'min:1'],
             'tiempo_segundos' => ['required', 'integer', 'min:1', 'max:7200'],
             'ponderacion' => ['required', 'numeric', 'gt:0', 'lte:100', 'decimal:0,2'],

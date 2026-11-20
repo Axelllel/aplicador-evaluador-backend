@@ -16,7 +16,7 @@
     <title>{{ $titulo }} · {{ __('panel.nombre_sistema') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-white font-sans text-base leading-normal text-primario">
+<body data-submit-message="{{ __('mensajes.guardando') }}" class="min-h-screen bg-white font-sans text-base leading-normal text-primario">
     {{ $slot }}
 </body>
 </html>
