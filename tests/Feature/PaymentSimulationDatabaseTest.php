@@ -178,6 +178,19 @@ SQL);
         DB::disconnect('payment_testing');
     }
 
+    public function test_migration_is_repeatable_and_also_installs_missing_legacy_payment_columns(): void
+    {
+        $this->db->exec('RESET ROLE');
+        $this->db->exec('ALTER TABLE public.pago DROP COLUMN metodo_pago CASCADE, DROP COLUMN proveedor_pago CASCADE, DROP COLUMN referencia_externa CASCADE, DROP COLUMN clave_rastreo_spei CASCADE, DROP COLUMN detalle_simulacion CASCADE');
+        $sql = file_get_contents(base_path('supabase/migrations/20261120120000_confirmar_pago_simulado.sql'));
+        $this->db->exec($sql);
+        $this->db->exec($sql);
+        $this->db->exec('SET ROLE laravel_app');
+        $receipt = $this->pay();
+        $this->assertSame(3, $receipt['grupos']);
+        $this->assertSame(1, (int) $this->db->query('SELECT count(*) FROM public.pago')->fetchColumn());
+    }
+
     private function identity(string $id): void
     {
         $statement = $this->db->prepare("SELECT set_config('app.docente_id', ?, false)");
