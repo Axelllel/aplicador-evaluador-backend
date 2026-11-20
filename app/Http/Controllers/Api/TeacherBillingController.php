@@ -40,7 +40,7 @@ class TeacherBillingController extends Controller
     public function simulate(SimularPagoRequest $request, SimulacionPagoService $simulador): JsonResponse
     {
         if (! config('services.payment_simulation.enabled')) {
-            return response()->json(['message' => 'La simulación de pagos está deshabilitada.'], 403);
+            return response()->json(['message' => 'La activación de planes está deshabilitada.'], 403);
         }
         try {
             $datos = DB::transaction(fn (): array => $simulador->confirmar($request->validated()));
@@ -48,16 +48,16 @@ class TeacherBillingController extends Controller
             $code = $exception->errorInfo[0] ?? $exception->getCode();
             [$message, $status] = match ($code) {
                 'P1001' => ['Docente no disponible.', 403],
-                'P1002' => ['Revisa la capacidad y los datos de la simulación.', 422],
+                'P1002' => ['Revisa la capacidad y los datos de pago.', 422],
                 'P1003', '23505' => ['La operación ya se utilizó con otros datos. Vuelve al resumen para iniciar una nueva compra.', 409],
                 'P1004' => ['El plan elegido es menor que tu uso actual. Aumenta su capacidad para continuar.', 409],
-                '42883', '42703' => ['La simulación todavía no está habilitada en la base de datos. No se registró el pago.', 503],
-                default => ['No se pudo confirmar la simulación. Reintenta con la misma operación.', 503],
+                '42883', '42703' => ['La activación de planes todavía no está habilitada en la base de datos. No se registró el pago.', 503],
+                default => ['No se pudo activar el plan. Reintenta con la misma operación.', 503],
             };
 
             return response()->json(['message' => $message], $status);
         }
 
-        return response()->json(['message' => 'Pago simulado confirmado.', 'data' => $datos], $datos['reutilizado'] ? 200 : 201);
+        return response()->json(['message' => 'Plan activado exitosamente.', 'data' => $datos], $datos['reutilizado'] ? 200 : 201);
     }
 }
