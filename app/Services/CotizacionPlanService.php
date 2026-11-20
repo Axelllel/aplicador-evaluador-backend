@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Archivo: CotizacionPlanService.php
+ * Módulo: app/Services
+ * Descripción: Cotiza un plan de suscripción según la cantidad de grupos y de alumnos por grupo elegidos.
+ * Autor: Axel (Axelllel)
+ * Creado: 08/11/2026
+ * Modificado: 20/11/2026 · Leonardo Ballestero López · Prólogo del Manual COD-WEB 6.7
+ */
+
 declare(strict_types=1);
 
 namespace App\Services;

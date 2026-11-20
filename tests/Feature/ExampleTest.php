@@ -6,6 +6,7 @@
  * Descripción: Verifica que la raíz del sitio ofrece los dos accesos por perfil.
  * Autor: Leonardo Ballestero López
  * Creado: 27/10/2026
+ * Modificado: 20/11/2026 · Axel (Axelllel) · Prueba de los accesos por perfil
  */
 
 declare(strict_types=1);

@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Archivo: PonderacionPreguntaRequest.php
+ * Módulo: app/Http/Requests
+ * Descripción: Valida la ponderación de una pregunta dentro de un apartado de examen en borrador.
+ * Autor: Axel (Axelllel)
+ * Creado: 08/11/2026
+ * Modificado: 20/11/2026 · Leonardo Ballestero López · Prólogo del Manual COD-WEB 6.7
+ */
+
 declare(strict_types=1);
 
 namespace App\Http\Requests;

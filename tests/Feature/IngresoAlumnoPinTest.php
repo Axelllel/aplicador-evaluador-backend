@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * Archivo: IngresoAlumnoPinTest.php
+ * Módulo: tests/Feature
+ * Descripción: Verifica que el ingreso del alumno crea el perfil, muestra el PIN y no lo guarda en claro.
+ * Autor: Axel (Axelllel)
+ * Creado: 09/11/2026
+ * Modificado: 20/11/2026 · Leonardo Ballestero López · Prólogo del Manual COD-WEB 6.7
+ */
+
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\DB;

@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * Archivo: StudentDashboardTest.php
+ * Módulo: tests/Feature
+ * Descripción: Verifica que el panel móvil del alumno resuelve la identidad con folio y PIN y no con un id del cliente.
+ * Autor: Axel (Axelllel)
+ * Creado: 19/11/2026
+ * Modificado: 20/11/2026 · Leonardo Ballestero López · Prólogo del Manual COD-WEB 6.7
+ */
+
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Services\CredencialAlumnoService;

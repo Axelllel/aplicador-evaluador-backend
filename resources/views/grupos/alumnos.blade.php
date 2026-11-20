@@ -1,3 +1,11 @@
+{{--
+    Archivo: alumnos.blade.php
+    Módulo: resources/views/grupos
+    Descripción: Lista de alumnos inscritos en un grupo del docente.
+    Autor: Axel (Axelllel)
+    Creado: 09/11/2026
+    Modificado: 20/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+--}}
 <x-layouts.panel titulo="Alumnos del grupo" descripcion="Consulta los alumnos inscritos.">
     <div class="space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">

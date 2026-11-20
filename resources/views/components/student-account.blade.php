@@ -1,3 +1,11 @@
+{{--
+    Archivo: student-account.blade.php
+    Módulo: resources/views/components
+    Descripción: Menú de cuenta del alumno con su código y la salida de la sesión.
+    Autor: Axel (Axelllel)
+    Creado: 09/11/2026
+    Modificado: 20/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+--}}
 @props(['nombre'])
 
 <details class="sh-account">

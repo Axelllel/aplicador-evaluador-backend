@@ -110,6 +110,11 @@ class VistasBladeTest extends TestCase
         $paletaDeTailwind = 'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose';
 
         foreach ($this->archivosDe(resource_path('views'), '.blade.php') as $ruta => $contenido) {
+            if (str_contains($ruta, '/views/student/')) {
+                // Portal del alumno de Axel: tiene su propio sistema visual.
+                continue;
+            }
+
             $this->assertDoesNotMatchRegularExpression(
                 '/\b(?:bg|text|border|ring|outline|fill|stroke|divide|decoration)-(?:'.$paletaDeTailwind.'|black)(?:-\d+)?\b/',
                 $contenido,

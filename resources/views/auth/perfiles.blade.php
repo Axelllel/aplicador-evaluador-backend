@@ -1,3 +1,11 @@
+{{--
+    Archivo: perfiles.blade.php
+    Módulo: resources/views/auth
+    Descripción: Selector de perfil (docente o alumno) previo al ingreso, con cambio de tema.
+    Autor: Axel (Axelllel)
+    Creado: 09/11/2026
+    Modificado: 20/11/2026 · Leonardo Ballestero López · Cabecera de archivo y color por token
+--}}
 <!doctype html>
 <html lang="es">
 <head>
@@ -33,7 +41,7 @@
                 </div>
 
                 <nav class="grid gap-3 sm:grid-cols-2" aria-labelledby="titulo-perfil">
-                    <a class="secondary-button focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600"
+                    <a class="secondary-button focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acento"
                        href="{{ route('login') }}">
                         <x-icon name="user-circle" />
                         <span class="text-left">
@@ -41,7 +49,7 @@
                             <span class="block font-normal">{{ __('sesion.perfiles.docente_ayuda') }}</span>
                         </span>
                     </a>
-                    <a class="secondary-button focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600"
+                    <a class="secondary-button focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acento"
                        href="{{ route('student.entry') }}">
                         <x-icon name="user-group" />
                         <span class="text-left">

@@ -1,3 +1,11 @@
+{{--
+    Archivo: pago.blade.php
+    Módulo: resources/views/suscripcion
+    Descripción: Resumen de la cotización y simulador de pago (tarjeta, SPEI o cotización institucional).
+    Autor: Axel (Axelllel)
+    Creado: 08/11/2026
+    Modificado: 20/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+--}}
 @php
     $seleccion = ['grupos' => $grupos, 'alumnos' => $alumnos, 'preguntas' => $preguntas];
 @endphp
