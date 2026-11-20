@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\StudentDashboardController;
 use App\Http\Controllers\Api\StudentExamController;
 use App\Http\Controllers\Api\StudentJoinController;
 use App\Http\Controllers\Api\SupabaseAccountController;
+use App\Http\Controllers\Api\TeacherAiController;
 use App\Http\Controllers\Api\TeacherBillingController;
 use App\Http\Controllers\Api\TeacherEvaluationController;
 use App\Http\Controllers\Api\TeacherExamController;
@@ -67,4 +68,9 @@ Route::middleware(VerifySupabaseToken::class)->group(function () {
     Route::get('/v1/teacher/plans', [TeacherBillingController::class, 'plans']);
     Route::post('/v1/teacher/payments/simulate', [TeacherBillingController::class, 'simulate'])->middleware('throttle:10,1');
     Route::get('/v1/teacher/payments', [TeacherBillingController::class, 'payments']);
+});
+
+Route::middleware([VerifySupabaseToken::class.':short', 'throttle:6,1'])->group(function () {
+    Route::post('/v1/teacher/ai/questions', [TeacherAiController::class, 'questions']);
+    Route::post('/v1/teacher/ai/answers/{respuestaId}', [TeacherAiController::class, 'grade'])->whereNumber('respuestaId');
 });

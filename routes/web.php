@@ -14,6 +14,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Web\ApartadoController;
+use App\Http\Controllers\Web\AsistenciaIaController;
 use App\Http\Controllers\Web\EstadisticaController;
 use App\Http\Controllers\Web\ExamenController;
 use App\Http\Controllers\Web\GrupoController;
@@ -53,6 +54,9 @@ Route::middleware('panel.sesion')->group(function (): void {
         ->whereNumber('grupo')->name('panel.grupos.alumnos');
 
     Route::get('/banco-de-preguntas', [PreguntaController::class, 'index'])->name('panel.banco-de-preguntas');
+    Route::post('/banco-de-preguntas/generar', [AsistenciaIaController::class, 'generate'])->name('panel.ia.generar');
+    Route::post('/banco-de-preguntas/borrador-ia/{indice}', [AsistenciaIaController::class, 'useDraft'])->whereNumber('indice')->name('panel.ia.borrador');
+    Route::post('/resultados/{examen}/intentos/{intento}/respuestas/{respuesta}/ia', [AsistenciaIaController::class, 'suggest'])->whereNumber(['examen', 'intento', 'respuesta'])->name('panel.ia.sugerir');
     Route::post('/banco-de-preguntas', [PreguntaController::class, 'store'])->name('panel.banco-de-preguntas.store');
 
     Route::get('/examenes', [ExamenController::class, 'index'])->name('panel.examenes');

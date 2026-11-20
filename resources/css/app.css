@@ -523,3 +523,9 @@
 .tp-payment-receipt h2 {font-size:20px;font-weight:700;margin-bottom:8px;}
 .tp-payment-receipt p {font-size:14px;line-height:1.7;overflow-wrap:anywhere;}
 @media(width < 40rem) {.tp-payment-methods {grid-template-columns:1fr;}}
+
+.tp-ai-settings {display:grid;grid-template-columns:2fr 1fr 1fr;gap:20px;align-items:start;}
+.tp-ai-proposal {border:1px solid var(--tp-border);border-left:3px solid var(--tp-blue);border-radius:12px;background:var(--tp-pale);padding:20px;display:grid;gap:12px;overflow-wrap:anywhere;font-size:14px;line-height:1.7;}
+.tp-ai-proposal h4 {font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;}
+.tp-ai-caption {font-size:13px;line-height:1.7;color:var(--tp-text);overflow-wrap:anywhere;}
+@media(width < 48rem) {.tp-ai-settings {grid-template-columns:minmax(0,1fr);gap:16px;}}

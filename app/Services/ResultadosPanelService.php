@@ -33,9 +33,7 @@ class ResultadosPanelService
 
     public const NOTA_ANULADO = 'anulado';
 
-    public function __construct(private readonly ConsultasPanelService $consultas)
-    {
-    }
+    public function __construct(private readonly ConsultasPanelService $consultas) {}
 
     /**
      * Reúne todo lo que muestra la página de un intento: el detalle (nota, respuestas, permisos) y sus incidencias.
@@ -175,8 +173,11 @@ class ResultadosPanelService
             $calificacion = $respuesta['calificacion_final'] !== null ? (float) $respuesta['calificacion_final'] : null;
             $texto = $respuesta['respuesta_texto'] ?? null;
             $modelo = $respuesta['respuesta_modelo_snapshot'] ?? null;
+            $ia = $respuesta['retroalimentacion_ia'] ?? null;
+            $ia = is_array($ia) && ($ia['proveedor'] ?? null) === 'groq' ? $ia + ['puntaje' => $respuesta['puntaje_ia'] ?? null] : null;
 
             return [
+                ...($ia === null ? [] : ['ia' => $ia]),
                 'id' => (int) $respuesta['id'],
                 'numero' => $posicion + 1,
                 'tipo' => (string) $respuesta['tipo'],
