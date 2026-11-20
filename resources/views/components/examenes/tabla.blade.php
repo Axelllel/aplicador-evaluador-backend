@@ -5,7 +5,7 @@
                  alternativo, y confirmación previa antes de publicar o eliminar (Manual COD-WEB, secciones 6.17 y 6.18).
     Autor: Leonardo Ballestero López
     Creado: 27/10/2026
-    Modificado: 06/11/2026 · Leonardo Ballestero López · Resultados y estadísticas abren el examen elegido
+    Modificado: 19/11/2026 · Axel Rebollo Zeferino · Mejora de espacios de trabajo y editor estructurado
 --}}
 @props(['examenes', 'idDeConfirmacion' => 'confirmar-eliminar-examen'])
 @php
@@ -40,7 +40,7 @@
                 </x-tabla.celda>
                 <x-tabla.celda>{{ $examen['fecha'] }}</x-tabla.celda>
                 <x-tabla.celda>
-                    <div class="flex gap-1">
+                    <div class="tp-row-actions">
                         @foreach ($examen['acciones'] as $accion)
                             @if ($accion === 'eliminar')
                                 <x-accion-tabla accion="eliminar" :contexto="$examen['nombre']"
@@ -48,7 +48,7 @@
                             @elseif ($accion === 'publicar' && isset($examen['id']))
                                 <x-accion-tabla accion="publicar" :contexto="$examen['nombre']" data-modal-abrir="confirmar-publicar-examen-{{ $examen['id'] }}" />
                             @elseif ($accion === 'abrir' && isset($examen['id']))
-                                <x-accion-tabla accion="abrir" :href="route('panel.examenes.apartados', ['examen' => $examen['id']])" :contexto="$examen['nombre']" />
+                                <x-boton variante="secundario" icono="folder-open" :title="__('acciones.abrir')" aria-label="{{ __('acciones.abrir') }}: {{ $examen['nombre'] }}" :href="route('panel.examenes.apartados', ['examen' => $examen['id']])">{{ __('workspace.exams.manage') }}</x-boton>
                             @elseif ($accion === 'resultados' && isset($examen['id']))
                                 <x-accion-tabla accion="resultados" :href="route('panel.resultados', ['examen' => $examen['id']])" :contexto="$examen['nombre']" />
                             @elseif ($accion === 'estadisticas' && isset($examen['id']))

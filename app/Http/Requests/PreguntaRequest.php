@@ -8,7 +8,7 @@
  *              (Manual COD-WEB, secciones 6.10 y 6.18).
  * Autor: Leonardo Ballestero López
  * Creado: 06/11/2026
- * Modificado: 06/11/2026 · Leonardo Ballestero López · Versión inicial
+ * Modificado: 19/11/2026 · Axel Rebollo Zeferino · Mejora de espacios de trabajo y editor estructurado
  */
 
 declare(strict_types=1);
@@ -50,18 +50,26 @@ class PreguntaRequest extends FormRequest
     public function rules(): array
     {
         $tipo = $this->input('tipo');
+        $estructurado = $this->boolean('editor_estructurado');
 
         return [
             'tipo' => ['required', Rule::in(self::TIPOS)],
+            'editor_estructurado' => ['nullable', 'boolean'],
+            'opciones_lista' => [Rule::requiredIf($estructurado && $tipo === 'opcion_multiple'), 'nullable', 'array', 'list', 'min:2', 'max:10'],
+            'opciones_lista.*' => ['required', 'string', 'max:2000', 'not_regex:/[\r\n]/'],
+            'correcta' => [Rule::requiredIf($estructurado && $tipo === 'opcion_multiple'), 'nullable', 'integer', 'min:0', 'max:9'],
+            'pares_lista' => [Rule::requiredIf($estructurado && $tipo === 'relacion_columnas'), 'nullable', 'array', 'list', 'min:2', 'max:10'],
+            'pares_lista.*.izquierda' => ['required', 'string', 'max:2000'],
+            'pares_lista.*.derecha' => ['required', 'string', 'max:2000'],
             'enunciado' => ['required', 'string', 'min:3', 'max:10000'],
             'opciones' => [
-                Rule::requiredIf(in_array($tipo, ['opcion_multiple', 'relacion_columnas'], true)),
+                Rule::requiredIf(! $estructurado && in_array($tipo, ['opcion_multiple', 'relacion_columnas'], true)),
                 'nullable', 'string', 'max:5000',
             ],
             // Sin respuesta modelo el examen no se puede publicar, por eso se pide en todos los tipos
             // (en relación de columnas se arma sola con los pares).
             'respuesta_modelo' => [
-                Rule::requiredIf($tipo !== 'relacion_columnas'),
+                Rule::requiredIf($tipo !== 'relacion_columnas' && ! ($estructurado && $tipo === 'opcion_multiple')),
                 'nullable', 'string', 'max:20000',
             ],
         ];
@@ -78,6 +86,18 @@ class PreguntaRequest extends FormRequest
             }
 
             $tipo = (string) $this->input('tipo');
+
+            if ($this->boolean('editor_estructurado') && $tipo === 'opcion_multiple') {
+                $opciones = $this->lineasDeOpciones();
+                if (! array_key_exists((int) $this->input('correcta'), $opciones)) {
+                    $validador->errors()->add('correcta', __('workspace.editor.correct_required'));
+                }
+                if (count(array_unique($opciones)) !== count($opciones)) {
+                    $validador->errors()->add('opciones_lista', __('workspace.editor.duplicate'));
+                }
+
+                return;
+            }
 
             if ($tipo === 'opcion_multiple') {
                 $opciones = $this->lineasDeOpciones();
@@ -110,7 +130,9 @@ class PreguntaRequest extends FormRequest
 
         if ($tipo === 'opcion_multiple') {
             $datos['opciones'] = $this->lineasDeOpciones();
-            $datos['respuesta_modelo'] = trim((string) $this->input('respuesta_modelo'));
+            $datos['respuesta_modelo'] = $this->boolean('editor_estructurado')
+                ? $datos['opciones'][(int) $this->input('correcta')]
+                : trim((string) $this->input('respuesta_modelo'));
         } elseif ($tipo === 'relacion_columnas') {
             $pares = $this->paresDeColumnas() ?? [];
             $datos['opciones'] = $pares;
@@ -131,6 +153,10 @@ class PreguntaRequest extends FormRequest
      */
     private function lineasDeOpciones(): array
     {
+        if ($this->boolean('editor_estructurado') && $this->input('tipo') === 'opcion_multiple') {
+            return array_map('trim', $this->input('opciones_lista', []));
+        }
+
         $lineas = preg_split('/\R/u', (string) $this->input('opciones')) ?: [];
 
         return array_values(array_filter(array_map('trim', $lineas), fn (string $linea): bool => $linea !== ''));
@@ -143,6 +169,13 @@ class PreguntaRequest extends FormRequest
      */
     private function paresDeColumnas(): ?array
     {
+        if ($this->boolean('editor_estructurado')) {
+            return array_map(fn (array $par): array => [
+                'izquierda' => trim($par['izquierda']),
+                'derecha' => trim($par['derecha']),
+            ], $this->input('pares_lista', []));
+        }
+
         $lineas = $this->lineasDeOpciones();
 
         if (count($lineas) < 2 || count($lineas) > self::MAXIMO_DE_OPCIONES) {

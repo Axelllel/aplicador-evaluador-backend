@@ -6,9 +6,11 @@
                  (Manual COD-WEB, secciones 6.16 y 6.17).
     Autor: Leonardo Ballestero López
     Creado: 06/11/2026
-    Modificado: 06/11/2026 · Leonardo Ballestero López · Versión inicial
+    Modificado: 19/11/2026 · Axel Rebollo Zeferino · Mejora de espacios de trabajo y editor estructurado
 --}}
 <x-layouts.panel :titulo="__('examenes.titulo')" :descripcion="__('examenes.descripcion')">
+    <div class="tp-workspace-toolbar"><div class="tp-context"><span class="tp-context-icon"><x-icon name="document-text" /></span><span>{{ __('workspace.exams.context') }}</span></div><x-boton href="#nuevo-examen" icono="plus">{{ __('examenes.nuevo.encabezado') }}</x-boton></div>
+    <nav class="tp-workflow" aria-label="{{ __('workspace.exams.workflow') }}"><span class="is-current"><b>1</b>{{ __('workspace.exams.step_one') }}</span><span><b>2</b>{{ __('workspace.exams.step_two') }}</span><span><b>3</b>{{ __('workspace.exams.step_three') }}</span></nav>
     <section aria-labelledby="titulo-lista-de-examenes" class="space-y-4">
         <h2 id="titulo-lista-de-examenes" class="text-xl font-semibold text-primario">{{ __('panel.tabla_examenes.titulo') }}</h2>
 
@@ -30,10 +32,12 @@
                 <x-boton variante="secundario" icono="user-group" :href="route('panel.grupos')">{{ __('examenes.nuevo.ir_a_grupos') }}</x-boton>
             </x-tarjeta>
         @else
-            <x-tarjeta>
-                <form method="POST" action="{{ route('panel.examenes.store') }}" novalidate class="max-w-3xl space-y-4">
+            <x-tarjeta class="tp-exam-composer">
+                <form method="POST" action="{{ route('panel.examenes.store') }}" class="tp-exam-form space-y-6">
                     @csrf
 
+                    <div class="tp-form-section"><span class="tp-step-number">01</span><div><h3>{{ __('workspace.exams.identify') }}</h3><p>{{ __('workspace.exams.identify_hint') }}</p></div></div>
+                    <div class="grid gap-5 md:grid-cols-2">
                     <x-campo-seleccion
                         nombre="grupo_id"
                         :etiqueta="__('examenes.nuevo.grupo')"
@@ -47,7 +51,9 @@
                         maxlength="150"
                     />
 
-                    <div class="grid gap-4 md:grid-cols-2">
+                    </div>
+                    <div class="tp-form-section"><span class="tp-step-number">02</span><div><h3>{{ __('workspace.exams.schedule') }}</h3><p>{{ __('workspace.exams.schedule_hint') }}</p></div></div>
+                    <div class="grid gap-5 md:grid-cols-2">
                         <x-campo-texto
                             nombre="fecha_apertura"
                             tipo="datetime-local"
@@ -62,7 +68,8 @@
                         />
                     </div>
 
-                    <div class="grid gap-4 md:grid-cols-2">
+                    <details class="tp-settings" @if($errors->any()) open @endif><summary><span><strong>{{ __('workspace.exams.settings') }}</strong><small>{{ __('workspace.exams.settings_hint') }}</small></span><x-icon name="chevron-down" /></summary>
+                    <div class="grid gap-5 md:grid-cols-2">
                         <x-campo-seleccion
                             nombre="orden"
                             :etiqueta="__('examenes.nuevo.orden')"
@@ -92,8 +99,9 @@
                         />
                     </div>
 
-                    <div class="flex justify-end">
-                        <x-boton type="submit" accion="guardar" ancho="movil" />
+                    </details>
+                    <div class="tp-form-actions"><p><x-icon name="information-circle" />{{ __('workspace.exams.draft_hint') }}</p>
+                        <x-boton type="submit" icono="plus" ancho="movil">{{ __('workspace.exams.create') }}</x-boton>
                     </div>
                 </form>
             </x-tarjeta>

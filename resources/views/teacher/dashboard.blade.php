@@ -5,9 +5,10 @@
                  contra los límites del paquete y tabla de exámenes reales (Manual COD-WEB, secciones 6.16 y 6.17).
     Autor: Leonardo Ballestero López
     Creado: 27/10/2026
-    Modificado: 06/11/2026 · Leonardo Ballestero López · Datos reales de la API y caso sin plan activo
+    Modificado: 19/11/2026 · Axel Rebollo Zeferino · Mejora de espacios de trabajo y editor estructurado
 --}}
 <x-layouts.panel :titulo="__('panel.inicio.titulo')" :descripcion="__('panel.inicio.descripcion')">
+    <section class="tp-welcome" aria-labelledby="tp-welcome-title"><div><p class="tp-section-label">{{ __('workspace.home.kicker') }}</p><h2 id="tp-welcome-title">{{ __('workspace.home.title') }}</h2><p>{{ __('workspace.home.description') }}</p></div><div class="tp-welcome-actions"><x-boton icono="plus" :href="route('panel.examenes').'#nuevo-examen'">{{ __('workspace.home.create') }}</x-boton><x-boton variante="secundario" icono="question-mark-circle" :href="route('panel.banco-de-preguntas')">{{ __('panel.menu.banco_preguntas') }}</x-boton></div></section>
     @if ($plan === null)
         <x-alerta tipo="aviso">{{ __('mensajes.aviso.sin_plan') }}</x-alerta>
 
@@ -35,7 +36,7 @@
                         $nombreDelRecurso = __('panel.recursos.'.$recurso['clave']);
                         $esLimite = $recurso['estado'] === 'alcanzado';
                     @endphp
-                    <x-tarjeta class="space-y-3">
+                    <x-tarjeta class="tp-plan-metric space-y-3">
                         <h3 class="text-base font-semibold text-primario">{{ $nombreDelRecurso }}</h3>
 
                         <p class="text-2xl font-semibold text-primario">

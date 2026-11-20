@@ -6,7 +6,7 @@
                  (Manual COD-WEB, secciones 6.16, 6.17 y 6.18).
     Autor: Leonardo Ballestero López
     Creado: 06/11/2026
-    Modificado: 06/11/2026 · Leonardo Ballestero López · Versión inicial
+    Modificado: 19/11/2026 · Axel Rebollo Zeferino · Mejora de espacios de trabajo y editor estructurado
 --}}
 @php
     $tipos = (array) __('preguntas.tipos');
@@ -20,6 +20,7 @@
     :titulo="__('examenes.apartados.titulo', ['examen' => $examen['nombre']])"
     :descripcion="__('examenes.apartados.descripcion', ['grupo' => $examen['grupo'], 'apertura' => $apertura, 'cierre' => $cierre])"
 >
+    <nav class="tp-workflow" aria-label="{{ __('workspace.exams.workflow') }}"><span><b><x-icon name="check" /></b>{{ __('workspace.exams.step_one') }}</span><span class="is-current"><b>2</b>{{ __('workspace.exams.step_two') }}</span><span><b>3</b>{{ __('workspace.exams.step_three') }}</span></nav>
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex flex-wrap items-center gap-3">
             <x-boton variante="secundario" icono="folder-open" :href="route('panel.examenes')">{{ __('examenes.apartados.volver') }}</x-boton>
@@ -36,7 +37,7 @@
     @endunless
 
     <section aria-labelledby="titulo-ponderacion" class="space-y-2">
-        <x-tarjeta class="space-y-3">
+        <x-tarjeta class="tp-section-card space-y-3">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 id="titulo-ponderacion" class="text-xl font-semibold text-primario">{{ __('examenes.apartados.ponderacion') }}</h2>
                 <p class="text-2xl font-semibold text-primario">{{ __('examenes.apartados.ponderacion_valor', ['total' => $ponderacionTotal]) }}</p>
@@ -68,7 +69,7 @@
             @php
                 $preguntasDelApartado = $apartado['preguntas'] ?? [];
             @endphp
-            <x-tarjeta class="space-y-3">
+            <x-tarjeta class="tp-section-card space-y-3">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <h3 class="text-base font-semibold text-primario">{{ $tipos[$apartado['tipo']] ?? $apartado['tipo'] }}</h3>
                     <x-insignia :tono="count($preguntasDelApartado) >= $apartado['cantidad_preguntas'] ? 'exito' : 'aviso'">
@@ -121,7 +122,7 @@
             <h2 id="titulo-nuevo-apartado" class="text-xl font-semibold text-primario">{{ __('examenes.apartados.nuevo.encabezado') }}</h2>
 
             <x-tarjeta>
-                <form method="POST" action="{{ route('panel.examenes.apartados.store', ['examen' => $examen['id']]) }}" novalidate class="max-w-xl space-y-4">
+                <form method="POST" action="{{ route('panel.examenes.apartados.store', ['examen' => $examen['id']]) }}" novalidate class="tp-section-form space-y-5">
                     @csrf
 
                     <x-campo-seleccion
@@ -141,8 +142,8 @@
                         inputmode="numeric"
                     />
 
-                    <div class="flex justify-end">
-                        <x-boton type="submit" accion="nuevo" ancho="movil" />
+                    <div class="tp-form-actions">
+                        <x-boton type="submit" icono="plus" ancho="movil">{{ __('workspace.exams.add_section') }}</x-boton>
                     </div>
                 </form>
             </x-tarjeta>
@@ -160,7 +161,7 @@
                         <x-boton variante="secundario" icono="question-mark-circle" :href="route('panel.banco-de-preguntas')">{{ __('panel.menu.banco_preguntas') }}</x-boton>
                     </div>
                 @else
-                    <form method="POST" action="{{ route('panel.examenes.preguntas.store', ['examen' => $examen['id']]) }}" novalidate class="max-w-xl space-y-4">
+                    <form method="POST" action="{{ route('panel.examenes.preguntas.store', ['examen' => $examen['id']]) }}" novalidate class="tp-section-form space-y-5">
                         @csrf
 
                         <x-campo-seleccion
