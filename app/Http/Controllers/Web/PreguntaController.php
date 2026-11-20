@@ -7,7 +7,7 @@
  *              de los cuatro tipos (Manual COD-WEB, secciones 6.16, 6.17 y 8.3).
  * Autor: Leonardo Ballestero López
  * Creado: 06/11/2026
- * Modificado: 06/11/2026 · Leonardo Ballestero López · Versión inicial
+ * Modificado: 19/11/2026 · Axel Rebollo Zeferino · Mejora de espacios de trabajo y editor estructurado
  */
 
 declare(strict_types=1);
@@ -35,8 +35,7 @@ class PreguntaController extends Controller
         private readonly PanelApiService $api,
         private readonly ConsultasPanelService $consultas,
         private readonly PaginadorPanel $paginador,
-    ) {
-    }
+    ) {}
 
     /**
      * Muestra la lista de preguntas (15 por página) y el formulario de alta.
@@ -46,9 +45,17 @@ class PreguntaController extends Controller
         $tipo = $solicitud->query('tipo');
         $tipo = is_string($tipo) && in_array($tipo, PreguntaRequest::TIPOS, true) ? $tipo : null;
 
+        $busqueda = $solicitud->query('q');
+        $busqueda = is_string($busqueda) ? mb_substr(trim($busqueda), 0, 150) : '';
+        $preguntas = $this->consultas->preguntas($tipo);
+        if ($busqueda !== '') {
+            $preguntas = $preguntas->filter(fn (array $pregunta): bool => mb_stripos($pregunta['enunciado'], $busqueda) !== false)->values();
+        }
+
         return view('preguntas.index', [
-            'preguntas' => $this->paginador->paginar($this->consultas->preguntas($tipo), $solicitud->integer('page', 1)),
+            'preguntas' => $this->paginador->paginar($preguntas, $solicitud->integer('page', 1)),
             'tipoFiltrado' => $tipo,
+            'busqueda' => $busqueda,
         ]);
     }
 

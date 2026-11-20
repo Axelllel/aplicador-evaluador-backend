@@ -4,7 +4,7 @@
     Descripción: Encabezado y barra lateral del docente unificados con la identidad visual del alumno.
     Autor: Leonardo Ballestero López
     Creado: 27/10/2026
-    Modificado: 08/11/2026 · Ajuste visual BigBitByte sin cambios de rutas ni lógica
+    Modificado: 19/11/2026 · Axel Rebollo Zeferino · Mejora de espacios de trabajo y editor estructurado
 --}}
 <x-layouts.base :titulo="$titulo">
     <div class="tp-shell" id="teacher-panel">
@@ -29,7 +29,7 @@
                 <span class="tp-portal-tag"><span class="tp-status-dot" aria-hidden="true"></span>Portal del docente</span>
                 <span class="tp-header-divider" aria-hidden="true"></span>
                 <button type="button" class="tp-icon-button tp-theme-button" id="tp-theme-toggle"
-                        aria-label="Activar modo oscuro" title="Cambiar tema">☾</button>
+                        aria-label="Activar modo oscuro" title="Cambiar tema"><svg data-theme-moon xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M20.2 15.4A8.5 8.5 0 0 1 8.6 3.8 9 9 0 1 0 20.2 15.4Z" /></svg><svg data-theme-sun hidden xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M11 1h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM3.5 5l1.4-1.5L7 5.6 5.6 7zM17 18.4l1.4-1.4 2.1 2.1-1.4 1.4zM3.5 19l2.1-2.1L7 18.3l-2.1 2.1zM17 5.6l2.1-2.1L20.5 5l-2.1 2.1z" /></svg></button>
                 <div class="tp-account">
                     <button type="button" data-cuenta-alternar aria-haspopup="true" aria-expanded="false"
                             aria-controls="menu-cuenta" title="{{ __('panel.barra_superior.menu_de_cuenta') }}"
@@ -91,12 +91,13 @@
 
     <script>
     (() => {
-        const panel = document.getElementById('teacher-panel');
+        const teacherShell = document.getElementById('teacher-panel');
         const button = document.getElementById('tp-theme-toggle');
-        if (!panel || !button) return;
+        if (!teacherShell || !button) return;
         const aplicar = (oscuro) => {
-            panel.classList.toggle('tp-dark', oscuro);
-            button.textContent = oscuro ? '☀' : '☾';
+            teacherShell.classList.toggle('tp-dark', oscuro);
+            button.querySelector('[data-theme-moon]').hidden = oscuro;
+            button.querySelector('[data-theme-sun]').hidden = !oscuro;
             button.setAttribute('aria-label', oscuro ? 'Activar modo claro' : 'Activar modo oscuro');
             try { localStorage.setItem('bbb-theme', oscuro ? 'dark' : 'light'); }
             catch (_) { /* La navegación funciona sin almacenamiento local. */ }
@@ -105,7 +106,7 @@
         try { oscuro = localStorage.getItem('bbb-theme') === 'dark'; }
         catch (_) { /* Se usa modo claro por defecto. */ }
         aplicar(oscuro);
-        button.addEventListener('click', () => aplicar(!panel.classList.contains('tp-dark')));
+        button.addEventListener('click', () => aplicar(!teacherShell.classList.contains('tp-dark')));
     })();
     </script>
 </x-layouts.base>
