@@ -26,8 +26,10 @@ class TeacherBillingController extends Controller
         $uid = $request->user()->getAuthIdentifier();
         $docente = DB::table('docente')->where('id', $uid)->first(['paquete_id', 'estado_pago']);
         $pagos = DB::table('pago')->where('docente_id', $uid)->orderByDesc('id')
-            ->get(['id', 'paquete_id', 'fecha', 'monto', 'estado', 'metodo_pago', 'proveedor_pago', 'referencia_externa',
-                'fecha_inicio_vigencia', 'fecha_fin_vigencia', 'renovacion_automatica']);
+            ->select(['id', 'paquete_id', 'fecha', 'monto', 'estado',
+                'fecha_inicio_vigencia', 'fecha_fin_vigencia', 'renovacion_automatica'])
+            ->selectRaw("to_jsonb(pago)->>'metodo_pago' AS metodo_pago, to_jsonb(pago)->>'proveedor_pago' AS proveedor_pago, to_jsonb(pago)->>'referencia_externa' AS referencia_externa")
+            ->get();
         foreach ($pagos as $pago) {
             $pago->es_plan_actual = $docente && $docente->estado_pago === 'activo' && (int) $docente->paquete_id === (int) $pago->paquete_id;
         }

@@ -1,7 +1,31 @@
 -- Compra de demostración: no procesa dinero ni almacena PAN/CVV.
 BEGIN;
 
-ALTER TABLE public.pago ADD COLUMN IF NOT EXISTS detalle_simulacion jsonb;
+ALTER TABLE public.pago
+    ADD COLUMN IF NOT EXISTS metodo_pago text,
+    ADD COLUMN IF NOT EXISTS proveedor_pago text,
+    ADD COLUMN IF NOT EXISTS referencia_externa text,
+    ADD COLUMN IF NOT EXISTS clave_rastreo_spei text,
+    ADD COLUMN IF NOT EXISTS detalle_simulacion jsonb;
+
+DO $checks$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.pago'::regclass AND conname='pago_metodo_valido') THEN
+        ALTER TABLE public.pago ADD CONSTRAINT pago_metodo_valido CHECK (metodo_pago IN ('tarjeta','spei'));
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.pago'::regclass AND conname='pago_proveedor_no_vacio') THEN
+        ALTER TABLE public.pago ADD CONSTRAINT pago_proveedor_no_vacio CHECK (btrim(proveedor_pago) <> '');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.pago'::regclass AND conname='pago_referencia_con_proveedor') THEN
+        ALTER TABLE public.pago ADD CONSTRAINT pago_referencia_con_proveedor CHECK (referencia_externa IS NULL OR (proveedor_pago IS NOT NULL AND btrim(referencia_externa) <> ''));
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.pago'::regclass AND conname='pago_clave_rastreo_solo_spei') THEN
+        ALTER TABLE public.pago ADD CONSTRAINT pago_clave_rastreo_solo_spei CHECK (clave_rastreo_spei IS NULL OR (metodo_pago IS NOT DISTINCT FROM 'spei' AND btrim(clave_rastreo_spei) <> ''));
+    END IF;
+END;
+$checks$;
+CREATE UNIQUE INDEX IF NOT EXISTS pago_operacion_externa_unica
+    ON public.pago(proveedor_pago,referencia_externa) WHERE referencia_externa IS NOT NULL;
 
 CREATE OR REPLACE FUNCTION public.fn_confirmar_pago_simulado(
     p_operacion uuid, p_grupos integer, p_alumnos integer, p_preguntas integer,
