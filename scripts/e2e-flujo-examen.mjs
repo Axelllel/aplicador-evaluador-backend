@@ -66,7 +66,7 @@ console.log('OK  alumno: abrir inicio                  ', inicio.status, htmlIni
 [r, j] = await api('POST', `/teacher/exams/${examenId}/students/${alumnoId}/grant`); paso('docente: emitir pase', r, j);
 const pase = j?.data?.pase;
 
-[r, j] = await web('POST', '/alumno/examen/iniciar', { pase }); paso('alumno: iniciar examen', r, j);
+[r, j] = await web('POST', '/alumno/examen/iniciar', { examen_id: examenId }); paso('alumno: iniciar examen (por examen_id)', r, j);
 [r, j] = await web('POST', '/alumno/api/preguntas', {}); paso('alumno: obtener preguntas', r, j);
 const lista = j?.data?.preguntas ?? j?.preguntas ?? j?.data ?? [];
 console.log('   preguntas recibidas:', Array.isArray(lista) ? lista.length : typeof lista, corto(Array.isArray(lista) ? lista.map((p) => ({ id: p.examen_pregunta_id ?? p.id, tipo: p.tipo })) : lista));
@@ -88,7 +88,7 @@ if (abierta) { [r, j] = await api('PATCH', `/teacher/answers/${abierta.id ?? abi
 [r, j] = await api('GET', `/teacher/exams/${examenId}/results`); paso('docente: resultados', r, j);
 
 [r, j] = await web('POST', '/alumno/api/resultado', {}); paso('alumno: ver resultado', r, j);
-[r, j] = await web('POST', '/alumno/examen/iniciar', { pase }); paso('alumno: reintentar (debe bloquear)', r, j, [409, 403, 422]);
+[r, j] = await web('POST', '/alumno/examen/iniciar', { examen_id: examenId }); paso('alumno: reintentar (debe bloquear)', r, j, [409, 403, 422]);
 
 console.log(fallos ? `\n${fallos} paso(s) fallaron.` : '\nFlujo completo sin fallos.');
 console.log('examen', examenId, 'alumno', alumnoId, 'intento', intentoId);
