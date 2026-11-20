@@ -65,5 +65,6 @@ Route::middleware(VerifySupabaseToken::class)->group(function () {
     Route::post('/v1/teacher/groups/{grupoId}/evaluations', [TeacherEvaluationController::class, 'store'])->whereNumber('grupoId');
     Route::post('/v1/teacher/rubrics/{rubroId}/grades', [TeacherEvaluationController::class, 'gradeRubric'])->whereNumber('rubroId');
     Route::get('/v1/teacher/plans', [TeacherBillingController::class, 'plans']);
+    Route::post('/v1/teacher/payments/simulate', [TeacherBillingController::class, 'simulate'])->middleware('throttle:10,1');
     Route::get('/v1/teacher/payments', [TeacherBillingController::class, 'payments']);
 });

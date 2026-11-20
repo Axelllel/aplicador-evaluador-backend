@@ -6,3 +6,5 @@ import './question-editor';
 import './exam-composer';
 
 import './form-feedback';
+
+import './payment-simulation';

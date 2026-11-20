@@ -35,9 +35,10 @@ return [
         ],
     ],
     'supabase' => [
-    'url' => env('SUPABASE_URL'),
-    'key' => env('SUPABASE_PUBLISHABLE_KEY'),
+        'url' => env('SUPABASE_URL'),
+        'key' => env('SUPABASE_PUBLISHABLE_KEY'),
     ],
+    'payment_simulation' => ['enabled' => env('PAYMENT_SIMULATION_ENABLED', true)],
     'student_pin' => [
         // Si no se configura, se usa APP_KEY, que debe permanecer estable.
         'pepper' => env('STUDENT_PIN_PEPPER'),
