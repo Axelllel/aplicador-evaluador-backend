@@ -20,7 +20,7 @@ class TeacherExamSectionController extends Controller
     public function index(Request $request, int $examenId): JsonResponse
     {
         $docenteId = (string) $request->user()->getAuthIdentifier();
-        if (!$this->examenPropio($examenId, $docenteId)) {
+        if (! $this->examenPropio($examenId, $docenteId)) {
             return response()->json(['message' => 'Examen no disponible.'], 404);
         }
 
@@ -29,17 +29,18 @@ class TeacherExamSectionController extends Controller
             ->orderBy('id')
             ->get(['id', 'examen_id', 'tipo', 'cantidad_preguntas']);
 
+        $preguntas = DB::table('examen_pregunta as ep')
+            ->join('pregunta as p', 'p.id', '=', 'ep.pregunta_id')
+            ->whereIn('ep.apartado_id', $apartados->pluck('id'))->orderBy('ep.id')
+            ->get(['ep.id as examen_pregunta_id', 'ep.apartado_id', 'ep.pregunta_id',
+                'p.tipo', 'p.enunciado', 'ep.tiempo_segundos', 'ep.ponderacion'])
+            ->groupBy('apartado_id');
         foreach ($apartados as $apartado) {
-            // Vista para el docente; no expone snapshots de respuestas modelo.
-            $apartado->preguntas = DB::table('examen_pregunta as ep')
-                ->join('pregunta as p', 'p.id', '=', 'ep.pregunta_id')
-                ->where('ep.apartado_id', $apartado->id)
-                ->orderBy('ep.id')
-                ->get([
-                    'ep.id as examen_pregunta_id', 'ep.pregunta_id',
-                    'p.tipo', 'p.enunciado',
-                    'ep.tiempo_segundos', 'ep.ponderacion',
-                ]);
+            $apartado->preguntas = ($preguntas[$apartado->id] ?? collect())->map(function (object $pregunta): object {
+                unset($pregunta->apartado_id);
+
+                return $pregunta;
+            })->values();
         }
 
         return response()->json(['data' => $apartados]);
@@ -85,7 +86,7 @@ class TeacherExamSectionController extends Controller
                 ->where('id', $apartadoId)
                 ->where('examen_id', $examenId)
                 ->first(['id', 'tipo', 'cantidad_preguntas']);
-            if (!$apartado) {
+            if (! $apartado) {
                 return response()->json(['message' => 'Apartado no disponible.'], 404);
             }
 
@@ -93,7 +94,7 @@ class TeacherExamSectionController extends Controller
                 ->where('id', $datos['pregunta_id'])
                 ->where('docente_id', $docenteId)
                 ->first(['id', 'tipo', 'respuesta_modelo']);
-            if (!$pregunta) {
+            if (! $pregunta) {
                 return response()->json(['message' => 'Pregunta no disponible.'], 404);
             }
             if ($pregunta->tipo !== $apartado->tipo) {
@@ -130,6 +131,52 @@ class TeacherExamSectionController extends Controller
                 'pregunta_id' => $pregunta->id,
                 'tiempo_segundos' => $datos['tiempo_segundos'],
                 'ponderacion' => $datos['ponderacion'],
+            ]], 201);
+        });
+    }
+
+    /** La pregunta determina su tipo; no se recibe un apartado elegido por el cliente. */
+    public function attachQuestionAutomatically(Request $request, int $examenId): JsonResponse
+    {
+        $datos = $request->validate([
+            'pregunta_id' => ['required', 'integer', 'min:1'],
+            'tiempo_segundos' => ['required', 'integer', 'min:1', 'max:7200'],
+            'ponderacion' => ['required', 'numeric', 'gt:0', 'lte:100', 'decimal:0,2'],
+        ]);
+        $docenteId = (string) $request->user()->getAuthIdentifier();
+
+        return $this->modificarBorrador($examenId, $docenteId, function () use ($docenteId, $examenId, $datos): JsonResponse {
+            $pregunta = DB::table('pregunta')
+                ->where('id', $datos['pregunta_id'])->where('docente_id', $docenteId)
+                ->first(['id', 'tipo', 'respuesta_modelo']);
+            if (! $pregunta) {
+                return response()->json(['message' => 'Pregunta no disponible.'], 404);
+            }
+            $repetida = DB::table('examen_pregunta as ep')
+                ->join('apartado as a', 'a.id', '=', 'ep.apartado_id')
+                ->where('a.examen_id', $examenId)->where('ep.pregunta_id', $pregunta->id)->exists();
+            if ($repetida) {
+                return response()->json(['message' => 'La pregunta ya pertenece a este examen.'], 409);
+            }
+
+            $apartadoId = DB::table('apartado')->where('examen_id', $examenId)
+                ->where('tipo', $pregunta->tipo)->orderBy('id')->value('id');
+            if ($apartadoId === null) {
+                $apartadoId = DB::table('apartado')->insertGetId([
+                    'examen_id' => $examenId, 'tipo' => $pregunta->tipo, 'cantidad_preguntas' => 1,
+                ]);
+            }
+            $id = DB::table('examen_pregunta')->insertGetId([
+                'apartado_id' => $apartadoId, 'pregunta_id' => $pregunta->id,
+                'tiempo_segundos' => $datos['tiempo_segundos'], 'ponderacion' => $datos['ponderacion'],
+                'respuesta_modelo_snapshot' => $pregunta->respuesta_modelo,
+            ]);
+            $this->sincronizarApartados($examenId);
+
+            return response()->json(['data' => [
+                'examen_pregunta_id' => $id, 'apartado_id' => (int) $apartadoId,
+                'pregunta_id' => (int) $pregunta->id, 'tipo' => $pregunta->tipo,
+                'tiempo_segundos' => (int) $datos['tiempo_segundos'], 'ponderacion' => $datos['ponderacion'],
             ]], 201);
         });
     }

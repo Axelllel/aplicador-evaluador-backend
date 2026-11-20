@@ -1,8 +1,8 @@
 {{--
     Archivo: apartados.blade.php
     Módulo: resources/views/examenes
-    Descripción: Apartados de un examen: avance de la ponderación, apartados con sus preguntas, formularios para
-                 agregar apartados y preguntas del banco, y botón Publicar con confirmación previa
+    Descripción: Composición del examen: selección de preguntas, organización automática por tipo,
+                 avance de ponderación y publicación con confirmación previa
                  (Manual COD-WEB, secciones 6.16, 6.17 y 6.18).
     Autor: Leonardo Ballestero López
     Creado: 06/11/2026
@@ -15,6 +15,8 @@
     $cierre = \Carbon\CarbonImmutable::parse($detalle['fecha_cierre'])->format($formato);
     $tonosDeEstado = ['borrador' => 'neutro', 'publicado' => 'exito', 'cerrado' => 'primario'];
     $ponderacionCompleta = abs($ponderacionTotal - 100) < 0.005;
+    $textoComposicion = __('examenes.composicion');
+    $cantidadTotal = $apartados->sum(fn (array $apartado): int => count($apartado['preguntas'] ?? []));
 @endphp
 <x-layouts.panel
     :titulo="__('examenes.apartados.titulo', ['examen' => $examen['nombre']])"
@@ -28,7 +30,7 @@
         </div>
 
         @if ($esBorrador)
-            <x-boton variante="principal" accion="publicar" data-modal-abrir="confirmar-publicar-examen-{{ $examen['id'] }}" />
+            <x-boton variante="principal" accion="publicar" data-modal-abrir="confirmar-publicar-examen-{{ $examen['id'] }}" :disabled="! $ponderacionCompleta || $cantidadTotal === 0" />
         @endif
     </div>
 
@@ -36,6 +38,46 @@
         <x-alerta tipo="info" :autoocultar="false">{{ __('examenes.apartados.publicado_aviso') }}</x-alerta>
     @endunless
 
+    @error('nueva_ponderacion')
+        <x-alerta tipo="error">{{ $message }}</x-alerta>
+    @enderror
+
+    @if ($esBorrador)
+        <div class="tp-composition-workbench">
+        <section aria-labelledby="titulo-asignar-pregunta" class="space-y-4">
+            <div class="tp-section-heading"><div><p class="tp-section-label">{{ __('examenes.composicion.etiqueta') }}</p><h2 id="titulo-asignar-pregunta">{{ __('examenes.apartados.asignar.encabezado') }}</h2><p>{{ __('examenes.composicion.ayuda') }}</p></div></div>
+            <x-tarjeta>
+                @if ($preguntasDisponibles === [])
+                    <div class="space-y-3"><p>{{ __('examenes.apartados.asignar.sin_preguntas') }}</p><x-boton variante="secundario" icono="question-mark-circle" :href="route('panel.banco-de-preguntas')">{{ __('panel.menu.banco_preguntas') }}</x-boton></div>
+                @else
+                    <form method="POST" action="{{ route('panel.examenes.preguntas.store', ['examen' => $examen['id']]) }}" class="tp-section-form space-y-5" data-exam-composer data-current-weight="{{ $ponderacionTotal }}">
+                        @csrf
+                        <div class="grid gap-5 md:grid-cols-2">
+                            <div><label for="filtro-tipo-pregunta">{{ __('examenes.composicion.filtro') }}</label><select id="filtro-tipo-pregunta" class="w-full px-3 py-2" data-composition-filter><option value="">{{ __('preguntas.filtro.todos') }}</option>@foreach($tipos as $tipo => $nombre)<option value="{{ $tipo }}">{{ $nombre }}</option>@endforeach</select></div>
+                            <div><label for="pregunta-del-banco">{{ __('examenes.apartados.asignar.pregunta') }}</label>
+                                <select id="pregunta-del-banco" name="pregunta_id" class="w-full px-3 py-2" required aria-describedby="pregunta-del-banco-ayuda @error('pregunta_id') pregunta-del-banco-error @enderror" @error('pregunta_id') aria-invalid="true" @enderror>
+                                    <option value="">{{ __('examenes.apartados.asignar.pregunta_vacia') }}</option>
+                                    @foreach($preguntasDisponibles as $id => $etiqueta)<option value="{{ $id }}" data-question-type="{{ $tiposDePreguntas[$id] }}" data-question-prompt="{{ $enunciadosDePreguntas[$id] }}" @selected((string) old('pregunta_id') === (string) $id)>{{ $etiqueta }}</option>@endforeach
+                                </select>
+                                <p id="pregunta-del-banco-ayuda" class="text-xs text-texto-suave">{{ __('examenes.composicion.tipo_automatico') }}</p>
+                                @error('pregunta_id')<p id="pregunta-del-banco-error" class="tp-field-error">{{ $message }}</p>@enderror
+                            </div>
+                        </div>
+                        <p class="tp-composition-balance" data-composition-empty role="status" hidden>{{ __('examenes.composicion.sin_tipo') }}</p>
+                        <p class="tp-composition-preview" data-composition-preview hidden></p>
+                        <div class="grid gap-5 md:grid-cols-2">
+                            <x-campo-texto nombre="tiempo_segundos" tipo="number" :etiqueta="__('examenes.apartados.asignar.tiempo')" min="1" max="7200" step="1" inputmode="numeric" required />
+                            <x-campo-texto nombre="ponderacion" tipo="number" :etiqueta="__('examenes.apartados.asignar.ponderacion')" min="0.01" max="100" step="0.01" inputmode="decimal" required />
+                        </div>
+                        <p class="tp-composition-balance" data-composition-total aria-live="polite" aria-atomic="true"></p>
+                        <div class="tp-form-actions"><p><x-icon name="information-circle" />{{ __('examenes.composicion.nota') }}</p><x-boton type="submit" icono="plus" ancho="movil">{{ __('examenes.composicion.agregar') }}</x-boton></div>
+                        <script type="application/json" data-composition-text>@json($textoComposicion)</script>
+                    </form>
+                @endif
+            </x-tarjeta>
+        </section>
+
+            <aside class="tp-composition-overview">
     <section aria-labelledby="titulo-ponderacion" class="space-y-2">
         <x-tarjeta class="tp-section-card space-y-3">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
@@ -55,26 +97,49 @@
             </div>
 
             <p class="text-sm text-texto-suave">{{ __('examenes.apartados.ponderacion_ayuda') }}</p>
+            <p class="tp-composition-balance">{{ $ponderacionCompleta ? __('examenes.composicion.completa') : ($ponderacionTotal > 100 ? __('examenes.composicion.exceso', ['valor' => number_format($ponderacionTotal - 100, 2)]) : __('examenes.composicion.falta', ['valor' => number_format(100 - $ponderacionTotal, 2)])) }}</p>
         </x-tarjeta>
     </section>
 
-    @error('nueva_ponderacion')
-        <x-alerta tipo="error">{{ $message }}</x-alerta>
-    @enderror
+            </aside>
+        </div>
+    @else
+    <section aria-labelledby="titulo-ponderacion" class="space-y-2">
+        <x-tarjeta class="tp-section-card space-y-3">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 id="titulo-ponderacion" class="text-xl font-semibold text-primario">{{ __('examenes.apartados.ponderacion') }}</h2>
+                <p class="text-2xl font-semibold text-primario">{{ __('examenes.apartados.ponderacion_valor', ['total' => $ponderacionTotal]) }}</p>
+            </div>
+
+            <div
+                role="progressbar"
+                aria-label="{{ __('examenes.apartados.ponderacion') }}"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="{{ min(100, $ponderacionTotal) }}"
+                class="h-2 w-full overflow-hidden rounded-lg border border-borde bg-white"
+            >
+                <div class="h-full {{ $ponderacionCompleta ? 'bg-exito' : 'bg-primario' }}" style="width: {{ min(100, $ponderacionTotal) }}%"></div>
+            </div>
+
+            <p class="text-sm text-texto-suave">{{ __('examenes.apartados.ponderacion_ayuda') }}</p>
+            <p class="tp-composition-balance">{{ $ponderacionCompleta ? __('examenes.composicion.completa') : ($ponderacionTotal > 100 ? __('examenes.composicion.exceso', ['valor' => number_format($ponderacionTotal - 100, 2)]) : __('examenes.composicion.falta', ['valor' => number_format(100 - $ponderacionTotal, 2)])) }}</p>
+        </x-tarjeta>
+    </section>
+
+    @endif
 
     <section aria-labelledby="titulo-lista-de-apartados" class="space-y-4">
         <h2 id="titulo-lista-de-apartados" class="text-xl font-semibold text-primario">{{ __('examenes.apartados.lista') }}</h2>
 
-        @forelse ($apartados as $apartado)
+        @forelse ($apartados->filter(fn (array $apartado): bool => count($apartado['preguntas'] ?? []) > 0) as $apartado)
             @php
                 $preguntasDelApartado = $apartado['preguntas'] ?? [];
             @endphp
             <x-tarjeta class="tp-section-card space-y-3">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <h3 class="text-base font-semibold text-primario">{{ $tipos[$apartado['tipo']] ?? $apartado['tipo'] }}</h3>
-                    <x-insignia :tono="count($preguntasDelApartado) >= $apartado['cantidad_preguntas'] ? 'exito' : 'aviso'">
-                        {{ __('examenes.apartados.avance', ['usadas' => count($preguntasDelApartado), 'cantidad' => $apartado['cantidad_preguntas']]) }}
-                    </x-insignia>
+                    <x-insignia tono="neutro">{{ trans_choice('examenes.composicion.cantidad', count($preguntasDelApartado), ['count' => count($preguntasDelApartado)]) }}</x-insignia>
                 </div>
 
                 @if ($preguntasDelApartado === [])
@@ -118,95 +183,6 @@
     </section>
 
     @if ($esBorrador)
-        <section aria-labelledby="titulo-nuevo-apartado" class="space-y-4">
-            <h2 id="titulo-nuevo-apartado" class="text-xl font-semibold text-primario">{{ __('examenes.apartados.nuevo.encabezado') }}</h2>
-
-            <x-tarjeta>
-                <form method="POST" action="{{ route('panel.examenes.apartados.store', ['examen' => $examen['id']]) }}" novalidate class="tp-section-form space-y-5">
-                    @csrf
-
-                    <x-campo-seleccion
-                        nombre="tipo"
-                        :etiqueta="__('examenes.apartados.nuevo.tipo')"
-                        :vacio="__('examenes.apartados.nuevo.tipo_vacio')"
-                        :opciones="$tipos"
-                    />
-
-                    <x-campo-texto
-                        nombre="cantidad_preguntas"
-                        tipo="number"
-                        :etiqueta="__('examenes.apartados.nuevo.cantidad')"
-                        min="1"
-                        max="200"
-                        step="1"
-                        inputmode="numeric"
-                    />
-
-                    <div class="tp-form-actions">
-                        <x-boton type="submit" icono="plus" ancho="movil">{{ __('workspace.exams.add_section') }}</x-boton>
-                    </div>
-                </form>
-            </x-tarjeta>
-        </section>
-
-        <section aria-labelledby="titulo-asignar-pregunta" class="space-y-4">
-            <h2 id="titulo-asignar-pregunta" class="text-xl font-semibold text-primario">{{ __('examenes.apartados.asignar.encabezado') }}</h2>
-
-            <x-tarjeta>
-                @if ($apartadosConEspacio === [])
-                    <p>{{ __('examenes.apartados.asignar.sin_espacio') }}</p>
-                @elseif ($preguntasDisponibles === [])
-                    <div class="space-y-3">
-                        <p>{{ __('examenes.apartados.asignar.sin_preguntas') }}</p>
-                        <x-boton variante="secundario" icono="question-mark-circle" :href="route('panel.banco-de-preguntas')">{{ __('panel.menu.banco_preguntas') }}</x-boton>
-                    </div>
-                @else
-                    <form method="POST" action="{{ route('panel.examenes.preguntas.store', ['examen' => $examen['id']]) }}" novalidate class="tp-section-form space-y-5">
-                        @csrf
-
-                        <x-campo-seleccion
-                            nombre="apartado_id"
-                            :etiqueta="__('examenes.apartados.asignar.apartado')"
-                            :vacio="__('examenes.apartados.asignar.apartado_vacio')"
-                            :opciones="$apartadosConEspacio"
-                        />
-
-                        <x-campo-seleccion
-                            nombre="pregunta_id"
-                            :etiqueta="__('examenes.apartados.asignar.pregunta')"
-                            :vacio="__('examenes.apartados.asignar.pregunta_vacia')"
-                            :opciones="$preguntasDisponibles"
-                            :ayuda="__('examenes.apartados.asignar.ayuda')"
-                        />
-
-                        <x-campo-texto
-                            nombre="tiempo_segundos"
-                            tipo="number"
-                            :etiqueta="__('examenes.apartados.asignar.tiempo')"
-                            min="1"
-                            max="7200"
-                            step="1"
-                            inputmode="numeric"
-                        />
-
-                        <x-campo-texto
-                            nombre="ponderacion"
-                            tipo="number"
-                            :etiqueta="__('examenes.apartados.asignar.ponderacion')"
-                            min="0.01"
-                            max="100"
-                            step="0.01"
-                            inputmode="decimal"
-                        />
-
-                        <div class="flex justify-end">
-                            <x-boton type="submit" accion="guardar" ancho="movil" />
-                        </div>
-                    </form>
-                @endif
-            </x-tarjeta>
-        </section>
-
         <x-confirmar
             :id="'confirmar-publicar-examen-'.$examen['id']"
             :titulo="__('mensajes.confirmar.publicar_examen.titulo')"

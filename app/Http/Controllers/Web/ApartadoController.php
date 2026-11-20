@@ -37,8 +37,7 @@ class ApartadoController extends Controller
         private readonly PanelApiService $api,
         private readonly ConsultasPanelService $consultas,
         private readonly ExamenesPanelService $examenes,
-    ) {
-    }
+    ) {}
 
     /**
      * Muestra el examen con sus apartados, el avance de la ponderación y los formularios para completarlo.
@@ -59,25 +58,20 @@ class ApartadoController extends Controller
             $apartado['preguntas'] ?? [],
         )));
 
+        $disponibles = $esBorrador
+            ? $this->consultas->preguntas()->reject(fn (array $pregunta): bool => $usadas->contains($pregunta['id']))
+            : collect();
+
         return view('examenes.apartados', [
             'examen' => $fila,
             'detalle' => $datosDelExamen,
             'apartados' => $apartados,
             'esBorrador' => $esBorrador,
             'ponderacionTotal' => round((float) $ponderacionTotal, 2),
-            'apartadosConEspacio' => $esBorrador
-                ? $apartados
-                    ->filter(fn (array $apartado): bool => count($apartado['preguntas'] ?? []) < (int) $apartado['cantidad_preguntas'])
-                    ->mapWithKeys(fn (array $apartado): array => [$apartado['id'] => __('examenes.apartados.opcion_apartado', [
-                        'tipo' => __('preguntas.tipos.'.$apartado['tipo']),
-                        'usadas' => count($apartado['preguntas'] ?? []),
-                        'cantidad' => $apartado['cantidad_preguntas'],
-                    ])])
-                    ->all()
-                : [],
+            'tiposDePreguntas' => $disponibles->pluck('tipo', 'id')->all(),
+            'enunciadosDePreguntas' => $disponibles->pluck('enunciado', 'id')->all(),
             'preguntasDisponibles' => $esBorrador
-                ? $this->consultas->preguntas()
-                    ->reject(fn (array $pregunta): bool => $usadas->contains($pregunta['id']))
+                ? $disponibles
                     ->mapWithKeys(fn (array $pregunta): array => [$pregunta['id'] => __('examenes.apartados.opcion_pregunta', [
                         'tipo' => __('preguntas.tipos.'.$pregunta['tipo']),
                         'enunciado' => Str::limit((string) $pregunta['enunciado'], 70),
@@ -111,7 +105,9 @@ class ApartadoController extends Controller
         $datos = $solicitud->validated();
 
         $respuesta = $this->api->post(
-            '/teacher/exams/'.$examen.'/sections/'.(int) $datos['apartado_id'].'/questions',
+            isset($datos['apartado_id'])
+                ? '/teacher/exams/'.$examen.'/sections/'.(int) $datos['apartado_id'].'/questions'
+                : '/teacher/exams/'.$examen.'/questions',
             [
                 'pregunta_id' => (int) $datos['pregunta_id'],
                 'tiempo_segundos' => (int) $datos['tiempo_segundos'],
