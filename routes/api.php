@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\StudentAttemptController;
 use App\Http\Controllers\Api\StudentDashboardController;
 use App\Http\Controllers\Api\StudentExamController;
 use App\Http\Controllers\Api\StudentJoinController;
@@ -24,8 +25,10 @@ Route::post('/v1/auth/register', [SupabaseAccountController::class, 'register'])
 Route::post('/v1/auth/recover', [SupabaseAccountController::class, 'recover'])->middleware('throttle:3,1');
 Route::post('/v1/grupos/unirse', [StudentJoinController::class, 'store'])->middleware('throttle:5,1');
 Route::post('/v1/student/dashboard', [StudentDashboardController::class, 'show'])->middleware('throttle:10,1');
+Route::post('/v1/student/exams/{examenId}/start', [StudentAttemptController::class, 'start'])
+    ->whereNumber('examenId')->middleware('throttle:5,1');
 
-// El folio NO da acceso al examen: el docente entrega un pase cifrado individual.
+// Compatibilidad con pases del docente; el inicio móvil por PIN usa la ruta anterior.
 Route::prefix('/v1/student/attempts')->middleware('throttle:30,1')->group(function () {
     Route::post('/start', [StudentExamController::class, 'start']);
     Route::post('/questions', [StudentExamController::class, 'questions']);
