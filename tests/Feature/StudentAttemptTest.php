@@ -45,4 +45,24 @@ class StudentAttemptTest extends TestCase
         }
         $this->postJson('/api/v1/student/exams/1/start')->assertTooManyRequests();
     }
+
+    public function test_questions_report_a_missing_read_function_without_exposing_sql_or_token(): void
+    {
+        $token = '11111111-1111-4111-8111-111111111111';
+        $error = new \PDOException('SQL with confidential parameters');
+        $error->errorInfo = ['42883', null, 'function missing'];
+        DB::shouldReceive('selectOne')->once()->andThrow(new QueryException('pgsql', 'select', [], $error));
+
+        $this->postJson('/api/v1/student/attempts/questions', ['token_sesion' => $token])
+            ->assertServiceUnavailable()->assertJsonPath('code', 'MIGRATION_REQUIRED')
+            ->assertDontSee('confidential')->assertDontSee($token);
+    }
+
+    public function test_questions_require_a_valid_attempt_token(): void
+    {
+        DB::shouldReceive('selectOne')->never();
+
+        $this->postJson('/api/v1/student/attempts/questions', ['alumno_id' => 14, 'token_sesion' => 'invalid'])
+            ->assertUnprocessable()->assertJsonValidationErrors('token_sesion');
+    }
 }

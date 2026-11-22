@@ -42,7 +42,34 @@ tar -xzf bigbitbyte_lote_backend_20261030.tar.gz
 - Cuentas: `POST /api/v1/auth/register` (JSON `nombre,email,password,telefono?`), `POST /api/v1/auth/recover` (`email`). Requieren configuración Supabase Auth SMTP/verificación para correos reales. Cuenta nueva queda `inactivo`, sin plan ni pagos.
 - Catálogo y pagos: `GET /api/v1/teacher/plans`, `GET /api/v1/teacher/payments`; **no se crean ni confirman cobros** sin integración con pasarela externa.
 
-## Límites y decisiones pendientes
+## Reanudación móvil por PIN y respuestas guardadas — 22/11/2026
+
+El flujo móvil actual no necesita cookies ni un pase cifrado:
+
+1. Enviar `POST /api/v1/student/exams/{examenId}/start` con `folio_codigo` y `codigo_acceso`. Si el intento sigue abierto, devuelve HTTP 200, `reanudado: true` y conserva `intento_id`, `token_sesion` y `fecha_inicio`. Un intento nuevo devuelve HTTP 201.
+2. Con ese `token_sesion`, enviar `POST /api/v1/student/attempts/questions` al abrir o reabrir el examen. Devuelve `data.examen_id`, `data.nombre`, `data.preguntas` y `data.respuestas`.
+3. Restaurar cada campo usando `data.respuestas[examen_pregunta_id.toString()]`. Las claves corresponden a la asociación del reactivo con el examen, no al ID del banco ni a la posición de la tarjeta. Los valores conservan exactamente el texto guardado por `/answers`, incluso código o selecciones serializadas.
+
+Ejemplo del contenido de la respuesta (los IDs y el texto son ilustrativos):
+
+```json
+{
+  "data": {
+    "examen_id": 1,
+    "nombre": "Examen",
+    "preguntas": [
+      {"examen_pregunta_id": 4, "apartado_id": 2, "tipo": "abierta", "enunciado": "Define variable.", "opciones": null, "tiempo_segundos": 60}
+    ],
+    "respuestas": {"4": "Un valor que puede cambiar."}
+  }
+}
+```
+
+Sin respuestas, `respuestas` es un objeto vacío `{}`. La lectura no escribe ni finaliza el intento, no reinicia el reloj ni cambia el orden para su token. Devuelve solo respuestas del intento autorizado; nunca devuelve modelos de corrección, respuestas de otros alumnos ni calificaciones reservadas. La app debe guardar cada cambio mediante `/answers` y esperar su confirmación; esta consulta recupera lo persistido en el servidor.
+
+Esta corrección de API reutiliza `fn_preguntas_portal_alumno(uuid)`, ya creada en `20261109120000_revision_y_resultados_portal_alumno.sql`. No agrega una migración. Si esa función aún no está instalada en un ambiente, la API devuelve HTTP 503 con `code: MIGRATION_REQUIRED` y debe aplicarse esa migración existente. Las sesiones inexistentes, cerradas o fuera de disponibilidad mantienen su rechazo.
+
+## Límites y decisiones pendientes del lote original
 
 - Ningún token de folio/nombre equivale a identidad. El docente debe entregar el pase individual al estudiante correcto. Un pase robado antes de usarse puede permitir suplantación. En producción requiere canal seguro de entrega y validaciones antifraude adicionales.
 - Ingreso permite **un intento por alumno y examen**. Reintentos requieren una regla aprobada y una nueva función; no se implementan en esta entrega.

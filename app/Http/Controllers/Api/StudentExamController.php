@@ -17,6 +17,7 @@ class StudentExamController extends Controller
     {
         // No exponer SQL, datos ni detalles de otros alumnos.
         $state = $e->errorInfo[0] ?? '';
+
         return response()->json(['message' => 'Solicitud no autorizada o examen no disponible.',
             'code' => $state === 'P0001' ? 'EXAM_UNAVAILABLE' : 'REQUEST_FAILED'],
             $state === 'P0001' ? 403 : 422);
@@ -33,9 +34,9 @@ class StudentExamController extends Controller
         } catch (Throwable $e) {
             return response()->json(['message' => 'Pase invalido.'], 403);
         }
-        if (!is_array($grant) || ($grant['kind'] ?? '') !== 'bbb-exam-grant-v1'
-            || !is_int($grant['exam'] ?? null) || !is_int($grant['student'] ?? null)
-            || !is_int($grant['exp'] ?? null) || $grant['exp'] < time()) {
+        if (! is_array($grant) || ($grant['kind'] ?? '') !== 'bbb-exam-grant-v1'
+            || ! is_int($grant['exam'] ?? null) || ! is_int($grant['student'] ?? null)
+            || ! is_int($grant['exp'] ?? null) || $grant['exp'] < time()) {
             return response()->json(['message' => 'Pase vencido o invalido.'], 403);
         }
         // El pase no autoriza mas de un intento, aun si se reutiliza.
@@ -43,7 +44,10 @@ class StudentExamController extends Controller
             $row = DB::selectOne('SELECT * FROM public.fn_iniciar_intento(?, ?, ?)', [
                 $grant['exam'], $grant['student'], $input['plataforma'],
             ]);
-        } catch (QueryException $e) { return $this->sqlError($e); }
+        } catch (QueryException $e) {
+            return $this->sqlError($e);
+        }
+
         return response()->json(['data' => ['intento_id' => (int) $row->intento_id,
             'token_sesion' => $row->token_sesion, 'fecha_inicio' => $row->fecha_inicio]], 201);
     }
@@ -52,9 +56,20 @@ class StudentExamController extends Controller
     {
         $input = $request->validate(['token_sesion' => ['required', 'uuid']]);
         try {
-            $row = DB::selectOne('SELECT public.fn_preguntas_intento(CAST(? AS uuid)) AS data', [$input['token_sesion']]);
-        } catch (QueryException $e) { return $this->sqlError($e); }
-        return response()->json(['data' => json_decode($row->data, true)]);
+            $row = DB::selectOne('SELECT public.fn_preguntas_portal_alumno(CAST(? AS uuid)) AS data', [$input['token_sesion']], false);
+        } catch (QueryException $e) {
+            if (($e->errorInfo[0] ?? '') === '42883') {
+                return response()->json([
+                    'message' => 'Falta habilitar la consulta de preguntas y respuestas guardadas.',
+                    'code' => 'MIGRATION_REQUIRED',
+                ], 503)->header('Cache-Control', 'no-store');
+            }
+
+            return $this->sqlError($e)->header('Cache-Control', 'no-store');
+        }
+
+        return response()->json(['data' => json_decode($row->data, false, 512, JSON_THROW_ON_ERROR)])
+            ->header('Cache-Control', 'no-store');
     }
 
     public function answer(Request $request): JsonResponse
@@ -68,7 +83,10 @@ class StudentExamController extends Controller
             $row = DB::selectOne('SELECT public.fn_registrar_respuesta(CAST(? AS uuid), CAST(? AS bigint), CAST(? AS text)) AS id', [
                 $input['token_sesion'], $input['examen_pregunta_id'], $input['respuesta_texto'],
             ]);
-        } catch (QueryException $e) { return $this->sqlError($e); }
+        } catch (QueryException $e) {
+            return $this->sqlError($e);
+        }
+
         return response()->json(['data' => ['respuesta_id' => (int) $row->id]]);
     }
 
@@ -77,7 +95,10 @@ class StudentExamController extends Controller
         $input = $request->validate(['token_sesion' => ['required', 'uuid']]);
         try {
             $row = DB::selectOne('SELECT * FROM public.fn_finalizar_intento(CAST(? AS uuid))', [$input['token_sesion']]);
-        } catch (QueryException $e) { return $this->sqlError($e); }
+        } catch (QueryException $e) {
+            return $this->sqlError($e);
+        }
+
         return response()->json(['data' => ['intento_id' => (int) $row->intento_id,
             'estado' => $row->estado, 'fecha_entrega' => $row->fecha_entrega]]);
     }
@@ -87,7 +108,10 @@ class StudentExamController extends Controller
         $input = $request->validate(['token_sesion' => ['required', 'uuid']]);
         try {
             $row = DB::selectOne('SELECT public.fn_resultado_alumno(CAST(? AS uuid)) AS data', [$input['token_sesion']]);
-        } catch (QueryException $e) { return $this->sqlError($e); }
+        } catch (QueryException $e) {
+            return $this->sqlError($e);
+        }
+
         return response()->json(['data' => json_decode($row->data, true)]);
     }
 
@@ -103,7 +127,10 @@ class StudentExamController extends Controller
             $row = DB::selectOne('SELECT public.fn_registrar_incidencia(CAST(? AS uuid), ?, ?, ?) AS id', [
                 $input['token_sesion'], $input['tipo_alerta'], $input['nivel_severidad'], $input['evidencia_url'] ?? null,
             ]);
-        } catch (QueryException $e) { return $this->sqlError($e); }
+        } catch (QueryException $e) {
+            return $this->sqlError($e);
+        }
+
         return response()->json(['data' => ['incidencia_id' => (int) $row->id]], 201);
     }
 }
