@@ -37,6 +37,7 @@ class StudentAttemptDatabaseTest extends TestCase
             foreach (['20261025194447_seguridad_roles.sql', '20261026211000_fn_registrar_respuesta.sql',
                 '20261026213000_restringir_acceso_directo.sql', '20261026214000_rls_docente_grupo_pregunta.sql',
                 '20261026214500_rls_fase2_tablas_restantes.sql', '20261030010000_flujo_examen_evaluacion.sql',
+                '20261109120000_revision_y_resultados_portal_alumno.sql',
                 '20261109150000_credencial_alumno_pin.sql', '20261120200000_inicio_intento_movil_pin.sql'] as $file) {
                 $sql = file_get_contents(base_path('supabase/migrations/'.$file));
                 if ($file === '20261025194447_seguridad_roles.sql' && $this->admin->query("SELECT 1 FROM pg_roles WHERE rolname='laravel_app'")->fetchColumn()) {
@@ -102,6 +103,8 @@ INSERT INTO public.examen_pregunta(id,apartado_id,pregunta_id,tiempo_segundos,po
         $this->postJson('/api/v1/student/attempts/questions', ['token_sesion' => $token])
             ->assertOk()->assertJsonPath('data.preguntas.0.enunciado', 'Define variable.')
             ->assertJsonMissingPath('data.preguntas.0.respuesta_modelo')->assertDontSee('Un valor modificable.');
+        $empty = $this->postJson('/api/v1/student/attempts/questions', ['token_sesion' => $token])->assertOk();
+        $this->assertInstanceOf(\stdClass::class, json_decode($empty->getContent())->data->respuestas);
         $this->postJson('/api/v1/student/attempts/answers', ['token_sesion' => $token, 'examen_pregunta_id' => 1, 'respuesta_texto' => 'Un dato que cambia.'])
             ->assertOk();
         $this->assertSame('Un dato que cambia.', $this->admin->query('SELECT respuesta_texto FROM public.respuesta_alumno')->fetchColumn());
@@ -122,6 +125,67 @@ INSERT INTO public.examen_pregunta(id,apartado_id,pregunta_id,tiempo_segundos,po
             ->assertJsonPath('data.fecha_inicio', $first['fecha_inicio']);
         $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.intento_examen')->fetchColumn());
         $this->assertSame('Guardada.', $this->admin->query('SELECT respuesta_texto FROM public.respuesta_alumno')->fetchColumn());
+
+        $this->postJson('/api/v1/student/attempts/questions', ['token_sesion' => $first['token_sesion']])
+            ->assertOk()->assertJsonPath('data.nombre', 'Examen')
+            ->assertJsonPath('data.respuestas.1', 'Guardada.')
+            ->assertJsonPath('data.preguntas.0.examen_pregunta_id', 1)
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertJsonMissingPath('data.preguntas.0.respuesta_modelo_snapshot');
+    }
+
+    public function test_resume_only_returns_the_current_attempt_answers_and_preserves_text_and_question_order(): void
+    {
+        $this->fixture();
+        $this->admin->exec("UPDATE public.examen SET orden='aleatorio' WHERE id=1;
+INSERT INTO public.pregunta(id,docente_id,tipo,enunciado,respuesta_modelo,opciones) VALUES
+(2,'".self::TEACHER."','opcion_multiple','Elige una opción.','A','{\"A\":\"Uno\",\"B\":\"Dos\"}'),
+(3,'".self::TEACHER."','programacion','Escribe código.','Referencia reservada.',null);
+INSERT INTO public.apartado(id,examen_id,tipo,cantidad_preguntas) VALUES(2,1,'opcion_multiple',1),(3,1,'programacion',1);
+INSERT INTO public.examen_pregunta(id,apartado_id,pregunta_id,tiempo_segundos,ponderacion,respuesta_modelo_snapshot) VALUES(2,2,2,60,25,'A'),(3,3,3,60,25,'Referencia reservada.');");
+        $first = $this->postJson('/api/v1/student/exams/1/start', $this->credentials())->assertCreated()->json('data');
+        $before = $this->postJson('/api/v1/student/attempts/questions', ['token_sesion' => $first['token_sesion']])->assertOk()->json('data.preguntas');
+        $code = "print(\"México\");\n// Código guardado sin cambios";
+        foreach ([2 => 'B', 3 => $code] as $question => $answer) {
+            $this->postJson('/api/v1/student/attempts/answers', ['token_sesion' => $first['token_sesion'], 'examen_pregunta_id' => $question, 'respuesta_texto' => $answer])->assertOk();
+        }
+        $other = $this->admin->query("INSERT INTO public.intento_examen(examen_id,alumno_id,numero_intento,estado) VALUES(1,15,1,'en_progreso') RETURNING id")->fetchColumn();
+        $statement = $this->admin->prepare('INSERT INTO public.respuesta_alumno(intento_id,examen_pregunta_id,respuesta_texto) VALUES(?,1,?)');
+        $statement->execute([$other, 'Respuesta privada de otro alumno.']);
+
+        $this->postJson('/api/v1/student/exams/1/start', $this->credentials())->assertOk()->assertJsonPath('data.reanudado', true);
+        $response = $this->postJson('/api/v1/student/attempts/questions', ['token_sesion' => $first['token_sesion']])
+            ->assertOk()->assertJsonPath('data.respuestas.2', 'B')->assertJsonPath('data.respuestas.3', $code)
+            ->assertJsonMissingPath('data.respuestas.1')
+            ->assertDontSee('Respuesta privada de otro alumno.')->assertDontSee('Referencia reservada.');
+
+        $this->assertSame($before, $response->json('data.preguntas'));
+        $this->assertCount(2, $response->json('data.respuestas'));
+    }
+
+    #[DataProvider('unavailableQuestionSessions')]
+    public function test_saved_answers_are_not_returned_when_the_session_is_no_longer_available(string $change): void
+    {
+        $this->fixture();
+        $first = $this->postJson('/api/v1/student/exams/1/start', $this->credentials())->assertCreated()->json('data');
+        $this->postJson('/api/v1/student/attempts/answers', ['token_sesion' => $first['token_sesion'], 'examen_pregunta_id' => 1, 'respuesta_texto' => 'Respuesta reservada.'])->assertOk();
+        $this->admin->exec($change);
+
+        $this->postJson('/api/v1/student/attempts/questions', ['token_sesion' => $first['token_sesion']])
+            ->assertForbidden()->assertJsonMissingPath('data')->assertDontSee('Respuesta reservada.');
+    }
+
+    public static function unavailableQuestionSessions(): array
+    {
+        return [
+            'finished' => ["UPDATE public.intento_examen SET estado='finalizado'"],
+            'annulled' => ["UPDATE public.intento_examen SET estado='anulado'"],
+            'not enrolled' => ['DELETE FROM public.alumno_grupo WHERE alumno_id=14'],
+            'inactive group' => ['UPDATE public.grupo SET activo=false'],
+            'draft' => ['UPDATE public.examen SET publicado=false'],
+            'out of schedule' => ["UPDATE public.examen SET fecha_cierre=now()-interval '1 minute'"],
+            'unknown token' => ['UPDATE public.intento_examen SET token_sesion=gen_random_uuid()'],
+        ];
     }
 
     #[DataProvider('closedStates')]
