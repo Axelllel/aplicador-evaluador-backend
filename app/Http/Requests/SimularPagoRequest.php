@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Archivo: SimularPagoRequest.php
+ * Módulo: app/Http/Requests
+ * Descripción: Valida los datos del pago de prueba del plan.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 20/11/2026
+ * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+ */
+
 declare(strict_types=1);
 
 namespace App\Http\Requests;

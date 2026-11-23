@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Archivo: AsistenciaIaService.php
+ * Módulo: app/Services
+ * Descripción: Orquesta la asistencia de IA: generación de preguntas y propuestas de calificación revisables.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 20/11/2026
+ * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+ */
+
 declare(strict_types=1);
 
 namespace App\Services;

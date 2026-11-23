@@ -1,3 +1,11 @@
+{{--
+    Archivo: ia.blade.php
+    Módulo: resources/views/preguntas
+    Descripción: Formulario de generación de preguntas con asistencia de IA.
+    Autor: Axel Rebollo Zeferino
+    Creado: 20/11/2026
+    Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+--}}
 @php
     $erroresIa = $errors->getBag('ia');
     $entradaIa = old('operacion_id') !== null;

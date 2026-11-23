@@ -6,6 +6,7 @@
  * Descripción: Valida el flujo de simulación, confirmaciones y privacidad de datos de prueba.
  * Autor: Axel Rebollo Zeferino
  * Creado: 20/11/2026
+ * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
  */
 
 declare(strict_types=1);

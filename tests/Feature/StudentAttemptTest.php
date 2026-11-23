@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * Archivo: StudentAttemptTest.php
+ * Módulo: tests/Feature
+ * Descripción: Pruebas del inicio de intento móvil por folio y código de acceso.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 20/11/2026
+ * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+ */
+
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use Illuminate\Database\QueryException;

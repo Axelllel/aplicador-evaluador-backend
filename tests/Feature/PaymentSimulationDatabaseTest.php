@@ -6,6 +6,7 @@
  * Descripción: Ejecuta migraciones y compras en PostgreSQL desechable, con RLS y permisos reales.
  * Autor: Axel Rebollo Zeferino
  * Creado: 20/11/2026
+ * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
  */
 
 declare(strict_types=1);

@@ -250,7 +250,7 @@ class PanelControllerTest extends TestCase
         $pago = $this->get('/suscripcion/planes/pago?'.http_build_query($seleccion + ['precio' => 1]))
             ->assertOk()
             ->assertSee('Resumen de pago')
-            ->assertSee('Completa tu pago de prueba')
+            ->assertSee('Activa tu plan')
             ->assertSeeInOrder(['Grupos activos', '3', 'Alumnos por grupo', '25', 'Preguntas en el banco', '150'])
             ->assertSee('$181.00')
             ->assertSee('Tarjeta de crédito o débito')
@@ -307,7 +307,7 @@ class PanelControllerTest extends TestCase
         ])
             ->assertOk()
             ->assertSee('Datos de facturación completos.')
-            ->assertSee('Completa tu pago de prueba')
+            ->assertSee('Activa tu plan')
             ->assertSee('$181.00');
 
         $this->assertSame([], $this->api->llamadas);

@@ -37,6 +37,9 @@ class AutomaticExamCompositionTest extends TestCase
         config(['database.default' => 'sqlite', 'database.connections.sqlite.database' => ':memory:']);
         DB::purge('sqlite');
         // SQLite exercises controller persistence; PostgreSQL's existing shared lock remains in production.
+        if (! method_exists(DB::connection()->getPdo(), 'sqliteCreateFunction')) {
+            $this->markTestSkipped('PHP 8.5 retiró PDO::sqliteCreateFunction; estas pruebas se ejecutan con PHP 8.4 (Dockerfile).');
+        }
         DB::connection()->getPdo()->sqliteCreateFunction('hashtextextended', fn ($key, $seed) => 1);
         DB::connection()->getPdo()->sqliteCreateFunction('pg_advisory_xact_lock', fn ($key) => null);
         Schema::create('docente', function (Blueprint $table): void {

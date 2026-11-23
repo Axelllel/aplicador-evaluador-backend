@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Archivo: GroqClient.php
+ * Módulo: app/Services
+ * Descripción: Cliente HTTP del proveedor de IA (Groq) usado por la asistencia de IA.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 20/11/2026
+ * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+ */
+
 declare(strict_types=1);
 
 namespace App\Services;

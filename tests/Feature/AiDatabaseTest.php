@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Archivo: AiDatabaseTest.php
+ * Módulo: tests/Feature
+ * Descripción: Pruebas de las funciones de IA en la base de datos.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 20/11/2026
+ * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+ */
+
 declare(strict_types=1);
 
 namespace Tests\Feature;

@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Archivo: ContratoIa.php
+ * Módulo: app/Services
+ * Descripción: Define el contrato de datos que se intercambia con el proveedor de IA.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 20/11/2026
+ * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+ */
+
 declare(strict_types=1);
 
 namespace App\Services;
