@@ -19,6 +19,7 @@ namespace App\Services;
 use App\Exceptions\SesionVencidaException;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\Router;
@@ -41,8 +42,7 @@ class PanelApiService
         private readonly Application $app,
         private readonly Kernel $nucleo,
         private readonly SesionPanelService $sesion,
-    ) {
-    }
+    ) {}
 
     /**
      * Consulta autenticada con el token de la sesión.
@@ -110,6 +110,11 @@ class PanelApiService
         }
 
         $respuesta = $this->ejecutar($metodo, self::PREFIJO.'/'.ltrim($ruta, '/'), $datos, $token);
+
+        if ($autenticada && $respuesta->estado === 403 && ($respuesta->cuerpo['code'] ?? '') === 'MFA_REQUIRED') {
+            session()->put(SesionPanelService::CLAVE.'.mfa_pendiente', true);
+            throw new HttpResponseException(redirect()->route('panel.mfa'));
+        }
 
         if ($autenticada && $respuesta->estado === 401) {
             throw new SesionVencidaException('La API rechazó el token.');

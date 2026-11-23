@@ -50,19 +50,28 @@ class TeacherStudentController extends Controller
             ->where('e.id', $examenId)->where('g.docente_id', $uid)
             ->where('g.activo', true)->where('e.publicado', true)
             ->first(['e.id', 'e.grupo_id', 'e.fecha_cierre']);
-        if (!$examen) return response()->json(['message' => 'Examen no disponible.'], 404);
+        if (! $examen) {
+            return response()->json(['message' => 'Examen no disponible.'], 404);
+        }
         $inscrito = DB::table('alumno_grupo')->where('grupo_id', $examen->grupo_id)
             ->where('alumno_id', $alumnoId)->exists();
-        if (!$inscrito) return response()->json(['message' => 'Alumno no inscrito en el grupo.'], 404);
+        if (! $inscrito) {
+            return response()->json(['message' => 'Alumno no inscrito en el grupo.'], 404);
+        }
         if (strtotime($examen->fecha_cierre) <= time()) {
             return response()->json(['message' => 'El examen ya cerro.'], 409);
         }
         // El pase es un secreto cifrado: no confundirlo con el folio publico del grupo.
+        $version = DB::selectOne('SELECT public.fn_version_credencial_alumno(?::bigint) AS version', [$alumnoId])->version;
+        if ($version === null) {
+            return response()->json(['message' => 'El alumno requiere una credencial activa.'], 409);
+        }
         $vence = min(time() + 1800, strtotime($examen->fecha_cierre));
         $pase = Crypt::encryptString(json_encode([
             'kind' => 'bbb-exam-grant-v1', 'exam' => $examenId, 'student' => $alumnoId,
-            'teacher' => $uid, 'exp' => $vence, 'nonce' => Str::random(24),
+            'teacher' => $uid, 'credential_version' => (int) $version, 'exp' => $vence, 'nonce' => Str::random(24),
         ], JSON_THROW_ON_ERROR));
+
         return response()->json(['data' => ['pase' => $pase, 'vence_unix' => $vence,
             'alumno_id' => $alumnoId, 'examen_id' => $examenId]]);
     }

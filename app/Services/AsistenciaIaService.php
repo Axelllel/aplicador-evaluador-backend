@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Archivo: AsistenciaIaService.php
+ * Módulo: app/Services
+ * Descripción: Genera preguntas y propuestas de calificación con cuotas e idempotencia.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
+ */
+
 declare(strict_types=1);
 
 namespace App\Services;

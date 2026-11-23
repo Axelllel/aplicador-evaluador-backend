@@ -1,3 +1,11 @@
+{{--
+    Archivo: planes.blade.php
+    Módulo: resources/views/suscripcion
+    Descripción: Vista del módulo suscripcion de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
+--}}
 <x-layouts.panel :titulo="__('suscripcion.planes.encabezado')" :descripcion="__('suscripcion.planes.descripcion')">
     <div>
         <x-boton variante="secundario" :href="route('panel.suscripcion')">

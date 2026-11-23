@@ -36,7 +36,7 @@ class MenuLateralService
             $destinos[] = [
                 'clave' => $destino['clave'],
                 'etiqueta' => __('panel.menu.'.$destino['clave']),
-                // Los destinos del superadministrador no tienen ruta mientras la API no tenga ese rol.
+                // Las rutas administrativas validan el permiso en la API y en PostgreSQL.
                 'url' => Route::has($destino['ruta']) ? route($destino['ruta']) : '#',
                 'icono' => $destino['icono'],
                 // Las páginas hijas (p. ej. panel.examenes.apartados) mantienen marcado su destino.

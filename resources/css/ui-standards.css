@@ -1,0 +1,41 @@
+/* Adición de conformidad visual — COD-WEB 6.15–6.17.
+   Se conserva la paleta vigente. La tipografía usa fuentes del sistema. */
+:root { --bbb-font-system: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+html { font-size: 100%; }
+body, body :is(h1,h2,h3,h4,p,span,a,button,label,input,select,textarea,summary,th,td,small,strong,legend) {
+  font-family: var(--bbb-font-system) !important;
+}
+body { font-size: 1rem; line-height: 1.5; }
+body :is(h1,.tp-page-heading h1,.heading-block h1,.sh-welcome h1) { font-size: 1.5rem !important; font-weight: 600; line-height: 1.5; }
+body :is(h2,.sh-section-heading h2) { font-size: 1.25rem !important; font-weight: 600; line-height: 1.5; }
+body :is(h3,.sh-exam-body h3) { font-size: 1.125rem !important; font-weight: 600; line-height: 1.5; }
+body :is(p,td,input,select,textarea,button,.sh-nav-item,.tp-nav-item) { font-size: 1rem !important; line-height: 1.5; }
+body :is(label,th,.field-hint,.form-error,.sh-exam-meta span,.sh-account-name,.sh-portal-tag,.tp-portal-tag,.sh-section-heading p,.heading-block > p) { font-size: .875rem !important; line-height: 1.5; }
+body :is(small,.eyebrow,.step,.step-number,.group-kicker,.qr-caption,.sh-sidebar-caption,.sh-sidebar-copyright,.tp-sidebar-caption,.tp-sidebar-footer) { font-size: .75rem !important; line-height: 1.5; }
+body :is(code,pre,code *,pre *) { font-family: ui-monospace, SFMono-Regular, Consolas, monospace !important; font-size: .875rem; }
+body :is(button,summary,[role=button],a.inline-flex,.primary-button,.secondary-button,.sh-nav-item,.tp-nav-item,.icon-button,.sh-icon-button,.tp-icon-button) { min-height: 2.75rem; min-width: 2.75rem; height: auto; border-radius: .5rem; }
+body :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]),select) { min-height: 2.75rem; height: auto; border-radius: .5rem; }
+body textarea { border-radius: .5rem; min-height: 6rem; }
+body :is(.tp-card,.tp-question-card,.entry-card,.sh-exam-card,.sh-stat-card,.tp-composer,.tp-registration-card,.tp-section-card) { border-radius: .75rem; box-shadow: none; }
+body :is(.tp-card,.tp-question-card,.tp-section-card,.sh-exam-body) { padding: 1.5rem; }
+body :is(dialog,.bbb-modal) { max-width: min(32rem,calc(100vw - 2rem)); border-radius: .75rem; max-height: calc(100svh - 2rem); overflow-y: auto; }
+body table tr { height: 3rem; }
+body :is(p,label,button,a,td,th,h1,h2,h3) { overflow-wrap: anywhere; }
+body :is(.tp-header,.sh-header,.site-header) { min-height: 4rem; height: auto; padding-block: .5rem; }
+body .tp-shell { --tp-ancho-menu: 16rem; }
+body :is(.tp-sidebar,.sh-sidebar) { width: 16rem; top: 4rem; }
+body :is(.tp-main,.sh-main) { padding: 1.5rem; min-width: 0; }
+body :is(.tp-main > .tp-content,.sh-main > .sh-container) { max-width: 80rem; margin-inline: auto; }
+body .sh-sidebar-open .sh-main { margin-left: 16rem; }
+body :is(.tp-main,.sh-main) svg:not([data-qr-grupo] svg):not(.sh-exam-watermark) { flex-shrink: 0; }
+@media (min-width: 1024px) {
+  body .tp-shell.tp-menu-abierto .tp-main { margin-left: 16rem; }
+}
+@media (max-width: 1023px) {
+  body :is(.tp-shell.tp-menu-abierto .tp-main,.sh-sidebar-open .sh-main) { margin-left: 0; }
+  body :is(.tp-sidebar,.sh-sidebar) { max-width: calc(100vw - 3rem); }
+  body :is(.tp-page-heading,.sh-section-heading,.tp-header,.sh-header) { flex-wrap: wrap; gap: .5rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,*::before,*::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

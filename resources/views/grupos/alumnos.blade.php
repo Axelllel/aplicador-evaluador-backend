@@ -1,3 +1,11 @@
+{{--
+    Archivo: alumnos.blade.php
+    Módulo: resources/views/grupos
+    Descripción: Vista del módulo grupos de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
+--}}
 <x-layouts.panel titulo="Alumnos del grupo" descripcion="Consulta los alumnos inscritos.">
     <div class="space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">

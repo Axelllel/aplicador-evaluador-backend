@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * Archivo: IngresoAlumnoPinTest.php
+ * Módulo: tests/Feature
+ * Descripción: Gestiona y verifica el módulo IngresoAlumnoPinTest.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
+ */
+
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\DB;
@@ -7,6 +18,12 @@ use Tests\TestCase;
 
 class IngresoAlumnoPinTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        DB::shouldReceive('getConnections')->andReturn([]);
+    }
+
     public function test_el_portal_crea_el_perfil_y_muestra_el_pin(): void
     {
         config(['services.student_pin.pepper' => 'clave-local-de-prueba']);
@@ -37,7 +54,7 @@ class IngresoAlumnoPinTest extends TestCase
 
         DB::shouldReceive('selectOne')
             ->once()
-            ->withArgs(fn (string $sql, array $datos) => str_contains($sql, 'fn_ingresar_alumno_con_pin')
+            ->withArgs(fn (string $sql, array $datos) => str_contains($sql, 'fn_ingresar_alumno_sesion_pin')
                 && $datos === ['GRUPO1', hash_hmac('sha256', 'ABCD27', 'clave-local-de-prueba')])
             ->andReturn($this->perfil());
 
@@ -55,6 +72,7 @@ class IngresoAlumnoPinTest extends TestCase
     {
         return (object) [
             'alumno_id' => 17,
+            'credencial_version' => 1,
             'grupo_id' => 4,
             'materia' => 'Historia',
             'nombre' => 'Ana Pérez',

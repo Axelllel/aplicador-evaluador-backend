@@ -81,3 +81,126 @@ Esta corrección de API reutiliza `fn_preguntas_portal_alumno(uuid)`, ya creada 
 ## Revertir solo los archivos nuevos
 
 Antes de aplicar la migración: restaurar `routes/api.php.antes-lote.bak`, y eliminar únicamente los controladores listados en el paquete; las tablas originales quedan intactas. Si la migración ya se aplicó, no improvisar un rollback SQL destructivo: revisar primero las dependencias y tener respaldo.
+
+
+---
+
+## Agregados de integración — 22/11/2026
+
+Actualización: 22/11/2026. Backend Laravel, web Blade y API compartida con Flutter. Los pagos continúan siendo de prueba: activan capacidades reales en la cuenta y no realizan un cobro bancario.
+
+### Despliegue del lote
+
+1. Respaldar y usar una ventana sin exámenes activos para cambiar el contrato de navegación del alumno.
+2. Como alternativa de una sola ejecución, usar `scripts/completar-requisitos.sql` completo: reúne los cuatro archivos en una transacción y termina con una consulta cuyos indicadores deben ser todos `true`. No aplicar ambos métodos. Para aplicarlos por separado, ejecutar completos y en este orden los cuatro archivos SQL nuevos en el proyecto Supabase correspondiente:
+   - `supabase/migrations/20261123010000_control_tiempo_intentos.sql`.
+   - `supabase/migrations/20261123020000_recuperacion_pin_controlada.sql`.
+   - `supabase/migrations/20261123030000_calificacion_en_segundo_plano.sql`.
+   - `supabase/migrations/20261123040000_administracion_controlada.sql`.
+3. Publicar esta versión de Laravel junto con los assets compilados. `scripts/start-container.sh` mantiene Apache y el planificador; el Dockerfile lo utiliza. En otro entorno ejecutar `php artisan schedule:work` como servicio supervisado, o configurar el cron de Laravel. El contenedor usa caché de archivos para los bloqueos del planificador; si se cambia a caché de BD, deben existir sus tablas y permisos. El proceso debe permanecer activo; un alojamiento que se suspenda necesita un worker/cron independiente.
+4. Conservar v1 para la app Flutter actual e integrar v2 cuando se habilite su control individual de tiempo. La web de este commit ya utiliza v2; al cambiar de cliente, un intento activado en v2 requiere un cliente que lo soporte.
+5. Verificar con cuentas de prueba: crear y reanudar un intento, conservar respuestas, recorrer preguntas, agotar tiempo, entregar, consultar propuesta de IA y publicar la revisión docente. La integración en el proyecto Supabase real requiere esta comprobación después de aplicar SQL; las pruebas automatizadas usan bases desechables.
+
+No se ejecutan migraciones automáticamente al iniciar el contenedor. No se concede administración ni se crea un operador de soporte por defecto. Una migración aplicada se corrige mediante otra migración; no se eliminan tablas para volver a una versión anterior.
+
+### Alumno: identidad, reanudación y tiempo
+
+El móvil usa solicitudes JSON; no necesita cookies. La API v1 conserva las preguntas completas, las respuestas guardadas y el guardado existente con límite global. Se agrega el contrato v2 para el tiempo por pregunta. Una vez activado v2 para un intento, no se puede volver a v1 para eludir sus límites; el servidor responde `UPGRADE_REQUIRED`.
+
+Rutas del nuevo flujo:
+
+- `POST /api/v1/grupos/unirse`: alta o reingreso por `folio_codigo` y `codigo_acceso`. El alta entrega un código aleatorio de cuatro letras y dos números una sola vez. El código se protege con HMAC y un secreto del servidor.
+- `POST /api/v1/student/exams/{examenId}/start`: recibe `folio_codigo` y `codigo_acceso`; devuelve 201 para un intento nuevo y 200 para uno reanudado, conservando su ID, token y fecha de inicio.
+- `POST /api/v2/student/attempts/questions`: recibe `token_sesion`; devuelve el índice de preguntas, `respuestas`, `tiempo`, `version_contrato: 2` y `requiere_abrir_pregunta: true`. En v2 el índice contiene IDs, tipo y duración; la consigna y las opciones se obtienen al abrir el reactivo, para fijar su primer acceso real.
+- `POST /api/v2/student/attempts/open-question`: enviar `token_sesion` y `examen_pregunta_id` antes de mostrar el reactivo. Devuelve `data.pregunta` con su contenido, `primer_acceso`, `pregunta_fecha_limite`, `fecha_limite`, `servidor_ahora`, `estado` y `puede_responder`. Reabrir no reinicia el tiempo. Las parejas correctas de relación de columnas se convierten en listas independientes antes de enviarlas al alumno.
+- `POST /api/v2/student/attempts/answers`: enviar `token_sesion`, `examen_pregunta_id` y `respuesta_texto`. Esperar la confirmación antes de marcar una respuesta como guardada. El servidor usa `fn_registrar_respuesta_temporizada`; la función heredada no se invoca desde esta versión de la API.
+- `POST /api/v2/student/attempts/time`: sincroniza el reloj del servidor y finaliza un intento cuyo límite global haya vencido.
+- `POST /api/v2/student/attempts/finish`: entrega idempotente; preserva la primera fecha de entrega y genera una sola evidencia de cierre.
+- `POST /api/v2/student/attempts/result`: respeta la publicación elegida por el docente: oculto, aproximado o final.
+- `POST /api/v2/student/attempts/incidents`: registra `cambio_pestana`, `salida_pantalla`, `conexion`, `rostro_no_detectado`, `multiples_rostros`, `camara_desactivada`, `movimiento` u `otro`, con severidad baja/media/alta y evidencia HTTPS opcional. La web registra pérdida de foco y salida de pantalla completa; una incidencia no anula automáticamente un examen.
+
+Restaurar los valores con `data.respuestas[examen_pregunta_id.toString()]`. Estas claves corresponden a la asociación de la pregunta con el examen, no al ID del banco ni a su posición. Sin respuestas se devuelve `{}`. Los códigos, textos y selecciones serializadas se conservan exactamente como fueron guardados.
+
+El límite global es el menor entre el cierre del examen y el inicio más la suma de tiempos. Cada pregunta vence en el menor entre ese límite y su primer acceso más su duración. El servidor acepta la recepción estrictamente anterior al límite: exactamente al vencimiento ya se rechaza. Desconectarse no detiene el reloj. Los errores 409 `QUESTION_NOT_OPEN`, `QUESTION_EXPIRED`, `ATTEMPT_EXPIRED` o `ATTEMPT_CLOSED` permiten distinguir el motivo sin mostrar SQL ni secretos.
+
+`php artisan examenes:cerrar-vencidos` ejecuta el cierre por lotes. El planificador lo llama cada diez segundos. El estado se materializa en esa ejecución; la fecha de entrega automática corresponde al límite lógico. Aunque el planificador esté detenido, los endpoints de tiempo/preguntas y el guardado rechazan las operaciones tardías.
+
+### Recuperación del PIN
+
+Implementa PR-BD-PIN-01. Administración debe registrar explícitamente dos identidades Supabase del personal en `operador_soporte`, con funciones `verificador` y `autorizador`. Deben tener un registro de docente para usar la autenticación actual de la API. El cliente no elige esos roles ni aporta la identidad del operador.
+
+1. Verificar por un medio institucional independiente la identidad, la inscripción y el canal de entrega. Nombre, folio de grupo o captura de pantalla no bastan.
+2. El verificador autenticado envía `POST /api/v1/support/pin-recovery` con `alumno_id`, `folio_caso`, `referencia_identidad`, `referencia_canal`, `motivo` e `identidad_verificada: true`. Las referencias identifican evidencias controladas por la institución; no deben contener el PIN ni copias innecesarias de documentos personales.
+3. Otro operador con función de autorizador envía `POST /api/v1/support/pin-recovery/{casoId}/authorize`. El servidor genera el nuevo código, sustituye su HMAC, registra la revocación y emisión, aumenta la versión de credencial y rota todos los tokens anteriores del alumno en una transacción. No crea otro alumno.
+4. Entregar el código devuelto una sola vez por el canal validado. Si se pierde la respuesta, tramitar otro caso; no se puede consultar el PIN en claro posteriormente.
+
+Las inscripciones, respuestas, intentos terminados y calificaciones conservan sus IDs. Las sesiones web previas son invalidadas en su siguiente petición; los tokens de intentos anteriores dejan de autorizar consultas. Los HMAC de códigos emitidos quedan reservados para impedir su reutilización futura, incluso después de revocarlos.
+
+### IA en segundo plano
+
+Configurar `GROQ_API_KEY` solo en el servidor. `AI_AUTOMATIC_GRADING=true` habilita propuestas automáticas; `AI_ENABLED=false` suspende las consultas externas. El proveedor y los límites se configuran en `config/ai.php`; la generación y la revisión manual existentes conservan sus endpoints.
+
+Una entrega o cierre automático encola en la misma transacción la calificación objetiva y las respuestas abiertas/de programación. `php artisan examenes:procesar-calificaciones` procesa lotes acotados; el planificador lo ejecuta cada minuto. La cola persiste en PostgreSQL, usa reservas exclusivas, recupera tareas interrumpidas y limita reintentos. Se conservan las cuotas, el control de consumo, la huella del contenido y la idempotencia del servicio de IA. Un límite de consumo pospone la tarea; no convierte la propuesta en una nota final.
+
+El docente ve el estado pendiente, en proceso o fallido. Puede calificar manualmente. Una propuesta de IA se muestra al alumno solo como aproximación cuando el docente la habilita y las respuestas necesarias tienen evaluación vigente. La publicación final requiere revisión; las preguntas sin contestar cuentan cero.
+
+### Administración, reportes y seguridad
+
+La tabla `administrador_sistema` autoriza identidades concretas por asignación administrativa de BD. No se otorga `super_admin` desde un formulario, metadatos editables ni parámetros de URL. El login devuelve el rol autorizado y la web lo conserva en la sesión del servidor.
+
+- `GET /api/v1/admin/teachers` y `GET /api/v1/admin/payments`.
+- `PATCH /api/v1/admin/teachers/{uuid}`: `suspender` booleano y `motivo` de al menos diez caracteres.
+- `PATCH /api/v1/admin/payments/{id}`: estado `pendiente`, `confirmado` o `rechazado`, con `motivo`.
+- Web: `/administracion/docentes` y `/administracion/pagos`. Suspender bloquea los endpoints del docente, incluida la activación de planes. Rehabilitar no regala vigencia: se comprueba un pago confirmado vigente. Los cambios administrativos generan auditoría.
+- `GET /api/v1/teacher/groups/{groupId}/analytics`: estadísticas del grupo propio.
+- `GET /api/v1/teacher/exams/{examId}/results/export/{pdf|xlsx}`: archivo autorizado, sin caché. La web incluye botones en Resultados. Excel trata los nombres como texto, nunca como fórmulas.
+
+La calificación consolidada y las exportaciones usan los mismos resultados y las mismas restricciones de propiedad. Las respuestas pendientes de revisión no se publican como notas definitivas. Las consultas agregadas evitan una consulta por alumno.
+
+### Segundo factor del docente
+
+El flujo está implementado con los endpoints oficiales de Supabase Auth. La API valida el token con Supabase antes de usar su nivel AAL. Un factor verificado exige AAL2 para acceder a los datos del docente; las rutas MFA permiten completar la verificación con AAL1.
+
+- `GET /api/v1/auth/mfa`.
+- `POST /api/v1/auth/mfa/enroll`: `telefono` en formato internacional, por ejemplo `+52...`.
+- `POST /api/v1/auth/mfa/{factorId}/challenge`.
+- `POST /api/v1/auth/mfa/{factorId}/verify`: `challenge_id` y `codigo`.
+- `DELETE /api/v1/auth/mfa/{factorId}`: requiere AAL2.
+
+La web incluye Seguridad de la cuenta, la captura del código y avisos de envío/error. Primero configurar Phone MFA y el proveedor SMS en Supabase; después activar `SUPABASE_MFA_PHONE_ENABLED=true`, lo que exige el segundo factor a los docentes que aún no lo tengan. No activar la obligatoriedad antes de probar el envío y la recepción reales. La implementación local no configura ni acredita saldo al proveedor externo.
+
+Referencia técnica: https://supabase.com/docs/guides/auth/auth-mfa/phone
+
+### Respaldos y restauración
+
+`php artisan bd:respaldar` usa una conexión de operación independiente (`BACKUP_DATABASE_URL`), `pg_dump`/`pg_dumpall` compatibles con el servidor, destino externo montado (`BACKUP_DIRECTORY`) y una clave independiente `BACKUP_KEY_FILE`. Generar 32 bytes aleatorios, guardar sus 64 dígitos hexadecimales en un archivo 0600 y custodiarlo fuera del respaldo. Conservar la clave mientras existan copias que la requieran. Se utiliza Sodium secretstream con cifrado autenticado, sin cargar el archivo completo en memoria.
+
+La copia incluye esquemas public/auth/extensions, roles sin contraseñas, rutinas, RLS, políticas y permisos. Las huellas de las respuestas y la extracción usan la misma instantánea PostgreSQL. Se cifra el archivo, los roles y el manifiesto; solo una copia terminada recibe el marcador `.complete`. Retención: treinta días. `BACKUP_ENABLED=true` programa su ejecución diaria a las 23:00 de Ciudad de México, siempre que el proceso disponga de las herramientas, conexión de operación y destino. Estas credenciales no se usan en las solicitudes de la API.
+
+`php artisan bd:verificar-restauracion /ruta/al/respaldo` exige `BACKUP_RESTORE_DATABASE_URL` hacia una base vacía con prefijo `bbb_restore_`. Restaura en una transacción, comprueba integridad, compara respuestas completas mediante sus huellas, rutinas, tablas/RLS, políticas, permisos e índices, y registra la duración de la prueba. Rechaza un destino con objetos. Los roles globales se revisan y aprovisionan por separado; la herramienta no ejecuta automáticamente cambios de roles en el servidor. La clave de cifrado y las dependencias externas se requieren también para recuperar.
+
+La prueba automatizada realiza una copia cifrada, elimina las respuestas del origen desechable y recupera su contenido en otra BD. Esto acredita la recuperación de esa instantánea y su duración local. **No acredita RPO cero para respuestas confirmadas después de la copia**, ni el RTO del servicio real. Esos compromisos necesitan el mecanismo continuo de infraestructura y un simulacro en el entorno contratado. Los archivos externos y la configuración del despliegue requieren respaldo separado; no se incluyen en un dump SQL.
+
+### Validación reproducible
+
+En una instancia PostgreSQL desechable en 127.0.0.1, con administrador local de pruebas y clientes PostgreSQL instalados:
+
+```bash
+composer install
+npm install
+BBB_TEST_PG_PORT=55440 BBB_TEST_PG_BIN=/ruta/a/clientes/postgresql/bin bash scripts/test-backend.sh
+npm run build
+```
+
+El script ejecuta también las pruebas de BD, cuotas de IA, permisos, PIN, tiempos y restauración. Los nombres de BD de pruebas son fijos y desechables. No apuntar sus variables a un proyecto real. Sin esas variables, PHPUnit omite las pruebas que requieren PostgreSQL; ese resultado no acredita la integración SQL.
+
+### Dependencias externas que requieren cierre operativo
+
+- Aplicar el lote SQL y comprobar el despliegue web/API en el Supabase y hosting del proyecto.
+- Configurar SMS/MFA, comprobar SMTP y mantener activos el planificador y el procesamiento de trabajos.
+- Asignar administradores y dos operadores de soporte autorizados, con referencias institucionales de verificación.
+- Configurar custodia, almacenamiento externo, respaldo continuo y simulacro real para validar RPO/RTO.
+- Elegir e integrar el SDK de detección facial/movimiento antes de afirmar que la cámara ofrece supervisión automática. La captura de foco y la recepción de incidencias ya funcionan; no constituyen detección de rostros.
+- Flutter puede conservar v1; para utilizar control individual de tiempo debe integrar v2 y sus errores. Este repositorio contiene la API y la web, no modifica el cliente Flutter.
+
+La pasarela bancaria real sigue fuera del alcance acordado: los pagos son simulados y las capacidades adquiridas sí se registran en la base.

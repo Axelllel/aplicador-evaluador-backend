@@ -1,3 +1,11 @@
+{{--
+    Archivo: perfiles.blade.php
+    Módulo: resources/views/auth
+    Descripción: Vista del módulo auth de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
+--}}
 <!doctype html>
 <html lang="es">
 <head>
@@ -5,6 +13,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ __('sesion.perfiles.titulo') }} · BigBitByte</title>
     @vite('resources/css/student-entry.css')
+    @vite('resources/css/ui-standards.css')
 </head>
 <body>
 <div class="portal" id="profile-entry">
@@ -33,7 +42,7 @@
                 </div>
 
                 <nav class="grid gap-3 sm:grid-cols-2" aria-labelledby="titulo-perfil">
-                    <a class="secondary-button focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600"
+                    <a class="secondary-button focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acento"
                        href="{{ route('login') }}">
                         <x-icon name="user-circle" />
                         <span class="text-left">
@@ -41,7 +50,7 @@
                             <span class="block font-normal">{{ __('sesion.perfiles.docente_ayuda') }}</span>
                         </span>
                     </a>
-                    <a class="secondary-button focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600"
+                    <a class="secondary-button focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acento"
                        href="{{ route('student.entry') }}">
                         <x-icon name="user-group" />
                         <span class="text-left">

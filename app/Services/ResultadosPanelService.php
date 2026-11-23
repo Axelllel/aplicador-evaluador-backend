@@ -179,6 +179,7 @@ class ResultadosPanelService
             return [
                 ...($ia === null ? [] : ['ia' => $ia]),
                 'id' => (int) $respuesta['id'],
+                'estado_ia' => $respuesta['estado_ia'] ?? null,
                 'numero' => $posicion + 1,
                 'tipo' => (string) $respuesta['tipo'],
                 'enunciado' => (string) $respuesta['enunciado'],

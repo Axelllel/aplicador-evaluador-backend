@@ -585,7 +585,7 @@ class ResultadosPanelTest extends TestCase
      */
     private function consultar(string $html, string $consulta): array
     {
-        $documento = new DOMDocument();
+        $documento = new DOMDocument;
         libxml_use_internal_errors(true);
         $documento->loadHTML('<?xml encoding="UTF-8">'.$html);
         libxml_clear_errors();
@@ -597,5 +597,20 @@ class ResultadosPanelTest extends TestCase
         }
 
         return $textos;
+    }
+
+    public function test_el_docente_descarga_excel_y_pdf_del_examen_seleccionado(): void
+    {
+        $this->prepararExamenes();
+        $excel = $this->get('/resultados/2/exportar/xlsx')->assertOk()
+            ->assertHeader('Content-Disposition', 'attachment; filename="resultados-examen-2.xlsx"');
+        $this->assertStringStartsWith('PK', $excel->getContent());
+        $this->get('/resultados/2/exportar/pdf')->assertOk()->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    public function test_la_exportacion_de_un_examen_ajeno_no_expone_datos(): void
+    {
+        $this->api->responder('GET', '/teacher/exams/999/results', ['message' => 'No disponible.'], 404);
+        $this->get('/resultados/999/exportar/pdf')->assertNotFound()->assertDontSee('Ana Pérez');
     }
 }

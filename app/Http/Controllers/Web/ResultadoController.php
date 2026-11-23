@@ -19,6 +19,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\RespondeConApi;
 use App\Http\Requests\CalificarRespuestaRequest;
 use App\Services\ConsultasPanelService;
+use App\Services\ExportacionResultadosService;
 use App\Services\PaginadorPanel;
 use App\Services\PanelApiService;
 use App\Services\ResultadosPanelService;
@@ -26,6 +27,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Controla las páginas de Resultados y la calificación de respuestas.
@@ -39,8 +41,7 @@ class ResultadoController extends Controller
         private readonly ConsultasPanelService $consultas,
         private readonly ResultadosPanelService $resultados,
         private readonly PaginadorPanel $paginador,
-    ) {
-    }
+    ) {}
 
     /**
      * Muestra el selector de examen y la tabla de intentos del examen elegido (15 filas por página); sin examen
@@ -71,6 +72,17 @@ class ResultadoController extends Controller
             'resumen' => $this->resultados->resumen($filas),
             'intentos' => $this->paginador->paginar($filas, $solicitud->integer('page', 1)),
         ]);
+    }
+
+    public function exportar(int $examen, string $formato, ExportacionResultadosService $exportador): Response
+    {
+        abort_unless(in_array($formato, ['xlsx', 'pdf'], true), 404);
+        $datos = $this->consultas->resultadosDelExamen($examen);
+        abort_if($datos === null, 404);
+        $fechas = $this->consultas->intentosDelExamen($examen)->keyBy('id');
+        $filas = $datos['resultados']->map(fn (array $fila): array => $fila + ['fecha_entrega' => $fechas->get($fila['intento_id'])['fecha_entrega'] ?? null]);
+
+        return $exportador->download($datos['examen'], $filas, $formato);
     }
 
     /**

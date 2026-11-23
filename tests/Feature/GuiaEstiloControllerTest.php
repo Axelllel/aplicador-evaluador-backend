@@ -136,8 +136,8 @@ class GuiaEstiloControllerTest extends TestCase
     {
         $this->get('/guia-estilo')
             ->assertOk()
-            ->assertSee('style="height: 40px"', false)
-            ->assertSee('style="height: 96px"', false);
+            ->assertSee('style="width: 40px; height: 40px"', false)
+            ->assertSee('style="width: 96px; height: 96px"', false);
     }
 
     public function test_la_guia_pagina_la_tabla_de_ejemplo_con_su_propio_parametro(): void

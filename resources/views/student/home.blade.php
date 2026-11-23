@@ -1,3 +1,11 @@
+{{--
+    Archivo: home.blade.php
+    Módulo: resources/views/student
+    Descripción: Vista del módulo student de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
+--}}
 @extends('student.layout')
 @section('title', 'Inicio')
 @section('screen', 'home')
@@ -24,7 +32,7 @@
                     @if ($activeInGroup)
                         <a class="bbb-primary" href="{{ route('student.exam') }}">Continuar mi examen →</a>
                     @else
-                        <a class="bbb-primary" href="#bbb-pending">Ver mis exámenes →</a>
+                        <a class="bbb-primary" href="#student-pending">Ver mis exámenes →</a>
                     @endif
                 </div>
             </div>
@@ -61,7 +69,7 @@
             </div>
         </div>
 
-        <section class="sh-exam-section" id="bbb-pending" tabindex="-1">
+        <section class="sh-exam-section" id="student-pending" tabindex="-1">
             <div class="sh-section-heading">
                 <div><h2>Exámenes pendientes</h2><p>Selecciona un examen para consultar sus detalles e iniciarlo dentro de su horario.</p></div>
             </div>

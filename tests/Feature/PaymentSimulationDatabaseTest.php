@@ -6,6 +6,7 @@
  * Descripción: Ejecuta migraciones y compras en PostgreSQL desechable, con RLS y permisos reales.
  * Autor: Axel Rebollo Zeferino
  * Creado: 20/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Revisión de integración
  */
 
 declare(strict_types=1);
@@ -60,7 +61,7 @@ SQL);
             $this->db->exec(str_replace('CREATE EXTENSION IF NOT EXISTS pgcrypto;', '', $base));
             foreach (['20261025194447_seguridad_roles.sql', '20261026213000_restringir_acceso_directo.sql',
                 '20261026214000_rls_docente_grupo_pregunta.sql', '20261026214500_rls_fase2_tablas_restantes.sql',
-                '20261109051000_pagos_referencias_externas.sql', '20261120120000_confirmar_pago_simulado.sql'] as $migration) {
+                '20261109051000_pagos_referencias_externas.sql', '20261120120000_confirmar_pago_simulado.sql', '20261123050000_revocacion_sesiones_docente.sql'] as $migration) {
                 $sql = file_get_contents(base_path('supabase/migrations/'.$migration));
                 if ($migration === '20261025194447_seguridad_roles.sql' && $this->db->query("SELECT 1 FROM pg_roles WHERE rolname='laravel_app'")->fetchColumn()) {
                     $sql = str_replace('CREATE ROLE laravel_app', 'ALTER ROLE laravel_app', $sql);

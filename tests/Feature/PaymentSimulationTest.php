@@ -6,6 +6,7 @@
  * Descripción: Valida el flujo de simulación, confirmaciones y privacidad de datos de prueba.
  * Autor: Axel Rebollo Zeferino
  * Creado: 20/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Revisión de integración
  */
 
 declare(strict_types=1);
@@ -38,6 +39,7 @@ class PaymentSimulationTest extends TestCase
         $this->withoutVite();
         config(['database.default' => 'sqlite', 'database.connections.sqlite.database' => ':memory:', 'services.payment_simulation.enabled' => true]);
         DB::purge('sqlite');
+        DB::shouldReceive('getConnections')->andReturn([]);
     }
 
     public function test_checkout_exposes_both_methods_and_does_not_refill_card_secrets(): void

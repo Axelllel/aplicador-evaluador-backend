@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'proceso' => ['pendiente' => 'La propuesta automática está pendiente. Puedes continuar con la revisión manual.', 'procesando' => 'La propuesta automática se está preparando.', 'fallido' => 'No se completó la propuesta automática. Puedes solicitarla nuevamente o calificar manualmente.'],
     'titulo' => 'Generar preguntas con IA',
     'intro' => 'Describe el tema y revisa las propuestas antes de agregarlas a tu banco.',
     'tema' => 'Tema o aprendizaje esperado',

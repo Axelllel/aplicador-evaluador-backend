@@ -13,6 +13,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Web\AdministracionController;
 use App\Http\Controllers\Web\ApartadoController;
 use App\Http\Controllers\Web\AsistenciaIaController;
 use App\Http\Controllers\Web\EstadisticaController;
@@ -23,9 +24,12 @@ use App\Http\Controllers\Web\PanelController;
 use App\Http\Controllers\Web\PreguntaController;
 use App\Http\Controllers\Web\RegistroController;
 use App\Http\Controllers\Web\ResultadoController;
+use App\Http\Controllers\Web\SegundoFactorController;
 use App\Http\Controllers\Web\SesionController;
 use App\Http\Controllers\Web\StudentPortalController;
 use App\Http\Controllers\Web\SuscripcionController;
+use App\Http\Middleware\NoStoreResponse;
+use App\Http\Middleware\VerifyStudentSession;
 use App\Http\Middleware\VerifySupabaseToken;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +50,10 @@ Route::post('/registro', [RegistroController::class, 'store'])->name('registro.s
 // Panel del docente: exige un token vigente en la sesión.
 // TODO(Leonardo Ballestero López): asignar CheckPlanLimits a la creación de alumnos cuando exista ese módulo.
 Route::middleware('panel.sesion')->group(function (): void {
+    Route::get('/administracion/docentes', [AdministracionController::class, 'teachers'])->name('panel.docentes');
+    Route::get('/administracion/pagos', [AdministracionController::class, 'payments'])->name('panel.pagos');
+    Route::patch('/administracion/docentes/{teacher}', [AdministracionController::class, 'teacherStatus'])->whereUuid('teacher')->name('panel.docentes.estado');
+    Route::patch('/administracion/pagos/{payment}', [AdministracionController::class, 'paymentStatus'])->whereNumber('payment')->name('panel.pagos.estado');
     Route::get('/panel', [PanelController::class, 'index'])->name('panel.inicio');
 
     Route::get('/grupos', [GrupoController::class, 'index'])->name('panel.grupos');
@@ -81,6 +89,12 @@ Route::middleware('panel.sesion')->group(function (): void {
     Route::post('/suscripcion/planes/pago/datos', [SuscripcionController::class, 'revisarDatosDePago'])->name('panel.suscripcion.planes.pago.revisar');
 
     // Resultados: tabla de intentos por examen, detalle de un intento y calificación (manual y automática).
+    Route::get('/resultados/{examen}/exportar/{formato}', [ResultadoController::class, 'exportar'])->whereNumber('examen')->whereIn('formato', ['pdf', 'xlsx'])->name('panel.resultados.exportar');
+    Route::get('/seguridad/doble-factor', [SegundoFactorController::class, 'show'])->name('panel.mfa');
+    Route::post('/seguridad/doble-factor/alta', [SegundoFactorController::class, 'enroll'])->middleware('throttle:3,1')->name('panel.mfa.enroll');
+    Route::post('/seguridad/doble-factor/codigo', [SegundoFactorController::class, 'challenge'])->middleware('throttle:3,1')->name('panel.mfa.challenge');
+    Route::post('/seguridad/doble-factor/verificar', [SegundoFactorController::class, 'verify'])->middleware('throttle:5,1')->name('panel.mfa.verify');
+    Route::delete('/seguridad/doble-factor', [SegundoFactorController::class, 'destroy'])->name('panel.mfa.destroy');
     Route::get('/resultados', [ResultadoController::class, 'index'])->name('panel.resultados');
     Route::get('/resultados/{examen}/intentos/{intento}', [ResultadoController::class, 'intento'])
         ->whereNumber(['examen', 'intento'])->name('panel.resultados.intento');
@@ -97,17 +111,20 @@ Route::middleware('panel.sesion')->group(function (): void {
 Route::get('/guia-estilo', [GuiaEstiloController::class, 'index'])->name('guia-estilo');
 
 // Portal del alumno (preservado desde staging).
-Route::prefix('alumno')->name('student.')->group(function () {
+Route::prefix('alumno')->name('student.')->middleware([VerifyStudentSession::class, NoStoreResponse::class])->group(function () {
     Route::get('/ingreso', [StudentPortalController::class, 'entry'])->name('entry');
-    Route::post('/validar-folio', [StudentPortalController::class, 'validateFolio'])->name('validate-folio')->middleware('throttle:10,1');
-    Route::post('/ingresar', [StudentPortalController::class, 'join'])->name('join')->middleware('throttle:5,1');
-    Route::post('/grupos', [StudentPortalController::class, 'joinGroup'])->name('groups.join')->middleware('throttle:5,1');
+    Route::post('/validar-folio', [StudentPortalController::class, 'validateFolio'])->name('validate-folio')->middleware('throttle:120,1');
+    Route::post('/ingresar', [StudentPortalController::class, 'join'])->name('join')->middleware('throttle:student-entry');
+    Route::post('/grupos', [StudentPortalController::class, 'joinGroup'])->name('groups.join')->middleware('throttle:student-entry');
     Route::get('/inicio', [StudentPortalController::class, 'home'])->name('home');
-    Route::post('/examen/iniciar', [StudentPortalController::class, 'start'])->name('start')->middleware('throttle:5,1');
+    Route::post('/examen/iniciar', [StudentPortalController::class, 'start'])->name('start')->middleware('throttle:student-entry');
     Route::get('/examen', [StudentPortalController::class, 'exam'])->name('exam');
+    Route::post('/api/incidencia', [StudentPortalController::class, 'incident'])->name('incident')->middleware('throttle:student-attempt');
+    Route::post('/api/tiempo', [StudentPortalController::class, 'time'])->name('time');
+    Route::post('/api/abrir-pregunta', [StudentPortalController::class, 'openQuestion'])->name('open-question');
     Route::post('/api/preguntas', [StudentPortalController::class, 'questions'])->name('questions');
     Route::post('/api/respuesta', [StudentPortalController::class, 'answer'])->name('answer');
-    Route::post('/api/entrega', [StudentPortalController::class, 'finish'])->name('finish')->middleware('throttle:5,1');
+    Route::post('/api/entrega', [StudentPortalController::class, 'finish'])->name('finish')->middleware('throttle:student-attempt');
     Route::get('/calificaciones', [StudentPortalController::class, 'grades'])->name('grades');
     Route::post('/api/resultado', [StudentPortalController::class, 'result'])->name('result');
     Route::post('/salir', [StudentPortalController::class, 'leave'])->name('leave');

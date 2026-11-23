@@ -1,3 +1,11 @@
+{{--
+    Archivo: pago.blade.php
+    Módulo: resources/views/suscripcion
+    Descripción: Vista del módulo suscripcion de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
+--}}
 @php
     $seleccion = ['grupos' => $grupos, 'alumnos' => $alumnos, 'preguntas' => $preguntas];
 @endphp

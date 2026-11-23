@@ -126,6 +126,9 @@
                 @if ((int) session('ia_respuesta', 0) === $respuesta['id'] && session('ia_error'))
                     <x-alerta tipo="error" :autoocultar="false">{{ session('ia_error') }}</x-alerta>
                 @endif
+                @if (in_array($respuesta['estado_ia'] ?? '', ['pendiente', 'procesando', 'fallido'], true) && !isset($respuesta['ia']) && $respuesta['calificacion'] === null)
+                    <x-alerta tipo="info" :autoocultar="false">{{ __('ia.proceso.'.($respuesta['estado_ia'])) }}</x-alerta>
+                @endif
                 @if (isset($respuesta['ia']))
                     <aside class="tp-ai-proposal" aria-labelledby="ia-titulo-{{ $respuesta['id'] }}">
                         <p class="tp-section-label">{{ __('ia.propuesta') }}</p>

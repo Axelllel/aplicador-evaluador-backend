@@ -1,16 +1,27 @@
 <?php
 
+/**
+ * Archivo: StudentPortalController.php
+ * Módulo: app/Http/Controllers/Web
+ * Descripción: Gestiona el portal del alumno y sus operaciones contra la API.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
+ */
+
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Web;
 
-use App\Http\Controllers\Controller;
-use App\Http\Controllers\Api\StudentJoinController;
 use App\Http\Controllers\Api\StudentExamController;
+use App\Http\Controllers\Api\StudentJoinController;
+use App\Http\Controllers\Controller;
 use App\Services\CredencialAlumnoService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\QueryException;
 use Illuminate\View\View;
 
 /** Portal Blade: no usa credenciales de docente ni SQL directo desde el navegador. */
@@ -41,7 +52,7 @@ class StudentPortalController extends Controller
     private function groupForRequest(Request $request, array $student): ?array
     {
         $data = $request->validate(['grupo' => ['sometimes', 'nullable', 'integer', 'min:1']]);
-        if (!isset($data['grupo'])) {
+        if (! isset($data['grupo'])) {
             return null;
         }
 
@@ -51,7 +62,7 @@ class StudentPortalController extends Controller
     private function completedAttempts(Request $request, ?int $attemptId = null): array
     {
         $student = $this->student($request);
-        if (!$student) {
+        if (! $student) {
             return [];
         }
 
@@ -131,7 +142,7 @@ class StudentPortalController extends Controller
                 'estado_filtro' => match (true) {
                     ($result['estado'] ?? null) === 'final' => 'revision_completada',
                     ($attempt['resultado_visible'] ?? null) === 'oculto' => 'sin_publicar',
-                    !isset($attempt['resultado_visible']) && !isset($result['estado']) => 'sin_publicar',
+                    ! isset($attempt['resultado_visible']) && ! isset($result['estado']) => 'sin_publicar',
                     default => 'en_revision',
                 },
             ];
@@ -157,9 +168,10 @@ class StudentPortalController extends Controller
         } catch (QueryException $e) {
             return response()->json(['message' => 'No fue posible verificar el grupo. Inténtalo más tarde.'], 503);
         }
-        if (!$row || !$row->valido) {
+        if (! $row || ! $row->valido) {
             return response()->json(['message' => 'No encontramos un grupo activo con ese folio. Verifica el código o consulta a tu docente.'], 404);
         }
+
         return response()->json(['data' => ['valido' => true]], 200);
     }
 
@@ -171,7 +183,7 @@ class StudentPortalController extends Controller
         }
 
         $response = app(StudentJoinController::class)->store($request, $credenciales);
-        if (!in_array($response->getStatusCode(), [200, 201], true)) {
+        if (! in_array($response->getStatusCode(), [200, 201], true)) {
             return $response;
         }
         $data = $response->getData(true)['data'];
@@ -179,6 +191,7 @@ class StudentPortalController extends Controller
         $request->session()->forget(['bbb.attempt', 'bbb.completed_attempts', 'bbb.groups', 'bbb.selected_group']);
         $request->session()->put('bbb.student', [
             'alumno_id' => (int) $data['alumno_id'],
+            'credencial_version' => (int) $data['credencial_version'],
             'grupo_id' => (int) $data['grupo_id'],
             'materia' => (string) $data['materia'],
             'nombre' => (string) $data['nombre'],
@@ -237,7 +250,7 @@ class StudentPortalController extends Controller
     public function joinGroup(Request $request): JsonResponse
     {
         $student = $this->student($request);
-        if (!$student) {
+        if (! $student) {
             return response()->json(['message' => 'Tu sesión del alumno expiró. Vuelve a ingresar al portal.'], 401);
         }
 
@@ -247,7 +260,7 @@ class StudentPortalController extends Controller
     public function home(Request $request): View|RedirectResponse
     {
         $student = $this->student($request);
-        if (!$student) {
+        if (! $student) {
             return redirect()->route('student.entry');
         }
         $groups = $this->groups($request, $student);
@@ -267,11 +280,11 @@ class StudentPortalController extends Controller
         if ($attempt) {
             $excluded[] = $attempt['examen_id'];
         }
-        $activeAttempt = $attempt && !$attempt['finished'] ? $attempt : null;
+        $activeAttempt = $attempt && ! $attempt['finished'] ? $attempt : null;
         $activeInGroup = $activeAttempt && $activeAttempt['grupo_id'] === $student['grupo_id'] ? $activeAttempt : null;
         $pendingExams = $exams === null ? null : array_values(array_filter(
             $exams,
-            fn ($exam) => !in_array((int) $exam->examen_id, $excluded, true),
+            fn ($exam) => ! in_array((int) $exam->examen_id, $excluded, true),
         ));
         $completedCount = count($completed);
         $recentResults = $this->resultCards(array_slice($completed, 0, 3), $groups);
@@ -298,10 +311,12 @@ class StudentPortalController extends Controller
     public function start(Request $request): JsonResponse
     {
         $student = $this->student($request);
-        if (!$student) return response()->json(['message'=>'Primero ingresa a un grupo.'], 401);
+        if (! $student) {
+            return response()->json(['message' => 'Primero ingresa a un grupo.'], 401);
+        }
         $student = $this->groupForRequest($request, $student) ?? $this->currentGroup($request, $student);
         $previous = $this->attempt($request);
-        if ($previous && !$previous['finished']) {
+        if ($previous && ! $previous['finished']) {
             return response()->json(['message' => 'Entrega el examen en curso antes de iniciar otro.'], 409);
         }
         $data = $request->validate(['examen_id' => ['required', 'integer', 'min:1']]);
@@ -318,14 +333,14 @@ class StudentPortalController extends Controller
                 )
                 SELECT intento.*, e.nombre
                 FROM examen_autorizado e
-                CROSS JOIN LATERAL public.fn_iniciar_intento(e.examen_id, ?, 'web') intento
+                CROSS JOIN LATERAL public.fn_iniciar_intento_web(?, ?, e.examen_id, ?) intento
                 SQL,
-                [$student['alumno_id'], $student['grupo_id'], $examId, $student['alumno_id']],
+                [$student['alumno_id'], $student['grupo_id'], $examId, $student['alumno_id'], $student['grupo_id'], $student['credencial_version']],
                 false,
             );
         } catch (QueryException $exception) {
-            if (($exception->errorInfo[0] ?? null) === 'P0001') {
-                return response()->json(['message' => 'El examen no está disponible o ya tienes un intento registrado.'], 403);
+            if (in_array($exception->errorInfo[0] ?? '', ['P0001', 'P1002', 'P1004', 'P1006'], true)) {
+                return response()->json(['message' => 'El examen no está disponible para esta sesión.'], ($exception->errorInfo[0] ?? '') === 'P1006' ? 409 : 403);
             }
 
             report($exception);
@@ -350,16 +365,22 @@ class StudentPortalController extends Controller
             'finished' => false,
         ]);
 
-        return response()->json(['data' => ['intento_id' => (int) $result->intento_id, 'url' => route('student.exam')]], 201);
+        return response()->json(['data' => ['intento_id' => (int) $result->intento_id, 'reanudado' => (bool) $result->reanudado, 'url' => route('student.exam')]], $result->reanudado ? 200 : 201);
     }
 
     public function exam(Request $request): View|RedirectResponse
     {
         $student = $this->student($request);
-        if (!$student) return redirect()->route('student.entry');
+        if (! $student) {
+            return redirect()->route('student.entry');
+        }
         $attempt = $this->attempt($request);
-        if (!$attempt) return redirect()->route('student.home');
-        if ($attempt['finished']) return redirect()->route('student.grades');
+        if (! $attempt) {
+            return redirect()->route('student.home');
+        }
+        if ($attempt['finished']) {
+            return redirect()->route('student.grades');
+        }
         $student = $this->groups($request, $student)[$attempt['grupo_id']] ?? abort(404);
 
         return view('student.exam', compact('student', 'attempt'));
@@ -368,9 +389,13 @@ class StudentPortalController extends Controller
     private function invoke(Request $request, string $method, bool $mustBeOpen = true, ?string $query = null, ?array $attempt = null): JsonResponse
     {
         $attempt ??= $this->attempt($request);
-        if (!$this->student($request) || !$attempt) return response()->json(['message'=>'Sesión de examen no disponible.'],401);
-        if ($mustBeOpen && $attempt['finished']) return response()->json(['message'=>'Examen ya entregado.'],403);
-        $request->merge(['token_sesion'=>$attempt['token_sesion']]);
+        if (! $this->student($request) || ! $attempt) {
+            return response()->json(['message' => 'Sesión de examen no disponible.'], 401);
+        }
+        if ($mustBeOpen && $attempt['finished']) {
+            return response()->json(['message' => 'Examen ya entregado.'], 403);
+        }
+        $request->merge(['token_sesion' => $attempt['token_sesion']]);
         if ($query !== null) {
             try {
                 $row = DB::selectOne($query, [$attempt['token_sesion']]);
@@ -388,36 +413,33 @@ class StudentPortalController extends Controller
                 }
             }
         }
+
         return app(StudentExamController::class)->{$method}($request);
     }
 
     public function questions(Request $request): JsonResponse
     {
-        $response = $this->invoke($request, 'questions', query: 'SELECT public.fn_preguntas_portal_alumno(CAST(? AS uuid)) AS data');
-        if ($response->getStatusCode() !== 200) {
-            return $response;
-        }
+        return $this->invoke($request, 'questionsV2');
+    }
 
-        $data = $response->getData(true)['data'];
-        foreach ($data['preguntas'] as &$question) {
-            $options = $question['opciones'];
-            if ($question['tipo'] !== 'relacion_columnas' || !is_array($options)
-                || !array_is_list($options) || !isset($options[0]['izquierda'], $options[0]['derecha'])) {
-                continue;
-            }
+    public function incident(Request $request): JsonResponse
+    {
+        return $this->invoke($request, 'incident');
+    }
 
-            $choices = array_values(array_unique(array_column($options, 'derecha')));
-            sort($choices, SORT_NATURAL | SORT_FLAG_CASE);
-            $question['opciones'] = ['izquierda' => array_column($options, 'izquierda'), 'derecha' => $choices];
-        }
-        unset($question);
+    public function time(Request $request): JsonResponse
+    {
+        return $this->invoke($request, 'time', false);
+    }
 
-        return response()->json(['data' => $data]);
+    public function openQuestion(Request $request): JsonResponse
+    {
+        return $this->invoke($request, 'openQuestion');
     }
 
     public function answer(Request $request): JsonResponse
     {
-        return $this->invoke($request, 'answer');
+        return $this->invoke($request, 'answerV2');
     }
 
     public function finish(Request $request): JsonResponse
@@ -430,13 +452,16 @@ class StudentPortalController extends Controller
             $request->session()->put('bbb.completed_attempts.'.$attempt['intento_id'], $attempt);
             $request->session()->put('bbb.attempt', $attempt);
         }
+
         return $response;
     }
 
     public function grades(Request $request): View|RedirectResponse
     {
         $student = $this->student($request);
-        if (!$student) return redirect()->route('student.entry');
+        if (! $student) {
+            return redirect()->route('student.entry');
+        }
 
         $groups = $this->groups($request, $student);
         $student = $this->groupForRequest($request, $student) ?? $this->currentGroup($request, $student);
@@ -461,19 +486,23 @@ class StudentPortalController extends Controller
 
     public function result(Request $request): JsonResponse
     {
-        if (!$this->student($request)) {
+        if (! $this->student($request)) {
             return response()->json(['message' => 'Sesión del alumno no disponible.'], 401);
         }
         $attempt = $this->selectedResult($request);
-        if (!$attempt || !$attempt['finished']) return response()->json(['message'=>'El examen aún no ha sido entregado.'],403);
+        if (! $attempt || ! $attempt['finished']) {
+            return response()->json(['message' => 'El examen aún no ha sido entregado.'], 403);
+        }
+
         // La funcion de la API oculta notas por decisión del docente.
         return $this->invoke($request, 'result', false, 'SELECT public.fn_revision_portal_alumno(CAST(? AS uuid)) AS data', $attempt);
     }
 
     private function selectedResult(Request $request): ?array
     {
-        if (!$request->has('intento')) {
+        if (! $request->has('intento')) {
             $completed = $this->completedAttempts($request);
+
             return reset($completed) ?: null;
         }
 
@@ -486,6 +515,7 @@ class StudentPortalController extends Controller
     {
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('student.entry');
     }
 }

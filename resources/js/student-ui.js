@@ -32,7 +32,7 @@ if (root) {
   const request = async (url, data={}) => {
     const res = await fetch(url, {method:'POST', credentials:'same-origin', headers:{'Accept':'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrf}, body:JSON.stringify(data)});
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) throw Object.assign(Error(json.message || `Operación rechazada (${res.status})`), {status: res.status});
+    if (!res.ok) throw Object.assign(Error(json.message || `Operación rechazada (${res.status})`), {status: res.status, code: json.code, data: json.data});
     return json.data ?? json;
   };
   const dialog = id => { const d=$(id); if (d && !d.open) d.showModal(); };
@@ -200,7 +200,39 @@ if (root) {
   }
   const typeNames={opcion_multiple:'Opción múltiple',relacion_columnas:'Relación de columnas',abierta:'Respuesta abierta',programacion:'Programación'};
   if (urls.screen === 'exam') {
-    let questions=[], current=0, answers={}, pendingSave=null, deadline=0, finished=false, navigating=false;
+    let questions=[], current=0, answers={}, pendingSave=null, deadline=0, finished=false, navigating=false, writable=false, questionDeadline=0, syncEpoch=0, syncMono=0, finishing=false;
+    const serverNow = () => syncEpoch + performance.now() - syncMono;
+    const applyTime = time => {
+      syncEpoch=Date.parse(time.servidor_ahora); syncMono=performance.now();
+      deadline=Date.parse(time.fecha_limite);
+      if (time.examen_pregunta_id != null) {
+        questionDeadline=Date.parse(time.pregunta_fecha_limite);
+        writable=Boolean(time.puede_responder);
+      }
+      if (time.estado==='finalizado') complete();
+    };
+    const lockInputs = () => $('bbb-q-input').querySelectorAll('input,textarea,select').forEach(input=>input.disabled=!writable || finished);
+    const complete = () => {
+      finished=true; writable=false; lockInputs();
+      if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
+      try { sessionStorage.removeItem(cacheKey); } catch {}
+      close('bbb-confirm'); close('bbb-review'); dialog('bbb-done-dialog');
+    };
+    const expire = async () => {
+      if (finished || finishing) return;
+      writable=false; lockInputs(); finishing=true;
+      $('bbb-save-state').textContent='El tiempo terminó. Confirmando el cierre…';
+      try { await request(urls.finish); complete(); }
+      catch { $('bbb-save-state').textContent='El tiempo terminó. Reconecta para confirmar la entrega; las respuestas guardadas se conservan.'; }
+      finally { finishing=false; }
+    };
+    const open = async () => {
+      writable=false; lockInputs();
+      const time=await request(urls.openQuestion,{examen_pregunta_id:questions[current].examen_pregunta_id});
+      if (time.pregunta) Object.assign(questions[current],time.pregunta);
+      applyTime(time); render(); lockInputs();
+      if (!writable && !finished) $('bbb-save-state').textContent='El tiempo de esta pregunta terminó. Puedes continuar con otra.';
+    };
     const cacheKey=`bbb-attempt-answers-${urls.attempt}`;
     try { const saved=JSON.parse(sessionStorage.getItem(cacheKey)||'{}'); if(saved && typeof saved==='object') answers=saved; } catch {};
     const cache = () => { try{sessionStorage.setItem(cacheKey,JSON.stringify(answers))}catch{} };
@@ -241,7 +273,7 @@ if (root) {
         if (!await pendingSave) return false;
         return save();
       }
-      const q=questions[current]; if(!q || finished)return true;
+      const q=questions[current]; if(!q || finished || !writable)return true;
       const value=formValue(q), old=answers[q.examen_pregunta_id] || '';
       if(value===old)return true;
       if(!value.trim()){ $('bbb-save-state').textContent='Escribe un reemplazo para la respuesta guardada.';return false; }
@@ -251,7 +283,12 @@ if (root) {
           await request(urls.answer,{examen_pregunta_id:q.examen_pregunta_id,respuesta_texto:value});
           answers[q.examen_pregunta_id]=value;cache();
           $('bbb-save-state').textContent='✓ Respuesta guardada'; progress();return true;
-        } catch(e){ $('bbb-save-state').textContent=`Error al guardar: ${e.message}`;return false; }
+        } catch(e){
+          $('bbb-save-state').textContent=`Error al guardar: ${e.message}`;
+          if(e.code==='QUESTION_EXPIRED'){writable=false;lockInputs();return true;}
+          if(e.code==='ATTEMPT_EXPIRED' || e.code==='ATTEMPT_CLOSED')expire();
+          return false;
+        }
       })();
       let saved;
       try { saved = await pendingSave; } finally { pendingSave = null; }
@@ -294,13 +331,16 @@ if (root) {
         if (!await save()) return;
         current = pos;
         render();
+        await open();
         $('bbb-question-heading').focus({preventScroll:true});
         scrollTo({top:0,behavior:'smooth'});
-      } finally { navigating = false; }
+      } catch(e) { $('bbb-save-state').textContent=`No fue posible abrir la pregunta: ${e.message}`; } finally { navigating = false; }
     };
     $('bbb-prev').addEventListener('click',()=>goto(current-1));
     $('bbb-next').addEventListener('click',()=>goto(current+1));
     $('bbb-q-nav').addEventListener('click',e=>{const button=e.target.closest('[data-q-go]');if(button)goto(Number(button.dataset.qGo));});
+    let autosave;
+    $('bbb-q-input').addEventListener('input',()=>{clearTimeout(autosave);autosave=setTimeout(save,600);});
     $('bbb-q-input').addEventListener('change',()=>save());
     $('bbb-q-input').addEventListener('focusout',e=>{if(e.target?.id==='bbb-free-answer')save();});
     const review=async()=>{
@@ -330,31 +370,47 @@ if (root) {
       const btn=$('bbb-confirm-submit');btn.disabled=true;btn.textContent='Registrando entrega…';$('bbb-finish-error').hidden=true;
       try{
         await request(urls.finish);
-        finished=true;
-        try { sessionStorage.removeItem(cacheKey); } catch {}
-        close('bbb-confirm');
-        dialog('bbb-done-dialog');
+        complete();
       }
       catch(e){$('bbb-finish-error').textContent=e.message;$('bbb-finish-error').hidden=false;btn.disabled=false;btn.textContent='Sí, entregar';}
     });
     $('bbb-done-dialog').addEventListener('cancel', event => event.preventDefault());
-    const tick=()=>{if(!deadline||finished)return;const remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));const m=Math.floor(remaining/60),s=remaining%60;$('bbb-time').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;};
+    const tick=()=>{
+      if(!deadline||finished)return;
+      const remaining=Math.max(0,Math.ceil((deadline-serverNow())/1000));
+      $('bbb-time').textContent=`${String(Math.floor(remaining/60)).padStart(2,'0')}:${String(remaining%60).padStart(2,'0')}`;
+      if(remaining===0){expire();return;}
+      if(questionDeadline){
+        const seconds=Math.max(0,Math.ceil((questionDeadline-serverNow())/1000));
+        $('bbb-question-time').textContent=`Tiempo de pregunta: ${seconds} s`;
+        if(!seconds && writable){writable=false;lockInputs();$('bbb-save-state').textContent='El tiempo de esta pregunta terminó. Las respuestas guardadas se conservan.';}
+      }
+    };
+    const resync = async () => { if(finished)return;try{applyTime(await request(urls.time));tick();}catch{} };
+    setInterval(resync,15000);
+    addEventListener('online',resync);
+    $('bbb-fullscreen').hidden=!document.fullscreenEnabled;
+    $('bbb-fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await root.requestFullscreen();}catch{$('bbb-save-state').textContent='No fue posible activar la pantalla completa en este navegador.';}});
+    // Se registra la incidencia; nunca se anula un examen por un evento del navegador.
+    document.addEventListener('visibilitychange',()=>{
+      if(!finished && document.hidden && questions.length)request(urls.incident,{tipo_alerta:'cambio_pestana',nivel_severidad:'baja'}).catch(()=>{});
+      if(!document.hidden)resync();
+    });
+    document.addEventListener('fullscreenchange',()=>{
+      if(!finished && !document.fullscreenElement && questions.length)request(urls.incident,{tipo_alerta:'salida_pantalla',nivel_severidad:'baja'}).catch(()=>{});
+    });
     request(urls.questions).then(data=>{
       questions=Array.isArray(data.preguntas)?data.preguntas:[];
       if(!questions.length){$('bbb-question-heading').textContent='Este examen no tiene preguntas disponibles.';return;}
       if (data.nombre) $('bbb-active-exam-title').textContent = data.nombre;
       if (data.respuestas) { answers = data.respuestas; cache(); }
-      const totalSeconds=questions.reduce((sum,q)=>sum+Math.max(0,Number(q.tiempo_segundos)||0),0);
-      // Temporizador informativo; las reglas y horarios reales los valida PostgreSQL.
-      if (totalSeconds) {
-        deadline=(Date.parse(urls.started)||Date.now())+totalSeconds*1000;
-        tick();
-        setInterval(tick,1000);
-      }
+      applyTime(data.tiempo);
+      tick(); setInterval(tick,1000);
       $('bbb-review-open').disabled = false;
       $('bbb-save-state').textContent='Puedes revisar tus respuestas antes de entregar.';
       render();
-    }).catch(e=>{$('bbb-question-heading').textContent='No fue posible recuperar las preguntas';$('bbb-save-state').textContent=e.message;});
+      return open();
+    }).catch(e=>{if(e.code==='ATTEMPT_CLOSED'){complete();return;}$('bbb-question-heading').textContent='No fue posible recuperar las preguntas';$('bbb-save-state').textContent=e.message;});
   }
   if (urls.screen === 'grades' && $('bbb-result-title')) {
     const status = $('bbb-result-status');
