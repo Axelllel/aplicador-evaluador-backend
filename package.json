@@ -17,6 +17,7 @@
         "@laravel/multiplex": "^0.4.1"
     },
     "dependencies": {
+        "air-datepicker": "3.6.0",
         "jsqr": "1.4.0"
     }
 }

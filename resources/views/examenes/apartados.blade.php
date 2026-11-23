@@ -11,8 +11,8 @@
 @php
     $tipos = (array) __('preguntas.tipos');
     $formato = \App\Services\ExamenesPanelService::FORMATO_DE_FECHA;
-    $apertura = \Carbon\CarbonImmutable::parse($detalle['fecha_apertura'])->format($formato);
-    $cierre = \Carbon\CarbonImmutable::parse($detalle['fecha_cierre'])->format($formato);
+    $apertura = \Carbon\CarbonImmutable::parse($detalle['fecha_apertura'])->setTimezone(\App\Support\ReglasExamen::zonaDelDocente())->format($formato);
+    $cierre = \Carbon\CarbonImmutable::parse($detalle['fecha_cierre'])->setTimezone(\App\Support\ReglasExamen::zonaDelDocente())->format($formato);
     $tonosDeEstado = ['borrador' => 'neutro', 'publicado' => 'exito', 'cerrado' => 'primario'];
     $ponderacionCompleta = abs($ponderacionTotal - 100) < 0.005;
     $textoComposicion = __('examenes.composicion');

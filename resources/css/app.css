@@ -529,3 +529,32 @@
 .tp-ai-proposal h4 {font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;}
 .tp-ai-caption {font-size:13px;line-height:1.7;color:var(--tp-text);overflow-wrap:anywhere;}
 @media(width < 48rem) {.tp-ai-settings {grid-template-columns:minmax(0,1fr);gap:16px;}}
+
+/* Selector de fecha (Air Datepicker) con los colores del panel y modo oscuro. */
+#nuevo-examen { scroll-margin-top: 92px; }
+.air-datepicker {
+    --adp-font-family: 'DM Sans', system-ui, Arial, sans-serif;
+    --adp-font-size: 14px;
+    --adp-background-color: var(--tp-card, #fff);
+    --adp-color: var(--tp-text, #1f2937);
+    --adp-border-color: var(--tp-border, #e7ecf3);
+    --adp-border-color-inner: var(--tp-border, #e7ecf3);
+    --adp-accent-color: #2563eb;
+    --adp-color-secondary: var(--tp-muted, #8490a3);
+    --adp-day-name-color: #2563eb;
+    --adp-cell-background-color-hover: var(--tp-pale, #eff6ff);
+    --adp-cell-background-color-selected: #2563eb;
+    --adp-cell-background-color-selected-hover: #1d4ed8;
+    --adp-cell-background-color-in-range: var(--tp-pale, #eff6ff);
+    --adp-btn-color: #2563eb;
+    --adp-btn-color-hover: #1d4ed8;
+    --adp-btn-background-color-hover: var(--tp-pale, #eff6ff);
+    --adp-time-track-color: var(--tp-border, #e7ecf3);
+    --adp-time-day-period-color: var(--tp-text, #1f2937);
+    --adp-popup-background-color: var(--tp-card, #fff);
+    --adp-popup-color: var(--tp-text, #1f2937);
+    --adp-z-index: 60;
+    border-radius: 12px;
+}
+.tp-dark .air-datepicker { --adp-accent-color: #60a5fa; --adp-day-name-color: #60a5fa; --adp-btn-color: #60a5fa; --adp-btn-color-hover: #93c5fd; --adp-cell-background-color-selected: #3b82f6; }
+.air-datepicker-cell.-disabled- { opacity: .35; }

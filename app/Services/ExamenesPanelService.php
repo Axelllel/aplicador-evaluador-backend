@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Support\ReglasExamen;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -60,7 +61,7 @@ class ExamenesPanelService
                 'nombre' => (string) $examen['nombre'],
                 'grupo' => (string) ($materias[$examen['grupo_id']] ?? '—'),
                 'estado' => $estado,
-                'fecha' => CarbonImmutable::parse($examen['fecha_apertura'])->format(self::FORMATO_DE_FECHA),
+                'fecha' => CarbonImmutable::parse($examen['fecha_apertura'])->setTimezone(ReglasExamen::zonaDelDocente())->format(self::FORMATO_DE_FECHA),
                 'acciones' => $estado === 'borrador'
                     ? ['abrir', 'publicar', 'eliminar']
                     : ['abrir', 'resultados', 'estadisticas'],

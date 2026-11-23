@@ -32,6 +32,8 @@ window.addEventListener('pageshow', () => {
     pendingForms.clear();
 });
 document.querySelector('[data-focus-notice]')?.focus();
+// Tras un error de validación, el foco va al resumen para que se lea sin buscarlo.
+document.querySelector('[data-error-summary]')?.focus({ preventScroll: false });
 
 document.querySelectorAll('[data-guest-theme]').forEach(guest => {
     try { guest.classList.toggle('tp-dark', localStorage.getItem('bbb-theme') === 'dark'); }

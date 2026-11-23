@@ -33,8 +33,21 @@
             </x-tarjeta>
         @else
             <x-tarjeta class="tp-exam-composer">
-                <form method="POST" action="{{ route('panel.examenes.store') }}" class="tp-exam-form space-y-6">
+                <form method="POST" action="{{ route('panel.examenes.store') }}" class="tp-exam-form space-y-6" data-submit-message="{{ __('examenes.nuevo.creando') }}">
                     @csrf
+
+                    @if ($errors->any() || session('error') || session('aviso'))
+                        <div role="alert" tabindex="-1" data-error-summary class="rounded-lg border border-error bg-error/10 p-3 text-sm text-error">
+                            <p class="font-semibold">{{ __('examenes.errores.resumen') }}</p>
+                            <ul class="mt-1 list-disc pl-5">
+                                @foreach ($errors->all() as $mensajeDeError)
+                                    <li>{{ $mensajeDeError }}</li>
+                                @endforeach
+                                @if (session('error')) <li>{{ session('error') }}</li> @endif
+                                @if (session('aviso')) <li>{{ session('aviso') }}</li> @endif
+                            </ul>
+                        </div>
+                    @endif
 
                     <div class="tp-form-section"><span class="tp-step-number">01</span><div><h3>{{ __('workspace.exams.identify') }}</h3><p>{{ __('workspace.exams.identify_hint') }}</p></div></div>
                     <div class="grid gap-5 md:grid-cols-2">
@@ -57,6 +70,7 @@
                         <x-campo-texto
                             nombre="fecha_apertura"
                             tipo="datetime-local"
+                            data-selector-fecha="apertura"
                             :etiqueta="__('examenes.nuevo.fecha_apertura')"
                             :ayuda="__('examenes.nuevo.ayuda_fechas')"
                         />
@@ -64,6 +78,7 @@
                         <x-campo-texto
                             nombre="fecha_cierre"
                             tipo="datetime-local"
+                            data-selector-fecha="cierre"
                             :etiqueta="__('examenes.nuevo.fecha_cierre')"
                         />
                     </div>

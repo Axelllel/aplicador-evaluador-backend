@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Support\ReglasExamen;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -40,9 +41,9 @@ class ExamenRequest extends FormRequest
     {
         return [
             'grupo_id' => ['required', 'integer', 'min:1'],
-            'nombre' => ['required', 'string', 'min:2', 'max:150'],
-            'fecha_apertura' => ['required', 'date'],
-            'fecha_cierre' => ['required', 'date', 'after:fecha_apertura'],
+            'nombre' => ReglasExamen::nombre(),
+            'fecha_apertura' => ReglasExamen::apertura(ReglasExamen::zonaDelDocente()),
+            'fecha_cierre' => ReglasExamen::cierre(ReglasExamen::zonaDelDocente()),
             'orden' => ['required', Rule::in(['aleatorio', 'fijo'])],
             'escala' => ['required', Rule::in(['0-10', '0-100'])],
             'plataforma_permitida' => ['required', Rule::in(['web', 'movil', 'ambas'])],
@@ -51,7 +52,15 @@ class ExamenRequest extends FormRequest
     }
 
     /**
-     * Devuelve el JSON que espera POST /api/v1/teacher/exams, con las fechas en «Y-m-d H:i:s».
+     * Tras un error, vuelve al formulario y no al inicio de la página.
+     */
+    protected function getRedirectUrl(): string
+    {
+        return parent::getRedirectUrl().'#nuevo-examen';
+    }
+
+    /**
+     * Devuelve el JSON que espera POST /api/v1/teacher/exams, con las fechas en ISO 8601 con desfase.
      *
      * @return array<string, mixed>
      */
@@ -59,8 +68,11 @@ class ExamenRequest extends FormRequest
     {
         $datos = $this->validated();
         $datos['grupo_id'] = (int) $datos['grupo_id'];
-        $datos['fecha_apertura'] = CarbonImmutable::parse($datos['fecha_apertura'])->format('Y-m-d H:i:s');
-        $datos['fecha_cierre'] = CarbonImmutable::parse($datos['fecha_cierre'])->format('Y-m-d H:i:s');
+        $zona = ReglasExamen::zonaDelDocente();
+        $datos['nombre'] = trim($datos['nombre']);
+        // La hora escrita es la del docente; se envía con su desfase para guardar el instante correcto.
+        $datos['fecha_apertura'] = CarbonImmutable::parse($datos['fecha_apertura'], $zona)->toIso8601String();
+        $datos['fecha_cierre'] = CarbonImmutable::parse($datos['fecha_cierre'], $zona)->toIso8601String();
 
         return $datos;
     }

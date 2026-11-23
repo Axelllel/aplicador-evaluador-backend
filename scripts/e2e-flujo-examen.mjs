@@ -30,8 +30,17 @@ const grupoId = (j?.data ?? j)[0]?.id;
 
 const ahora = Date.now();
 const iso = (ms) => new Date(ms).toISOString();
-[r, j] = await api('POST', '/teacher/exams', { grupo_id: grupoId, nombre: 'Prueba E2E ' + new Date().toISOString().slice(11, 19), fecha_apertura: iso(ahora - 300000), fecha_cierre: iso(ahora + 7200000), orden: 'fijo', escala: '0-10', plataforma_permitida: 'web', resultado_visible: 'final' });
+[r, j] = await api('POST', '/teacher/exams', { grupo_id: grupoId, nombre: 'Prueba E2E ' + new Date().toISOString().slice(11, 19), fecha_apertura: iso(ahora - 60000), fecha_cierre: iso(ahora + 7200000), orden: 'fijo', escala: '0-10', plataforma_permitida: 'web', resultado_visible: 'final' });
 paso('docente: crear examen', r, j); const examenId = j?.data?.id;
+// Validaciones: apertura en 1900, apertura en el pasado, cierre anterior y nombre repetido deben rechazarse (422).
+const base = { grupo_id: grupoId, orden: 'fijo', escala: '0-10', plataforma_permitida: 'web', resultado_visible: 'final' };
+for (const [nombre, extra] of [
+  ['apertura en 1900', { nombre: 'Invalido A', fecha_apertura: '1900-01-01T08:00:00Z', fecha_cierre: iso(ahora + 3600000) }],
+  ['apertura en el pasado', { nombre: 'Invalido B', fecha_apertura: iso(ahora - 86400000), fecha_cierre: iso(ahora + 3600000) }],
+  ['cierre antes de la apertura', { nombre: 'Invalido C', fecha_apertura: iso(ahora + 3600000), fecha_cierre: iso(ahora + 1800000) }],
+  ['ventana de 60 dias', { nombre: 'Invalido D', fecha_apertura: iso(ahora), fecha_cierre: iso(ahora + 60 * 86400000) }],
+]) { [r, j] = await api('POST', '/teacher/exams', { ...base, ...extra }); console.log((r.status === 422 ? 'OK  ' : 'FALLO ') + 'docente: rechaza ' + nombre + ' -> ' + r.status); if (r.status !== 422) process.exitCode = 1; }
+[r, j] = await api('POST', '/teacher/exams', { ...base, nombre: ' ' + (j?.data?.nombre ?? '').toUpperCase() + ' ', fecha_apertura: iso(ahora), fecha_cierre: iso(ahora + 3600000) }); console.log((r.status === 422 ? 'OK  ' : 'FALLO ') + 'docente: rechaza nombre repetido -> ' + r.status); if (r.status !== 422) process.exitCode = 1;
 
 const apartados = {};
 for (const [tipo, preguntaId, pond] of [['opcion_multiple', 1, 50], ['abierta', 2, 50]]) {

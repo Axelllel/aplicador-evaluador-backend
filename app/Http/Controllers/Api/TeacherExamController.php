@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\ModificaExamenBorrador;
 use App\Http\Controllers\Controller;
+use App\Support\ReglasExamen;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Examenes en borrador del docente autenticado.
@@ -46,9 +48,9 @@ class TeacherExamController extends Controller
     {
         $datos = $request->validate([
             'grupo_id' => ['required', 'integer', 'min:1'],
-            'nombre' => ['required', 'string', 'min:2', 'max:150'],
-            'fecha_apertura' => ['required', 'date'],
-            'fecha_cierre' => ['required', 'date', 'after:fecha_apertura'],
+            'nombre' => ReglasExamen::nombre(),
+            'fecha_apertura' => ReglasExamen::apertura('UTC'),
+            'fecha_cierre' => ReglasExamen::cierre('UTC'),
             'orden' => ['required', Rule::in(['aleatorio', 'fijo'])],
             'escala' => ['required', Rule::in(['0-10', '0-100'])],
             'plataforma_permitida' => ['required', Rule::in(['web', 'movil', 'ambas'])],
@@ -67,6 +69,19 @@ class TeacherExamController extends Controller
 
             if (!$grupo) {
                 return response()->json(['message' => 'Grupo no disponible.'], 404);
+            }
+
+            // Un candado por docente evita duplicados por doble clic o peticiones simultaneas.
+            DB::selectOne('SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))', ['examen:'.$docenteId]);
+
+            $nombre = trim($datos['nombre']);
+            $repetido = DB::table('examen')
+                ->where('grupo_id', $grupo->id)
+                ->whereRaw('lower(btrim(nombre)) = ?', [mb_strtolower($nombre)])
+                ->exists();
+
+            if ($repetido) {
+                throw ValidationException::withMessages(['nombre' => [__('examenes.errores.nombre_repetido')]]);
             }
 
             // El manual condiciona la gestion del sistema a un plan vigente.
@@ -98,7 +113,7 @@ class TeacherExamController extends Controller
             // Se crea como borrador; publicar requiere preguntas/apartados validos.
             $nuevo = [
                 'grupo_id' => $grupo->id,
-                'nombre' => $datos['nombre'],
+                'nombre' => $nombre,
                 'fecha_apertura' => $datos['fecha_apertura'],
                 'fecha_cierre' => $datos['fecha_cierre'],
                 'orden' => $datos['orden'],

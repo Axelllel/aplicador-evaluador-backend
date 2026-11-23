@@ -356,7 +356,7 @@ class PanelControllerTest extends TestCase
             ->assertSee('Cálculo diferencial')
             ->assertSee('Borrador')
             ->assertSee('Cerrado')
-            ->assertSee('01/10/2026 08:00')
+            ->assertSee('01/10/2026 02:00')
             ->assertSee('title="Publicar"', false)
             ->assertSee('title="Abrir"', false)
             ->assertSee('title="Resultados"', false)

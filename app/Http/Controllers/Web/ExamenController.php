@@ -66,13 +66,16 @@ class ExamenController extends Controller
             ? redirect()->route('panel.examenes.apartados', ['examen' => (int) $respuesta->dato('id')])
             : redirect()->route('panel.examenes');
 
-        return $this->redirigirSegunRespuesta(
+        $redireccion = $this->redirigirSegunRespuesta(
             $respuesta,
             $destino,
             __('mensajes.exito.examen_creado'),
             null,
             __('mensajes.error.examen_no_guardado'),
         );
+
+        // Con error se regresa al formulario, no al inicio de la página.
+        return $respuesta->exitosa() ? $redireccion : $redireccion->withFragment('nuevo-examen');
     }
 
     /**

@@ -29,7 +29,16 @@ return [
         'escala' => 'Escala de calificación',
         'plataforma' => 'Plataforma permitida',
         'resultado_visible' => 'Resultado visible para el alumno',
-        'ayuda_fechas' => 'El examen solo estará disponible entre la apertura y el cierre.',
+        'ayuda_fechas' => 'El examen solo estará disponible entre la apertura y el cierre. Hora de la Ciudad de México; la apertura no puede estar en el pasado y la ventana dura 30 días como máximo.',
+        'creando' => 'Creando examen…',
+    ],
+
+    'errores' => [
+        'resumen' => 'No se pudo crear el examen. Revisa lo siguiente:',
+        'apertura_pasada' => 'La fecha de apertura no puede estar en el pasado.',
+        'apertura_antigua' => 'La fecha de apertura debe ser posterior al año :anio.',
+        'duracion_excesiva' => 'La ventana del examen no puede durar más de :dias días.',
+        'nombre_repetido' => 'Ya tienes un examen con ese nombre en este grupo.',
     ],
 
     'opciones' => [

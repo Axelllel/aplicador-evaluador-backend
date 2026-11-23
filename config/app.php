@@ -67,6 +67,9 @@ return [
 
     'timezone' => 'UTC',
 
+    // Zona en la que el docente escribe y lee las fechas de los exámenes; se guardan en UTC.
+    'timezone_docente' => env('APP_TIMEZONE_DOCENTE', 'America/Mexico_City'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
