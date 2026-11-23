@@ -223,3 +223,14 @@ El cliente registra cambios de pestaña, salida de pantalla completa, desconexi�
 Comprobación local de este lote: 325 pruebas PHP, 4432 aserciones y 89.21 % de líneas ejecutables cubiertas en servicios y modelos. El pipeline vuelve a medir en cada PR. El administrador del repositorio debe seleccionar el estado `Pruebas y cobertura 70` como requisito de merge en las reglas de `staging` y `main`; crear el workflow no modifica por sí solo la protección de ramas.
 
 La capa `resources/css/ui-standards.css` agrega fuentes del sistema, títulos 24/20 px, cuerpo 16 px, texto secundario 14 px, controles de al menos 44 px y geometría adaptable. La paleta se conserva. No se descargan fuentes externas. Las pruebas de navegador revisan anchuras 1366/768/375 y ampliación tipográfica al 200 %.
+
+### Activación en el servicio existente
+
+1. Aplicar `scripts/completar-requisitos.sql` completo en SQL Editor; todos los indicadores finales deben ser verdaderos. Este lote agrega seis migraciones y no borra alumnos, respuestas ni tablas originales.
+2. Aplicar `scripts/activar-administrador.sql` después de sustituir `TU_CORREO`; una cuenta docente existente debe coincidir exactamente.
+3. Para Render Free, habilitar pg_cron y aplicar `scripts/activar-cierre-supabase.sql`; la fecha límite es aplicada por el backend aunque el cierre materializado ocurra en el siguiente minuto. El procesamiento con IA espera un proceso Laravel activo; si Render se suspende, las tareas permanecen en cola hasta que vuelva a estar activo.
+4. Conservar `APP_KEY`, `STUDENT_PIN_PEPPER`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, las credenciales de BD y la clave de IA actuales. Añadir solo los valores de `scripts/activacion.env.example` que falten.
+5. Integrar este PR en staging y esperar el deploy Live de Render. El nuevo Dockerfile compila el modelo y arranca el planificador. En una shell del servicio, `bash scripts/comprobar-activacion.sh` permite comprobar rutas y procesar un lote real. No iniciar un segundo `schedule:work` si ya lo ejecuta el contenedor.
+6. Volver a iniciar sesión para obtener el rol de administrador. Verificar con cuentas de prueba los permisos y una entrega completa.
+
+**Segundo factor telefónico:** Supabase Advanced MFA Phone no está incluido en Free y requiere un complemento pagado además del proveedor SMS. No se activa ni contrata desde este código. Mantener `SUPABASE_MFA_PHONE_ENABLED=false` hasta que el responsable habilite y pruebe ese servicio. Referencias oficiales: https://supabase.com/docs/guides/auth/auth-mfa/phone y https://supabase.com/docs/guides/platform/manage-your-usage/advanced-mfa-phone.

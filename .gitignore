@@ -54,3 +54,5 @@ Thumbs.db
 /public/qa-*.html
 /test-results/
 /playwright-report/
+
+!scripts/activacion.env.example
