@@ -50,3 +50,7 @@ Thumbs.db
 
 # Informes generados de cobertura
 /storage/coverage/
+
+/public/qa-*.html
+/test-results/
+/playwright-report/

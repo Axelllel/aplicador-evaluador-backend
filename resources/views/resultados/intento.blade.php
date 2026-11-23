@@ -207,7 +207,14 @@
                 <x-tabla :titulo="__('resultados.incidencias.tabla.titulo')" :columnas="array_values(__('resultados.incidencias.tabla.columnas'))">
                     @foreach ($incidencias as $incidencia)
                         <x-tabla.fila>
-                            <x-tabla.celda>{{ __('resultados.incidencias.tipos.'.$incidencia['tipo']) }}</x-tabla.celda>
+                            <x-tabla.celda>{{ __('resultados.incidencias.tipos.'.$incidencia['tipo']) }}
+                                @if (!empty($incidencia['evidencia']))
+                                    <details><summary>Ver observación</summary>
+                                        <p>Detección automática para revisión; no determina una infracción.</p>
+                                        <p>{{ $incidencia['evidencia']['rostros'] ?? '—' }} rostro(s) · {{ $incidencia['evidencia']['duracion_segundos'] ?? '—' }} s</p>
+                                    </details>
+                                @endif
+                            </x-tabla.celda>
                             <x-tabla.celda>
                                 <x-insignia :tono="$tonosDeSeveridad[$incidencia['severidad']] ?? 'neutro'">{{ __('resultados.incidencias.severidades.'.$incidencia['severidad']) }}</x-insignia>
                             </x-tabla.celda>

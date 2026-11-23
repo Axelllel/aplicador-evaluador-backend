@@ -1,3 +1,4 @@
+import { startProctoring } from './proctoring';
 /** BigBitByte Portal estudiantil. Las operaciones reales pasan por Laravel + Supabase. */
 import { createStudentQrScanner } from './student-qr';
 
@@ -201,6 +202,7 @@ if (root) {
   const typeNames={opcion_multiple:'Opción múltiple',relacion_columnas:'Relación de columnas',abierta:'Respuesta abierta',programacion:'Programación'};
   if (urls.screen === 'exam') {
     let questions=[], current=0, answers={}, pendingSave=null, deadline=0, finished=false, navigating=false, writable=false, questionDeadline=0, syncEpoch=0, syncMono=0, finishing=false;
+    const supervision=startProctoring({send:event=>request(urls.incident,event),active:()=>!finished && questions.length>0,button:$('bbb-camera'),status:$('bbb-proctoring-status')});
     const serverNow = () => syncEpoch + performance.now() - syncMono;
     const applyTime = time => {
       syncEpoch=Date.parse(time.servidor_ahora); syncMono=performance.now();
@@ -213,7 +215,7 @@ if (root) {
     };
     const lockInputs = () => $('bbb-q-input').querySelectorAll('input,textarea,select').forEach(input=>input.disabled=!writable || finished);
     const complete = () => {
-      finished=true; writable=false; lockInputs();
+      finished=true; supervision.stop(); writable=false; lockInputs();
       if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
       try { sessionStorage.removeItem(cacheKey); } catch {}
       close('bbb-confirm'); close('bbb-review'); dialog('bbb-done-dialog');
@@ -393,11 +395,11 @@ if (root) {
     $('bbb-fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await root.requestFullscreen();}catch{$('bbb-save-state').textContent='No fue posible activar la pantalla completa en este navegador.';}});
     // Se registra la incidencia; nunca se anula un examen por un evento del navegador.
     document.addEventListener('visibilitychange',()=>{
-      if(!finished && document.hidden && questions.length)request(urls.incident,{tipo_alerta:'cambio_pestana',nivel_severidad:'baja'}).catch(()=>{});
+      if(!finished && document.hidden && questions.length)supervision.record({tipo_alerta:'cambio_pestana',nivel_severidad:'baja'});
       if(!document.hidden)resync();
     });
     document.addEventListener('fullscreenchange',()=>{
-      if(!finished && !document.fullscreenElement && questions.length)request(urls.incident,{tipo_alerta:'salida_pantalla',nivel_severidad:'baja'}).catch(()=>{});
+      if(!finished && !document.fullscreenElement && questions.length)supervision.record({tipo_alerta:'salida_pantalla',nivel_severidad:'baja'});
     });
     request(urls.questions).then(data=>{
       questions=Array.isArray(data.preguntas)?data.preguntas:[];

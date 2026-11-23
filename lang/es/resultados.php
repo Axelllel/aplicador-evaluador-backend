@@ -122,6 +122,10 @@ return [
             'salida_pantalla' => 'Salida de pantalla',
             'conexion' => 'Problema de conexión',
             'otro' => 'Otra incidencia',
+            'rostro_no_detectado' => 'Rostro no detectado',
+            'multiples_rostros' => 'Varios rostros detectados',
+            'camara_desactivada' => 'Cámara desactivada',
+            'movimiento' => 'Movimiento detectado',
         ],
         'severidades' => [
             'baja' => 'Baja',

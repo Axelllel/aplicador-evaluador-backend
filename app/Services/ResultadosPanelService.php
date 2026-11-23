@@ -69,6 +69,7 @@ class ResultadosPanelService
                 'tipo' => (string) $incidencia['tipo_alerta'],
                 'severidad' => (string) $incidencia['nivel_severidad'],
                 'fecha' => $this->fecha($incidencia['fecha_hora'] ?? null),
+                'evidencia' => $incidencia['evidencia_detalle'] ?? [],
             ])->values(),
         ];
     }

@@ -53,7 +53,7 @@ class StudentAttemptDatabaseTest extends TestCase
                 '20261026213000_restringir_acceso_directo.sql', '20261026214000_rls_docente_grupo_pregunta.sql',
                 '20261026214500_rls_fase2_tablas_restantes.sql', '20261030010000_flujo_examen_evaluacion.sql',
                 '20261109100000_examenes_publicados_portal_alumno.sql', '20261109120000_revision_y_resultados_portal_alumno.sql',
-                '20261109150000_credencial_alumno_pin.sql', '20261120200000_inicio_intento_movil_pin.sql', '20261120130000_asistencia_ia_groq.sql', '20261123010000_control_tiempo_intentos.sql', '20261123020000_recuperacion_pin_controlada.sql', '20261123030000_calificacion_en_segundo_plano.sql', '20261123040000_administracion_controlada.sql', '20261123050000_revocacion_sesiones_docente.sql'] as $file) {
+                '20261109150000_credencial_alumno_pin.sql', '20261120200000_inicio_intento_movil_pin.sql', '20261120130000_asistencia_ia_groq.sql', '20261123010000_control_tiempo_intentos.sql', '20261123020000_recuperacion_pin_controlada.sql', '20261123030000_calificacion_en_segundo_plano.sql', '20261123040000_administracion_controlada.sql', '20261123050000_revocacion_sesiones_docente.sql', '20261123060000_evidencia_incidencias.sql'] as $file) {
                 $sql = file_get_contents(base_path('supabase/migrations/'.$file));
                 if ($file === '20261025194447_seguridad_roles.sql' && $this->admin->query("SELECT 1 FROM pg_roles WHERE rolname='laravel_app'")->fetchColumn()) {
                     $sql = str_replace('CREATE ROLE laravel_app', 'ALTER ROLE laravel_app', $sql);
@@ -113,9 +113,32 @@ class StudentAttemptDatabaseTest extends TestCase
         $this->withToken('')->postJson('/api/v1/auth/logout')->assertUnauthorized();
     }
 
+    public function test_proctoring_evidence_is_validated_and_only_visible_to_the_owner(): void
+    {
+        $this->fixture();
+        $token = $this->postJson('/api/v1/student/exams/1/start', $this->credentials())->json('data.token_sesion');
+        $evidence = ['tecnologia' => 'MediaPipe BlazeFace 0.10.32', 'rostros' => 0, 'duracion_segundos' => 6, 'confianza' => 0];
+        $this->postJson('/api/v2/student/attempts/incidents', ['token_sesion' => $token, 'tipo_alerta' => 'rostro_no_detectado', 'nivel_severidad' => 'media', 'evidencia_detalle' => $evidence])->assertCreated();
+        $this->assertEquals($evidence, json_decode($this->admin->query('SELECT evidencia_detalle FROM public.incidencia_proctoring')->fetchColumn(), true));
+        $this->postJson('/api/v2/student/attempts/incidents', ['token_sesion' => $token, 'tipo_alerta' => 'rostro_no_detectado', 'nivel_severidad' => 'media', 'evidencia_detalle' => ['fotografia' => 'no permitida']])->assertUnprocessable();
+        $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.incidencia_proctoring')->fetchColumn());
+        config(['services.supabase.url' => 'https://auth.example.test', 'services.supabase.key' => 'test-key']);
+        $this->app->forgetInstance(Factory::class);
+        Http::clearResolvedInstance(Factory::class);
+        Http::fake(['auth.example.test/*' => Http::response(['id' => self::TEACHER])]);
+        $this->withToken('evidence-owner')->getJson('/api/v1/teacher/attempts/1/incidents')->assertOk()->assertJsonPath('data.0.evidencia_detalle.rostros', 0);
+        $other = '22222222-2222-4222-8222-222222222222';
+        $this->admin->exec("INSERT INTO auth.users VALUES('$other'); INSERT INTO public.docente(id,nombre,correo) VALUES('$other','Otro','otro@example.test')");
+        $this->app->forgetInstance(Factory::class);
+        Http::clearResolvedInstance(Factory::class);
+        Http::fake(['auth.example.test/*' => Http::response(['id' => $other])]);
+        $this->withToken('evidence-outsider')->getJson('/api/v1/teacher/attempts/1/incidents')->assertNotFound();
+
+    }
+
     private function fixture(): void
     {
-        $this->admin->exec('TRUNCATE auth.users, public.paquete, public.alumno, public.codigo_alumno_reservado RESTART IDENTITY CASCADE');
+        $this->admin->exec('TRUNCATE public.sesion_docente_revocada, auth.users, public.paquete, public.alumno, public.codigo_alumno_reservado RESTART IDENTITY CASCADE');
         $teacher = self::TEACHER;
         $this->admin->exec("INSERT INTO auth.users VALUES('$teacher');
 INSERT INTO public.paquete(id,nombre,max_grupos,max_preguntas,max_alumnos,precio) VALUES(1,'Prueba',10,100,30,10);
@@ -638,6 +661,7 @@ INSERT INTO public.examen_pregunta(id,apartado_id,pregunta_id,tiempo_segundos,po
         $this->postJson('/api/v2/student/attempts/finish', ['token_sesion' => $token])->assertOk();
         $this->postJson('/api/v2/student/attempts/incidents', $body)->assertForbidden();
         $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.incidencia_proctoring')->fetchColumn());
+
     }
 
     public static function proctoringEvents(): array

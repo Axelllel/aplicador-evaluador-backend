@@ -99,7 +99,11 @@ class TeacherResultsController extends Controller
             return response()->json(['message' => 'Intento no disponible.'], 404);
         }
         $rows = DB::table('incidencia_proctoring')->where('intento_id', $attemptId)
-            ->orderBy('id')->get(['id', 'tipo_alerta', 'nivel_severidad', 'evidencia_url', 'fecha_hora']);
+            ->orderBy('id')->get(['id', 'tipo_alerta', 'nivel_severidad', 'evidencia_url', 'fecha_hora', 'evidencia_detalle'])->map(function ($row) {
+                $row->evidencia_detalle = json_decode($row->evidencia_detalle, true);
+
+                return $row;
+            });
 
         return response()->json(['data' => $rows]);
     }

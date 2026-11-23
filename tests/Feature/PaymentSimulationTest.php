@@ -39,7 +39,6 @@ class PaymentSimulationTest extends TestCase
         $this->withoutVite();
         config(['database.default' => 'sqlite', 'database.connections.sqlite.database' => ':memory:', 'services.payment_simulation.enabled' => true]);
         DB::purge('sqlite');
-        DB::shouldReceive('getConnections')->andReturn([]);
     }
 
     public function test_checkout_exposes_both_methods_and_does_not_refill_card_secrets(): void
@@ -94,6 +93,7 @@ class PaymentSimulationTest extends TestCase
 
     public function test_persistence_receives_only_last_four_not_card_number_or_cvv(): void
     {
+        DB::shouldReceive('getConnections')->andReturn([]);
         DB::shouldReceive('selectOne')->once()->with(Mockery::type('string'), Mockery::on(function (array $bindings): bool {
             $json = json_encode($bindings);
 

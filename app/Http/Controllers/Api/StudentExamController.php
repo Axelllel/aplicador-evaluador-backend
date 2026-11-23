@@ -216,10 +216,15 @@ class StudentExamController extends Controller
             'tipo_alerta' => ['required', 'in:cambio_pestana,salida_pantalla,conexion,rostro_no_detectado,multiples_rostros,camara_desactivada,movimiento,otro'],
             'nivel_severidad' => ['required', 'in:baja,media,alta'],
             'evidencia_url' => ['nullable', 'url:https', 'max:2048'],
+            'evidencia_detalle' => ['sometimes', 'array:tecnologia,rostros,duracion_segundos,confianza'],
+            'evidencia_detalle.tecnologia' => ['sometimes', 'string', 'max:80'],
+            'evidencia_detalle.rostros' => ['sometimes', 'integer', 'min:0', 'max:100'],
+            'evidencia_detalle.duracion_segundos' => ['sometimes', 'integer', 'min:0', 'max:86400'],
+            'evidencia_detalle.confianza' => ['sometimes', 'numeric', 'min:0', 'max:1'],
         ]);
         try {
-            $row = DB::selectOne('SELECT public.fn_registrar_incidencia(CAST(? AS uuid), ?, ?, ?) AS id', [
-                $input['token_sesion'], $input['tipo_alerta'], $input['nivel_severidad'], $input['evidencia_url'] ?? null,
+            $row = DB::selectOne('SELECT public.fn_registrar_incidencia_evidencia(CAST(? AS uuid), ?, ?, ?, ?::jsonb) AS id', [
+                $input['token_sesion'], $input['tipo_alerta'], $input['nivel_severidad'], $input['evidencia_url'] ?? null, json_encode((object) ($input['evidencia_detalle'] ?? [])),
             ]);
         } catch (QueryException $e) {
             return $this->sqlError($e);

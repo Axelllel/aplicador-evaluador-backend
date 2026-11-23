@@ -44,6 +44,11 @@
         </section>
 
         <p class="es-question-hint">Los cambios de pestaña y las salidas de pantalla completa se registran durante el examen.</p>
+        <section aria-label="Supervisión de cámara" class="tp-card">
+            <p>La cámara se analiza en este dispositivo. Solo se registran incidencias; no se envían fotografías ni audio.</p>
+            <button id="bbb-camera" type="button" class="er-secondary">Activar cámara</button>
+            <p id="bbb-proctoring-status" role="status">La cámara requiere tu permiso. Las incidencias se revisan por el docente.</p>
+        </section>
         <nav class="es-question-nav" id="bbb-q-nav" aria-label="Navegación de preguntas"></nav>
         <div class="es-nav-legend">
             <span><i class="es-legend-current"></i> Actual</span><span><i class="es-legend-answered"></i> Respondida</span><span><i></i> Pendiente</span>

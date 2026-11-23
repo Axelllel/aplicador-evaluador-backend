@@ -92,11 +92,13 @@ Actualización: 22/11/2026. Backend Laravel, web Blade y API compartida con Flut
 ### Despliegue del lote
 
 1. Respaldar y usar una ventana sin exámenes activos para cambiar el contrato de navegación del alumno.
-2. Como alternativa de una sola ejecución, usar `scripts/completar-requisitos.sql` completo: reúne los cuatro archivos en una transacción y termina con una consulta cuyos indicadores deben ser todos `true`. No aplicar ambos métodos. Para aplicarlos por separado, ejecutar completos y en este orden los cuatro archivos SQL nuevos en el proyecto Supabase correspondiente:
+2. Como alternativa de una sola ejecución, usar `scripts/completar-requisitos.sql` completo: reúne los seis archivos en una transacción y termina con una consulta cuyos indicadores deben ser todos `true`. No aplicar ambos métodos. Para aplicarlos por separado, ejecutar completos y en este orden los seis archivos SQL nuevos en el proyecto Supabase correspondiente:
    - `supabase/migrations/20261123010000_control_tiempo_intentos.sql`.
    - `supabase/migrations/20261123020000_recuperacion_pin_controlada.sql`.
    - `supabase/migrations/20261123030000_calificacion_en_segundo_plano.sql`.
    - `supabase/migrations/20261123040000_administracion_controlada.sql`.
+   - `supabase/migrations/20261123050000_revocacion_sesiones_docente.sql`.
+   - `supabase/migrations/20261123060000_evidencia_incidencias.sql`.
 3. Publicar esta versión de Laravel junto con los assets compilados. `scripts/start-container.sh` mantiene Apache y el planificador; el Dockerfile lo utiliza. En otro entorno ejecutar `php artisan schedule:work` como servicio supervisado, o configurar el cron de Laravel. El contenedor usa caché de archivos para los bloqueos del planificador; si se cambia a caché de BD, deben existir sus tablas y permisos. El proceso debe permanecer activo; un alojamiento que se suspenda necesita un worker/cron independiente.
 4. Conservar v1 para la app Flutter actual e integrar v2 cuando se habilite su control individual de tiempo. La web de este commit ya utiliza v2; al cambiar de cliente, un intento activado en v2 requiere un cliente que lo soporte.
 5. Verificar con cuentas de prueba: crear y reanudar un intento, conservar respuestas, recorrer preguntas, agotar tiempo, entregar, consultar propuesta de IA y publicar la revisión docente. La integración en el proyecto Supabase real requiere esta comprobación después de aplicar SQL; las pruebas automatizadas usan bases desechables.
@@ -204,3 +206,20 @@ El script ejecuta también las pruebas de BD, cuotas de IA, permisos, PIN, tiemp
 - Flutter puede conservar v1; para utilizar control individual de tiempo debe integrar v2 y sus errores. Este repositorio contiene la API y la web, no modifica el cliente Flutter.
 
 La pasarela bancaria real sigue fuera del alcance acordado: los pagos son simulados y las capacidades adquiridas sí se registran en la base.
+
+
+### Cierre de sesión y supervisión añadidos
+
+La implementación de cámara descrita aquí amplía el alcance inicial registrado al comienzo de este archivo. MediaPipe Tasks Vision 0.10.32 y BlazeFace short range se ejecutan localmente en un worker con permiso explícito de cámara. El modelo tiene versión y SHA-256 fijados; el build comprueba su integridad y copia WASM/modelo dentro de `public/build/proctoring`. No depende de un CDN durante el examen. No se solicita micrófono ni se transmiten fotografías. La API admite evidencia descriptiva validada (tecnología, número de rostros, duración y confianza), visible solo para el docente propietario. No identifica personas ni demuestra fraude. Una detección no anula el intento. La revisión es humana.
+
+El cliente registra cambios de pestaña, salida de pantalla completa, desconexión, cámara desactivada y ausencia/múltiples rostros persistentes. Agrupa eventos del mismo tipo durante treinta segundos y reintenta el envío mientras permanezca abierto el examen. La denegación o falta de cámara se informa claramente. Las pruebas de navegador usan cámara sintética y no acreditan precisión biométrica sobre personas reales.
+
+`POST /api/v1/auth/logout` requiere Bearer. Revoca inmediatamente el hash del token y el `session_id` en el gateway y solicita a Supabase cerrar la sesión actual. La respuesta distingue la revocación local y la confirmación del proveedor. Otro JWT de la misma sesión queda bloqueado; un nuevo login independiente conserva acceso. La web utiliza este endpoint al salir. No se persiste el JWT en claro en la tabla de revocación.
+
+### Pruebas por cada PR
+
+`.github/workflows/backend-tests.yml` instala PHP 8.4, PostgreSQL 18 y Node 22. Ejecuta la suite con bases desechables, restauración cifrada real, pruebas de navegador y JavaScript, auditoría de dependencias y cobertura mínima del 70 % en **todos los servicios y modelos**, alcance del COD-WEB 11.4. Conserva Clover/JUnit y capturas como artifacts. `phpunit.coverage.xml` mantiene intacta la configuración de la suite normal y explicita ese alcance.
+
+Comprobación local de este lote: 325 pruebas PHP, 4432 aserciones y 89.21 % de líneas ejecutables cubiertas en servicios y modelos. El pipeline vuelve a medir en cada PR. El administrador del repositorio debe seleccionar el estado `Pruebas y cobertura 70` como requisito de merge en las reglas de `staging` y `main`; crear el workflow no modifica por sí solo la protección de ramas.
+
+La capa `resources/css/ui-standards.css` agrega fuentes del sistema, títulos 24/20 px, cuerpo 16 px, texto secundario 14 px, controles de al menos 44 px y geometría adaptable. La paleta se conserva. No se descargan fuentes externas. Las pruebas de navegador revisan anchuras 1366/768/375 y ampliación tipográfica al 200 %.
