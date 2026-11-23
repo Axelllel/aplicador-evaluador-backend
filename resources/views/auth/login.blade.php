@@ -59,6 +59,7 @@
 
     <main id="contenido" tabindex="-1">
         <div class="entry-layout">
+            <x-volver-perfiles />
             <div class="eyebrow"><span aria-hidden="true"></span>TU SIGUIENTE GRAN IDEA EMPIEZA AQUÍ</div>
 
             <section class="entry-card" aria-labelledby="teacher-login-title">
@@ -76,11 +77,28 @@
                         <p>Inicia sesión en tu espacio docente</p>
                     </div>
 
+                    @if (session('registro_estado'))
+                        @php($registroEstado = session('registro_estado'))
+                        <section class="registration-notice" role="status" tabindex="-1" data-focus-notice aria-labelledby="registration-notice-title">
+                            <div class="registration-notice-icon" aria-hidden="true"><x-icon name="paper-airplane" /></div>
+                            @if ($registroEstado['estado'] === 'confirmation_required')
+                                <h2 id="registration-notice-title">{{ __('registro.confirmacion.titulo') }}</h2>
+                                <p>{{ $registroEstado['correo_solicitado'] ? __('registro.confirmacion.solicitado') : __('registro.confirmacion.pendiente') }}</p>
+                                <ol><li>{{ __('registro.confirmacion.paso_uno') }}</li><li>{{ __('registro.confirmacion.paso_dos') }}</li><li>{{ __('registro.confirmacion.paso_tres') }}</li></ol>
+                                <p class="registration-notice-help">{{ __('registro.confirmacion.sin_correo') }}</p>
+                            @elseif ($registroEstado['estado'] === 'ready')
+                                <h2 id="registration-notice-title">{{ __('registro.confirmacion.lista_titulo') }}</h2><p>{{ __('registro.confirmacion.lista') }}</p>
+                            @else
+                                <h2 id="registration-notice-title">{{ __('registro.confirmacion.procesando_titulo') }}</h2><p>{{ __('registro.confirmacion.procesando') }}</p>
+                            @endif
+                        </section>
+                    @endif
+
                     @if (session('error'))
                         <div class="entry-message login-notice" role="alert"><strong>{{ __('mensajes.tipos.error') }}.</strong> {{ session('error') }}</div>
                     @endif
                     @if (session('aviso'))
-                        <div class="entry-message login-notice" role="status"><strong>{{ __('mensajes.tipos.aviso') }}.</strong> {{ session('aviso') }}</div>
+                        <div class="entry-message login-notice" role="status"><span class="sr-only">{{ __('mensajes.tipos.aviso') }}: </span>{{ session('aviso') }}</div>
                     @endif
                     @if (session('exito'))
                         <div class="login-notice-ok login-notice" role="status"><strong>{{ __('mensajes.tipos.exito') }}.</strong> {{ session('exito') }}</div>
@@ -89,7 +107,7 @@
                         <div class="login-notice-ok login-notice" role="status"><strong>{{ __('mensajes.tipos.info') }}.</strong> {{ session('info') }}</div>
                     @endif
 
-                    <form method="POST" action="{{ route('sesion.store') }}" novalidate>
+                    <form method="POST" action="{{ route('sesion.store') }}" novalidate data-submit-message="{{ __('sesion.estado_ingresando') }}">
                         @csrf
                         <div class="teacher-field">
                             <label for="teacher-email">{{ __('sesion.campos.email') }}</label>

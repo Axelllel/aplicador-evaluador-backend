@@ -25,7 +25,7 @@ return [
         'sesion_cerrada' => 'Sesión cerrada correctamente.',
         'folio_copiado' => 'Folio copiado correctamente.',
         'pregunta_creada' => 'Pregunta agregada al banco correctamente.',
-        'examen_creado' => 'Examen creado como borrador. Agrega sus apartados y preguntas para publicarlo.',
+        'examen_creado' => 'Examen creado como borrador. Agrega preguntas y completa la ponderación para publicarlo.',
         'examen_publicado' => 'Examen publicado correctamente.',
         'examen_eliminado' => 'Examen eliminado correctamente.',
         'apartado_creado' => 'Apartado agregado correctamente.',
@@ -76,4 +76,6 @@ return [
             'mensaje' => '¿Publicar este examen? Los alumnos podrán presentarlo con el folio del grupo.',
         ],
     ],
+    'guardando' => 'Guardando…',
+
 ];

@@ -8,11 +8,11 @@
     Creado: 06/11/2026
     Modificado: 06/11/2026 · Leonardo Ballestero López · Versión inicial
 --}}
-<x-layouts.invitado :titulo="__('registro.titulo')">
-    <x-alerta tipo="aviso">{{ __('registro.descripcion') }}</x-alerta>
+<x-layouts.invitado :titulo="__('registro.titulo')" :compacto="true">
+    <p class="tp-registration-intro">{{ __('registro.descripcion') }}</p>
 
-    <x-tarjeta>
-        <form method="POST" action="{{ route('registro.store') }}" novalidate class="space-y-4">
+    <x-tarjeta class="tp-registration-card">
+        <form method="POST" action="{{ route('registro.store') }}" novalidate class="space-y-4" data-submit-message="{{ __('registro.estado_creando') }}">
             @csrf
 
             <x-campo-texto

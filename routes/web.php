@@ -14,6 +14,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Web\ApartadoController;
+use App\Http\Controllers\Web\AsistenciaIaController;
 use App\Http\Controllers\Web\EstadisticaController;
 use App\Http\Controllers\Web\ExamenController;
 use App\Http\Controllers\Web\GrupoController;
@@ -23,8 +24,9 @@ use App\Http\Controllers\Web\PreguntaController;
 use App\Http\Controllers\Web\RegistroController;
 use App\Http\Controllers\Web\ResultadoController;
 use App\Http\Controllers\Web\SesionController;
-use App\Http\Controllers\Web\SuscripcionController;
 use App\Http\Controllers\Web\StudentPortalController;
+use App\Http\Controllers\Web\SuscripcionController;
+use App\Http\Middleware\VerifySupabaseToken;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'auth.perfiles')->name('acceso');
@@ -32,7 +34,7 @@ Route::view('/', 'auth.perfiles')->name('acceso');
 // Ruta de Axel para comprobar la autenticación con Supabase (se conserva).
 Route::get('/probar-auth', function () {
     return response()->json(['message' => 'Autenticado']);
-})->middleware(\App\Http\Middleware\VerifySupabaseToken::class);
+})->middleware(VerifySupabaseToken::class);
 
 // Acceso público: inicio de sesión y registro. Ambos hablan con /api/v1/auth/* en proceso.
 Route::get('/login', [SesionController::class, 'create'])->name('login');
@@ -52,6 +54,9 @@ Route::middleware('panel.sesion')->group(function (): void {
         ->whereNumber('grupo')->name('panel.grupos.alumnos');
 
     Route::get('/banco-de-preguntas', [PreguntaController::class, 'index'])->name('panel.banco-de-preguntas');
+    Route::post('/banco-de-preguntas/generar', [AsistenciaIaController::class, 'generate'])->name('panel.ia.generar');
+    Route::post('/banco-de-preguntas/borrador-ia/{indice}', [AsistenciaIaController::class, 'useDraft'])->whereNumber('indice')->name('panel.ia.borrador');
+    Route::post('/resultados/{examen}/intentos/{intento}/respuestas/{respuesta}/ia', [AsistenciaIaController::class, 'suggest'])->whereNumber(['examen', 'intento', 'respuesta'])->name('panel.ia.sugerir');
     Route::post('/banco-de-preguntas', [PreguntaController::class, 'store'])->name('panel.banco-de-preguntas.store');
 
     Route::get('/examenes', [ExamenController::class, 'index'])->name('panel.examenes');
@@ -72,6 +77,7 @@ Route::middleware('panel.sesion')->group(function (): void {
     Route::get('/suscripcion', [SuscripcionController::class, 'index'])->name('panel.suscripcion');
     Route::get('/suscripcion/planes', [SuscripcionController::class, 'catalogo'])->name('panel.suscripcion.planes');
     Route::get('/suscripcion/planes/pago', [SuscripcionController::class, 'resumenDePago'])->name('panel.suscripcion.planes.pago');
+    Route::post('/suscripcion/planes/pago/simular', [SuscripcionController::class, 'simularPago'])->name('panel.suscripcion.planes.pago.simular');
     Route::post('/suscripcion/planes/pago/datos', [SuscripcionController::class, 'revisarDatosDePago'])->name('panel.suscripcion.planes.pago.revisar');
 
     // Resultados: tabla de intentos por examen, detalle de un intento y calificación (manual y automática).

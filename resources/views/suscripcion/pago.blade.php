@@ -11,42 +11,46 @@
 @endphp
 <x-layouts.panel :titulo="__('suscripcion.resumen_pago.titulo')" :descripcion="__('suscripcion.resumen_pago.descripcion')">
     <div class="grid items-start gap-6 lg:grid-cols-3">
-        <x-tarjeta class="space-y-4 lg:col-span-2">
-            <h2 class="text-xl font-semibold text-primario">{{ __('suscripcion.resumen_pago.estado') }}</h2>
-            <p class="text-sm text-texto-suave">{{ __('suscripcion.resumen_pago.aviso') }}</p>
-
-            <form method="POST" action="{{ route('panel.suscripcion.planes.pago.revisar') }}" class="space-y-4">
+        <x-tarjeta class="space-y-5 lg:col-span-2">
+            <div class="tp-section-heading"><div><p class="tp-section-label">{{ __('suscripcion.simulacion.etiqueta') }}</p><h2>{{ __('suscripcion.simulacion.titulo') }}</h2><p>{{ __('suscripcion.simulacion.aviso') }}</p></div></div>
+            <form method="POST" action="{{ route('panel.suscripcion.planes.pago.simular') }}" class="space-y-5" data-payment-simulation data-submit-message="{{ __('suscripcion.simulacion.procesando') }}">
                 @csrf
+                <input type="hidden" name="operacion_id" value="{{ old('operacion_id', $operacionId) }}">
                 @foreach ($seleccion as $nombre => $valor)
                     <input type="hidden" name="{{ $nombre }}" value="{{ $valor }}">
                 @endforeach
-
-                <fieldset class="space-y-3" aria-describedby="ayuda-datos-tarjeta">
-                    <legend class="flex items-center gap-2 text-sm font-semibold text-primario">
-                        <x-icon name="credit-card" />
-                        {{ __('suscripcion.resumen_pago.metodos.tarjeta') }}
-                    </legend>
-                    <p id="ayuda-datos-tarjeta" class="text-sm text-texto-suave">{{ __('suscripcion.resumen_pago.tarjeta.ayuda') }}</p>
-
-                    <x-campo-texto nombre="titular" :etiqueta="__('suscripcion.resumen_pago.tarjeta.titular')"
-                                   :valor="$datosRevisados['titular'] ?? null" autocomplete="billing name" minlength="2" maxlength="150" required />
-                    <x-campo-texto nombre="correo_facturacion" tipo="email" :etiqueta="__('suscripcion.resumen_pago.tarjeta.correo')"
-                                   :valor="$datosRevisados['correo_facturacion'] ?? null" autocomplete="billing email" maxlength="254" required />
+                @error('operacion_id')<p class="tp-field-error" role="alert">{{ $message }}</p>@enderror
+                <fieldset class="space-y-3">
+                    <legend class="font-semibold">{{ __('suscripcion.simulacion.metodo') }}</legend>
+                    <div class="tp-payment-methods">
+                        @foreach (['tarjeta' => 'credit-card', 'spei' => 'banknotes'] as $metodo => $icono)
+                            <label class="tp-payment-method"><input type="radio" name="metodo_pago" value="{{ $metodo }}" @checked(old('metodo_pago', 'tarjeta') === $metodo) required><x-icon :name="$icono" /><span>{{ __('suscripcion.resumen_pago.metodos.'.$metodo) }}</span></label>
+                        @endforeach
+                    </div>
+                    @error('metodo_pago')<p class="tp-field-error" role="alert">{{ $message }}</p>@enderror
                 </fieldset>
-
-                <x-boton type="submit">{{ __('suscripcion.resumen_pago.tarjeta.revisar') }}</x-boton>
-                @isset($datosRevisados)
-                    <p class="text-sm font-semibold text-exito" role="status">{{ __('suscripcion.resumen_pago.tarjeta.revisados') }}</p>
-                @endisset
+                <div class="grid gap-4 md:grid-cols-2">
+                    <x-campo-texto nombre="titular" :etiqueta="__('suscripcion.resumen_pago.tarjeta.titular')" :valor="$datosRevisados['titular'] ?? null" autocomplete="name" minlength="2" maxlength="150" required />
+                    <x-campo-texto nombre="correo_facturacion" tipo="email" :etiqueta="__('suscripcion.resumen_pago.tarjeta.correo')" :valor="$datosRevisados['correo_facturacion'] ?? null" autocomplete="email" maxlength="254" required />
+                </div>
+                <fieldset class="space-y-4" data-payment-fields="tarjeta">
+                    <legend class="font-semibold">{{ __('suscripcion.simulacion.datos_tarjeta') }}</legend>
+                    <p class="tp-payment-help">{{ __('suscripcion.simulacion.tarjeta_prueba') }}</p>
+                    <x-campo-texto nombre="numero_tarjeta" :valor="''" :etiqueta="__('suscripcion.simulacion.numero')" autocomplete="off" inputmode="numeric" maxlength="23" placeholder="4242 4242 4242 4242" data-payment-required />
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <x-campo-texto nombre="vencimiento" :etiqueta="__('suscripcion.simulacion.vencimiento')" autocomplete="off" inputmode="numeric" maxlength="5" placeholder="12/30" data-payment-required />
+                        <x-campo-texto nombre="cvv" :valor="''" tipo="password" :etiqueta="__('suscripcion.simulacion.cvv')" autocomplete="off" inputmode="numeric" maxlength="3" placeholder="123" data-payment-required />
+                    </div>
+                </fieldset>
+                <fieldset class="space-y-4" data-payment-fields="spei">
+                    <legend class="font-semibold">{{ __('suscripcion.simulacion.datos_spei') }}</legend>
+                    <p class="tp-payment-help">{{ __('suscripcion.simulacion.spei_prueba') }}</p>
+                    <div><label for="banco-prueba">{{ __('suscripcion.simulacion.banco') }}</label><select id="banco-prueba" name="banco" class="w-full" data-payment-required><option value="">{{ __('suscripcion.simulacion.elegir_banco') }}</option>@foreach(['Banco de prueba A','Banco de prueba B'] as $banco)<option @selected(old('banco') === $banco)>{{ $banco }}</option>@endforeach</select>@error('banco')<p class="tp-field-error" role="alert">{{ $message }}</p>@enderror</div>
+                    <x-campo-texto nombre="clabe" :valor="''" :etiqueta="__('suscripcion.simulacion.clabe')" autocomplete="off" inputmode="numeric" maxlength="18" placeholder="032180000118359719" data-payment-required />
+                </fieldset>
+                @isset($datosRevisados)<p class="tp-composition-balance" role="status">{{ __('suscripcion.resumen_pago.tarjeta.revisados') }}</p>@endisset
+                <div class="tp-form-actions"><p><x-icon name="information-circle" />{{ __('suscripcion.simulacion.capacidad') }}</p><x-boton type="submit" icono="check" ancho="movil">{{ __('suscripcion.simulacion.confirmar') }}</x-boton></div>
             </form>
-
-            <section class="space-y-2 border-t border-borde pt-4" aria-labelledby="titulo-spei">
-                <h3 id="titulo-spei" class="flex items-center gap-2 text-sm font-semibold text-primario">
-                    <x-icon name="banknotes" />
-                    {{ __('suscripcion.resumen_pago.metodos.spei') }}
-                </h3>
-                <p class="text-sm text-texto-suave">{{ __('suscripcion.resumen_pago.spei_ayuda') }}</p>
-            </section>
         </x-tarjeta>
 
         <x-tarjeta class="space-y-4">

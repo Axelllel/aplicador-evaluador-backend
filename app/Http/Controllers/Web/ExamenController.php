@@ -37,8 +37,7 @@ class ExamenController extends Controller
         private readonly ConsultasPanelService $consultas,
         private readonly ExamenesPanelService $examenes,
         private readonly PaginadorPanel $paginador,
-    ) {
-    }
+    ) {}
 
     /**
      * Muestra la tabla de exámenes (15 filas por página) y el formulario de nuevo examen.
@@ -81,7 +80,7 @@ class ExamenController extends Controller
      */
     public function publicar(int $examen): RedirectResponse
     {
-        $respuesta = $this->api->post('/teacher/exams/'.$examen.'/publish');
+        $respuesta = $this->api->post('/teacher/exams/'.$examen.'/publish', ['composicion_automatica' => true]);
 
         return $this->redirigirSegunRespuesta(
             $respuesta,

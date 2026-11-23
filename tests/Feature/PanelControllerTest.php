@@ -250,7 +250,7 @@ class PanelControllerTest extends TestCase
         $pago = $this->get('/suscripcion/planes/pago?'.http_build_query($seleccion + ['precio' => 1]))
             ->assertOk()
             ->assertSee('Resumen de pago')
-            ->assertSee('Pago en línea pendiente')
+            ->assertSee('Completa tu pago de prueba')
             ->assertSeeInOrder(['Grupos activos', '3', 'Alumnos por grupo', '25', 'Preguntas en el banco', '150'])
             ->assertSee('$181.00')
             ->assertSee('Tarjeta de crédito o débito')
@@ -261,12 +261,12 @@ class PanelControllerTest extends TestCase
             $this->consultar($pago->getContent(), '//main//a[normalize-space(.)="Editar mi plan"]/@href'),
         );
         $this->assertSame(
-            [route('panel.suscripcion.planes.pago.revisar')],
+            [route('panel.suscripcion.planes.pago.simular')],
             $this->consultar($pago->getContent(), '//main//form/@action'),
         );
         $this->assertSame(
             ['titular', 'correo_facturacion'],
-            $this->consultar($pago->getContent(), '//main//form//input[@required]/@name'),
+            $this->consultar($pago->getContent(), '//main//form//input[@required and not(@type="radio")]/@name'),
         );
         $this->assertSame([], $this->api->llamadas);
     }
@@ -307,7 +307,7 @@ class PanelControllerTest extends TestCase
         ])
             ->assertOk()
             ->assertSee('Datos de facturación completos.')
-            ->assertSee('Pago en línea pendiente')
+            ->assertSee('Completa tu pago de prueba')
             ->assertSee('$181.00');
 
         $this->assertSame([], $this->api->llamadas);
@@ -496,7 +496,7 @@ class PanelControllerTest extends TestCase
      */
     private function consultar(string $html, string $consulta): array
     {
-        $documento = new DOMDocument();
+        $documento = new DOMDocument;
         libxml_use_internal_errors(true);
         $documento->loadHTML('<?xml encoding="UTF-8">'.$html);
         libxml_clear_errors();

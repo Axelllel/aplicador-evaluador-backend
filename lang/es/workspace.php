@@ -1,0 +1,97 @@
+<?php
+
+/**
+ * Archivo: workspace.php
+ * Módulo: lang/es
+ * Descripción: Textos de los espacios de trabajo y del editor estructurado de preguntas.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 19/11/2026
+ * Modificado: 19/11/2026 · Jerarquía, formularios y orientación contextual
+ */
+
+declare(strict_types=1);
+
+return [
+    'clear' => 'Limpiar filtros',
+    'bank' => [
+        'context' => 'Tu biblioteca de recursos para evaluar',
+        'summary' => 'Resumen del banco de preguntas',
+        'total' => 'Preguntas disponibles',
+        'current_view' => 'En esta vista del banco',
+        'formats' => 'Tipos de pregunta',
+        'formats_hint' => 'Distintas formas de demostrar lo aprendido',
+        'reusable' => 'Crea una vez. Evalúa mejor.',
+        'reusable_hint' => 'Organiza tus preguntas y utilízalas en los exámenes de tus grupos.',
+        'library' => 'TU BIBLIOTECA',
+        'list_hint' => 'Encuentra una pregunta y consulta su contenido antes de usarla.',
+        'search' => 'Buscar pregunta',
+        'search_hint' => 'Escribe una palabra del enunciado…',
+        'empty_title' => 'Aquí empieza tu próxima evaluación',
+        'empty_hint' => 'Prueba otro filtro o agrega una pregunta para construir tu banco.',
+        'options_count' => '{1} :count opción|[2,*] :count opciones',
+        'reference_answer' => 'Respuesta de referencia',
+        'view' => 'Ver contenido',
+        'no_reference' => 'Sin respuesta de referencia',
+    ],
+    'editor' => [
+        'intro' => 'Elige el tipo y construye cada respuesta en su propio campo.',
+        'errors' => 'Revisa los campos indicados antes de guardar.',
+        'question' => 'Plantea la pregunta',
+        'question_hint' => 'Un enunciado claro ayuda a tus estudiantes a concentrarse.',
+        'prompt_hint' => '¿Qué quieres que demuestren tus estudiantes?',
+        'preview_label' => 'VISTA PREVIA',
+        'preview_title' => 'Así se leerá tu pregunta',
+        'choose_type' => 'Selecciona un tipo de pregunta',
+        'preview_empty' => 'El enunciado aparecerá aquí mientras escribes.',
+        'preview_note' => 'Esta vista te ayuda a revisar el contenido antes de guardarlo.',
+        'save_hint' => 'La pregunta quedará disponible para tus próximos exámenes.',
+        'save' => 'Guardar en el banco',
+        'answers' => 'Construye las respuestas',
+        'multiple_hint' => 'Escribe cada opción y marca una como correcta.',
+        'option' => 'Opción',
+        'correct' => 'Correcta',
+        'add_option' => 'Agregar opción',
+        'remove' => 'Eliminar',
+        'pairs' => 'Relaciona las columnas',
+        'pairs_hint' => 'Cada fila representa una pareja correcta. No necesitas separadores.',
+        'left' => 'Concepto',
+        'right' => 'Correspondencia',
+        'add_pair' => 'Agregar pareja',
+        'reference' => 'Respuesta modelo',
+        'reference_hint' => 'Escribe la respuesta esperada o los criterios para revisarla.',
+        'code_hint' => 'Incluye el código de referencia y las condiciones que debe cumplir.',
+        'correct_required' => 'Marca la opción correcta antes de guardar.',
+        'option_required' => 'Completa todas las opciones.',
+        'pair_required' => 'Completa ambos campos de cada pareja.',
+        'duplicate' => 'Usa opciones distintas para evitar respuestas ambiguas.',
+        'removed' => 'Fila eliminada.',
+        'added' => 'Nueva fila agregada.',
+        'limit' => 'Puedes agregar hasta 10 filas.',
+        'min_rows' => 'Conserva al menos dos filas.',
+        'preview_option' => 'Escribe una opción…',
+        'preview_reference' => 'Respuesta escrita por el estudiante',
+    ],
+    'exams' => [
+        'context' => 'Prepara, organiza y publica tus evaluaciones',
+        'workflow' => 'Etapas de preparación de un examen',
+        'step_one' => 'Configura el examen',
+        'step_two' => 'Agrega las preguntas',
+        'step_three' => 'Revisa y publica',
+        'identify' => 'Define tu evaluación',
+        'identify_hint' => 'Asigna un nombre reconocible y el grupo que la presentará.',
+        'schedule' => 'Establece el horario',
+        'schedule_hint' => 'Tus estudiantes podrán comenzar dentro de este periodo.',
+        'settings' => 'Opciones de aplicación y resultados',
+        'settings_hint' => 'Orden de preguntas, escala, plataforma y publicación de calificaciones.',
+        'draft_hint' => 'Primero se guarda como borrador. Después podrás agregar las preguntas.',
+        'create' => 'Crear borrador y continuar',
+        'manage' => 'Administrar',
+        'add_section' => 'Agregar apartado',
+    ],
+    'home' => [
+        'kicker' => 'TU ESPACIO DE TRABAJO',
+        'title' => 'Todo listo para tu próxima evaluación.',
+        'description' => 'Prepara tus preguntas, organiza tus grupos y acompaña el progreso de tus estudiantes.',
+        'create' => 'Crear examen',
+    ],
+];

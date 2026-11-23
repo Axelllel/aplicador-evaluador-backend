@@ -59,4 +59,24 @@ trait ModificaExamenBorrador
             ->whereRaw('pg.fecha_fin_vigencia > CURRENT_TIMESTAMP')
             ->exists();
     }
+
+    /** Ajusta la estructura interna; el llamador debe tener el candado transaccional del examen. */
+    private function sincronizarApartados(int $examenId): void
+    {
+        $apartados = DB::table('apartado')->where('examen_id', $examenId)->get(['id', 'cantidad_preguntas']);
+        $cantidades = DB::table('examen_pregunta')->whereIn('apartado_id', $apartados->pluck('id'))
+            ->selectRaw('apartado_id, COUNT(*) AS total')->groupBy('apartado_id')->pluck('total', 'apartado_id');
+        $vacios = [];
+        foreach ($apartados as $apartado) {
+            $cantidad = (int) ($cantidades[$apartado->id] ?? 0);
+            if ($cantidad === 0) {
+                $vacios[] = $apartado->id;
+            } elseif ((int) $apartado->cantidad_preguntas !== $cantidad) {
+                DB::table('apartado')->where('id', $apartado->id)->update(['cantidad_preguntas' => $cantidad]);
+            }
+        }
+        if ($vacios !== []) {
+            DB::table('apartado')->whereIn('id', $vacios)->delete();
+        }
+    }
 }

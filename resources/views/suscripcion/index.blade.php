@@ -13,6 +13,13 @@
     $tonosDeEstado = ['confirmado' => 'exito', 'pendiente' => 'aviso', 'rechazado' => 'error', 'cancelado' => 'error'];
 @endphp
 <x-layouts.panel :titulo="__('suscripcion.titulo')" :descripcion="__('suscripcion.descripcion')">
+    @if (session('pago_confirmado'))
+        @php($confirmacion = session('pago_confirmado'))
+        <section class="tp-payment-receipt" role="status" data-focus-notice tabindex="-1" aria-labelledby="pago-exitoso">
+            <div><h2 id="pago-exitoso">{{ __('suscripcion.simulacion.exito') }}</h2><p>{{ __('suscripcion.simulacion.detalle', $confirmacion) }}</p><p>{{ __('suscripcion.simulacion.sin_cobro') }}</p></div>
+            <div><p>{{ __('suscripcion.simulacion.monto', ['monto' => number_format((float) $confirmacion['monto'],2)]) }}</p><p>{{ __('suscripcion.simulacion.referencia', $confirmacion) }}</p></div>
+        </section>
+    @endif
     @if ($vigente === null)
         <x-alerta tipo="aviso">{{ __('mensajes.aviso.sin_plan') }}</x-alerta>
     @endif
@@ -26,6 +33,7 @@
                 <p class="text-sm text-texto-suave">{{ __('suscripcion.vigente.sin_plan_ayuda') }}</p>
             @else
                 <p class="text-2xl font-semibold text-primario">{{ $vigente['plan']['nombre'] }}</p>
+                <p>{{ __('suscripcion.simulacion.detalle', ['grupos' => $vigente['plan']['max_grupos'], 'alumnos' => $vigente['plan']['max_alumnos'], 'preguntas' => $vigente['plan']['max_preguntas']]) }}</p>
                 <p class="text-sm text-texto-suave">
                     {{ __('suscripcion.vigente.vigente_hasta', ['fecha' => \Carbon\CarbonImmutable::parse($vigente['pago']['fecha_fin_vigencia'])->format($formatoDeFecha)]) }}
                 </p>
@@ -51,6 +59,7 @@
                             <x-tabla.celda>{{ $nombresDePlanes[$pago['paquete_id']] ?? '—' }}</x-tabla.celda>
                             <x-tabla.celda>{{ $dinero($pago['monto']) }}</x-tabla.celda>
                             <x-tabla.celda>
+                                @if (($pago['proveedor_pago'] ?? null) === 'simulador_bigbitbyte')<p class="text-sm">{{ __('suscripcion.simulacion.historial') }}</p>@endif
                                 <x-insignia :tono="$tonosDeEstado[$pago['estado']] ?? 'neutro'">
                                     {{ \Illuminate\Support\Facades\Lang::has('suscripcion.pagos.estados.'.$pago['estado']) ? __('suscripcion.pagos.estados.'.$pago['estado']) : $pago['estado'] }}
                                 </x-insignia>

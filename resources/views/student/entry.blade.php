@@ -33,6 +33,7 @@ Nota: No crea cuentas ni autoriza intentos de examen.
 
     <main>
         <div class="entry-layout">
+            <x-volver-perfiles />
             <div class="eyebrow"><span></span>TU SIGUIENTE GRAN IDEA EMPIEZA AQUÍ</div>
             <section class="entry-card" aria-label="Ingreso al grupo">
                 <div class="card-top-line"></div>

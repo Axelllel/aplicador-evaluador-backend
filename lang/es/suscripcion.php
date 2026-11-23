@@ -20,7 +20,7 @@ return [
         'encabezado' => 'Tu plan',
         'vigente_hasta' => 'Vigente hasta el :fecha',
         'sin_plan' => 'No tienes un plan activo.',
-        'sin_plan_ayuda' => 'Para activar tu cuenta, solicita un plan a soporte. Cuando se confirme tu pago podrás crear grupos, preguntas y exámenes.',
+        'sin_plan_ayuda' => 'Configura tu plan y completa los datos de pago para activar su capacidad.',
     ],
 
     'planes' => [
@@ -69,6 +69,33 @@ return [
             'tarjeta' => 'Tarjeta de crédito o débito',
             'spei' => 'Transferencia SPEI',
         ],
+    ],
+
+    'simulacion' => [
+        'etiqueta' => 'ACTIVACIÓN DEL PLAN',
+        'titulo' => 'Activa tu plan',
+        'aviso' => 'Usa únicamente los datos de prueba indicados. El plan se activará en tu cuenta sin realizar un cobro bancario.',
+        'metodo' => 'Elige tu método de pago',
+        'datos_tarjeta' => 'Tarjeta de prueba',
+        'tarjeta_prueba' => 'Número: 4242 4242 4242 4242 · CVV: 123 · Vencimiento: un mes actual o futuro (MM/AA).',
+        'numero' => 'Número de tarjeta de prueba',
+        'vencimiento' => 'Vencimiento (MM/AA)',
+        'cvv' => 'CVV de prueba',
+        'datos_spei' => 'Transferencia de prueba',
+        'spei_prueba' => 'CLABE de prueba: 032180000118359719. El sistema generará una referencia de prueba, sin hacer una transferencia bancaria.',
+        'banco' => 'Banco de prueba',
+        'elegir_banco' => 'Elige un banco de prueba',
+        'clabe' => 'CLABE de origen de prueba',
+        'capacidad' => 'El plan tendrá la capacidad total elegida durante un mes. No se crearán grupos automáticamente.',
+        'confirmar' => 'Activar plan',
+        'procesando' => 'Activando plan…',
+        'error' => 'No se pudo activar el plan. Reintenta con la misma operación.',
+        'exito' => 'Plan activado exitosamente',
+        'detalle' => 'Tu plan permite :grupos grupos activos, :alumnos alumnos por grupo y :preguntas preguntas en el banco.',
+        'referencia' => 'Referencia: :referencia',
+        'monto' => 'Importe del plan: $:monto MXN',
+        'sin_cobro' => 'No se realizó ningún cobro real.',
+        'historial' => 'Pago de prueba',
     ],
 
     'pagos' => [

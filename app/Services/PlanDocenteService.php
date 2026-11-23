@@ -38,7 +38,8 @@ class PlanDocenteService
         $ahora ??= CarbonImmutable::now();
 
         $pago = $pagos
-            ->filter(fn (array $pago): bool => ($pago['estado'] ?? null) === 'confirmado'
+            ->filter(fn (array $pago): bool => (! array_key_exists('es_plan_actual', $pago) || $pago['es_plan_actual'])
+                && ($pago['estado'] ?? null) === 'confirmado'
                 && CarbonImmutable::parse($pago['fecha_inicio_vigencia'])->lessThanOrEqualTo($ahora)
                 && CarbonImmutable::parse($pago['fecha_fin_vigencia'])->greaterThan($ahora))
             ->sortByDesc(fn (array $pago): int => CarbonImmutable::parse($pago['fecha_fin_vigencia'])->getTimestamp())
