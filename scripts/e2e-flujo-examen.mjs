@@ -97,6 +97,8 @@ console.log('   preguntas recibidas:', Array.isArray(lista) ? lista.length : typ
 
 for (const p of Array.isArray(lista) ? lista : []) {
   const id = p.examen_pregunta_id ?? p.id;
+  // E2E_SIN_RESPONDER=1: el alumno deja sin contestar la pregunta abierta.
+  if (process.env.E2E_SIN_RESPONDER === '1' && p.tipo !== 'opcion_multiple') continue;
   const texto = p.tipo === 'opcion_multiple' ? 'París' : 'Las plantas convierten la luz en energía química.';
   [r, j] = await web('POST', '/alumno/api/respuesta', { examen_pregunta_id: id, respuesta_texto: texto }); paso(`alumno: responder #${id}`, r, j);
 }
@@ -110,6 +112,12 @@ const intentoId = (j?.data ?? [])[0]?.id ?? (j?.data ?? [])[0]?.intento_id;
 const abierta = (j?.data?.respuestas ?? []).find((a) => a.tipo === 'abierta' || /fotos/i.test(a.respuesta_texto ?? ''));
 if (abierta) { [r, j] = await api('PATCH', `/teacher/answers/${abierta.id ?? abierta.respuesta_id}/grade`, { calificacion: 8, retroalimentacion: 'Buena explicación.', motivo: 'Prueba E2E' }); paso('docente: calificar abierta', r, j, [200, 201, 422]); }
 [r, j] = await api('GET', `/teacher/exams/${examenId}/results`); paso('docente: resultados', r, j);
+if (process.env.E2E_SIN_RESPONDER === '1') {
+  const fila = (j?.data?.resultados ?? [])[0];
+  const bien = fila?.completo === true && Number(fila?.calificacion) === 5;
+  console.log((bien ? 'OK  ' : 'FALLO ') + 'docente: pregunta sin responder cuenta como 0 (completo y nota 5) -> ' + JSON.stringify(fila));
+  if (!bien) process.exitCode = 1;
+}
 
 [r, j] = await web('POST', '/alumno/api/resultado', {}); paso('alumno: ver resultado', r, j);
 [r, j] = await web('POST', '/alumno/examen/iniciar', { examen_id: examenId }); paso('alumno: reintentar (debe bloquear)', r, j, [409, 403, 422]);

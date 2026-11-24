@@ -73,7 +73,7 @@ return [
         'entrega' => 'Fecha de entrega',
         'escala' => 'Escala de calificación',
         'avance' => ':calificadas de :total preguntas calificadas.',
-        'sin_responder' => '{1} El alumno no respondió 1 pregunta. No se puede calificar, así que la nota final seguirá pendiente.|[2,*] El alumno no respondió :cantidad preguntas. No se pueden calificar, así que la nota final seguirá pendiente.',
+        'sin_responder' => '{1} El alumno no respondió 1 pregunta. Cuenta como 0 en la nota final y no necesita calificarse.|[2,*] El alumno no respondió :cantidad preguntas. Cuentan como 0 en la nota final y no necesitan calificarse.',
         'no_calificable' => 'Podrás calificar este intento cuando el alumno lo entregue.',
         'autocalificar' => 'Autocalificar opción múltiple',
         'autocalificar_ayuda' => 'Compara cada respuesta de opción múltiple con la respuesta modelo. Las preguntas abiertas se califican a mano.',

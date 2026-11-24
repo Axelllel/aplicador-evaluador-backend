@@ -123,6 +123,11 @@ class TeacherResultsController extends Controller
                     $weighted += ((float) $answer->calificacion_final * (float) $answer->ponderacion) / 100;
                 }
             }
+            // Una pregunta sin responder no tiene fila que calificar: en un intento entregado cuenta como 0,
+            // igual que en fn_resultado_alumno, para que docente y alumno vean la misma nota.
+            if ($attempt->estado === 'finalizado') {
+                $graded += max(0, $totalQuestions - $answers->count());
+            }
             $ready = $attempt->estado === 'finalizado' && $graded === $totalQuestions && $totalQuestions > 0;
             $results[] = ['intento_id' => $attempt->id, 'alumno_id' => $attempt->alumno_id,
                 'nombre' => $attempt->nombre, 'estado' => $attempt->estado,
