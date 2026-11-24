@@ -46,7 +46,7 @@ class SesionPanelService
 
     public static function rutaInicio(): string
     {
-        return self::esAdministracion() ? 'panel.docentes' : 'panel.inicio';
+        return self::esAdministracion() ? 'admin.dashboard' : 'panel.inicio';
     }
 
     public static function rutaMfa(): string

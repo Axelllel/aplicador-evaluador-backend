@@ -6,6 +6,9 @@
     Creado: 27/10/2026
     Modificado: 19/11/2026 · Axel Rebollo Zeferino · Mejora de espacios de trabajo y editor estructurado
 --}}
+@if ($rol === \App\Enums\RolPanel::SuperAdmin)
+    <x-layouts.administracion :titulo="$titulo" :descripcion="$descripcion">{{ $slot }}</x-layouts.administracion>
+@else
 <x-layouts.base :titulo="$titulo">
     <div class="tp-shell" id="teacher-panel">
         <a href="#contenido" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:text-primario">
@@ -111,3 +114,5 @@
     })();
     </script>
 </x-layouts.base>
+
+@endif

@@ -140,6 +140,7 @@ Route::get('/administracion/ingreso', [SesionAdministracionController::class, 'c
 Route::post('/administracion/ingreso', [SesionAdministracionController::class, 'store'])->name('admin.login.store');
 Route::post('/administracion/salir', [SesionAdministracionController::class, 'destroy'])->name('admin.logout');
 Route::middleware('panel.sesion')->group(function (): void {
+    Route::get('/administracion', [AdministracionController::class, 'dashboard'])->name('admin.dashboard');
     Route::get('/administracion/docentes', [AdministracionController::class, 'teachers'])->name('panel.docentes');
     Route::get('/administracion/pagos', [AdministracionController::class, 'payments'])->name('panel.pagos');
     Route::patch('/administracion/docentes/{teacher}', [AdministracionController::class, 'teacherStatus'])->whereUuid('teacher')->name('panel.docentes.estado');
