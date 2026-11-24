@@ -131,6 +131,6 @@ class RecuperacionContrasenaController extends Controller
 
     private function pista(string $email): string
     {
-        return '…@'.mb_strtolower(explode('@', $email, 2)[1]);
+        return mb_substr($email, 0, 1).'*****'.mb_strtolower(mb_substr($email, mb_strrpos($email, '@')));
     }
 }

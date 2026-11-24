@@ -98,7 +98,7 @@ file_put_contents('public/qa-review-manual.html', view('resultados.intento', [
 foreach (['correo', 'confirmar', 'enviado', 'enlace', 'restablecer'] as $modo) {
     $viewData = ['modo' => $modo];
     if (in_array($modo, ['confirmar', 'enviado', 'restablecer'], true)) {
-        $viewData['pista'] = '…@outlook.com';
+        $viewData['pista'] = 'd*****@outlook.com';
     }
     file_put_contents('public/qa-recovery-'.$modo.'.html', view('auth.recuperar-contrasena', $viewData)->render());
 }

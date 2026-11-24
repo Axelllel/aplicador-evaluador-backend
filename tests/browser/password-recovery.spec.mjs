@@ -14,7 +14,7 @@ test('recuperación docente con correo completo, pista de dominio y confirmació
  await page.getByRole('link',{name:'¿Olvidaste tu contraseña?'}).click();
  await page.getByLabel('Correo electrónico registrado',{exact:true}).fill('docente@outlook.com');
  await page.getByRole('button',{name:'Continuar',exact:true}).click();
- await expect(page.getByText('…@outlook.com',{exact:true})).toBeVisible();
+ await expect(page.getByText('d*****@outlook.com',{exact:true})).toBeVisible();
  await expect(page.locator('input[type=email]')).toHaveValue('');
  await page.route('**/recuperar-contrasena/confirmar', async route => {
   expect(new URLSearchParams(route.request().postData()).get('email_confirmation')).toBe('docente@outlook.com');

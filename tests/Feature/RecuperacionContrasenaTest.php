@@ -69,7 +69,7 @@ class RecuperacionContrasenaTest extends TestCase
         $this->get('/login')->assertOk()->assertSee(route('password.request'), false)->assertSee('¿Olvidaste tu contraseña?');
         $this->post('/recuperar-contrasena', ['email' => self::EMAIL])->assertRedirect(route('password.confirm'))
             ->assertSessionHas(Recovery::SOLICITUD.'.email', self::EMAIL);
-        $this->get('/recuperar-contrasena/confirmar')->assertOk()->assertSee('…@outlook.com')->assertDontSee(self::EMAIL)
+        $this->get('/recuperar-contrasena/confirmar')->assertOk()->assertSee('d*****@outlook.com')->assertSee('Enviaremos el enlace a este correo')->assertDontSee(self::EMAIL)
             ->assertHeader('Cache-Control', 'no-store, private')->assertHeader('Referrer-Policy', 'no-referrer');
         Http::assertNothingSent();
     }
