@@ -94,3 +94,11 @@ file_put_contents('public/qa-review-manual.html', view('resultados.intento', [
     'detalle' => $detail, 'examenId' => 1, 'intentoId' => 1,
     'incidencias' => app(PaginadorPanel::class)->paginar(collect(), 1),
 ])->render());
+
+foreach (['correo', 'confirmar', 'enviado', 'enlace', 'restablecer'] as $modo) {
+    $viewData = ['modo' => $modo];
+    if (in_array($modo, ['confirmar', 'enviado', 'restablecer'], true)) {
+        $viewData['pista'] = '…@outlook.com';
+    }
+    file_put_contents('public/qa-recovery-'.$modo.'.html', view('auth.recuperar-contrasena', $viewData)->render());
+}

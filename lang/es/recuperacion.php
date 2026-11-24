@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'olvidaste' => '¿Olvidaste tu contraseña?',
+    'correo_titulo' => 'Recupera tu contraseña',
+    'correo_ayuda' => 'Ingresa el correo electrónico con el que registraste tu cuenta docente.',
+    'confirmar_titulo' => 'Confirma tu correo',
+    'confirmar_ayuda' => 'Vuelve a escribir completo el mismo correo para recibir el enlace de recuperación.',
+    'pista' => 'Correo que debes completar',
+    'correo' => 'Correo electrónico registrado',
+    'confirmacion' => 'Escribe otra vez tu correo completo',
+    'continuar' => 'Continuar',
+    'enviar' => 'Enviar enlace de recuperación',
+    'cambiar_correo' => 'Usar otro correo',
+    'enviado_titulo' => 'Revisa tu correo',
+    'enviado_ayuda' => 'Si el correo corresponde a una cuenta registrada, recibirás un enlace para crear una nueva contraseña.',
+    'spam' => 'Revisa también la carpeta de spam. Abre el enlace del correo más reciente.',
+    'volver' => 'Volver al inicio de sesión',
+    'no_coincide' => 'Los correos no coinciden. Escribe el mismo correo que ingresaste en el paso anterior.',
+    'enlace_titulo' => 'Abre tu enlace de recuperación',
+    'enlace_ayuda' => 'Para continuar, abre el enlace que recibiste en tu correo electrónico.',
+    'enlace_invalido' => 'El enlace es inválido, ya se utilizó o venció. Solicita uno nuevo.',
+    'verificando' => 'Verificando tu enlace…',
+    'nueva_titulo' => 'Crea una nueva contraseña',
+    'nueva_ayuda' => 'El enlace fue verificado. Elige una contraseña nueva para tu cuenta.',
+    'password' => 'Nueva contraseña',
+    'password_ayuda' => 'Usa entre 10 y 200 caracteres.',
+    'password_confirmation' => 'Confirma la nueva contraseña',
+    'guardar' => 'Guardar nueva contraseña',
+    'solicitar' => 'Solicitar otro enlace',
+    'servicio' => 'No pudimos conectar con el servicio de correo. Intenta de nuevo en unos minutos.',
+    'nuevo_enlace' => 'No pudimos completar el cambio. Solicita otro enlace y elige una contraseña distinta, de al menos 10 caracteres.',
+    'exito' => 'Tu contraseña se actualizó correctamente. Inicia sesión con la nueva contraseña.',
+    'seguridad' => 'El cambio solo se autoriza con el enlace enviado a tu correo.',
+];

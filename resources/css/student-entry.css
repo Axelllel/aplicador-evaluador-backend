@@ -191,3 +191,18 @@ form label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 9
 .admin-login .input-wrap {border-color:var(--muted);}
 .admin-login .input-wrap:focus-within {border-color:var(--blue);}
 .admin-login :is(.eyebrow,.card-footer) {color:var(--muted);font-size:.75rem;}
+
+/* Recuperación docente: composición compartida del acceso, sin alterar otros portales. */
+.recovery-page:not(.dark) {--muted:#4b5563;}
+.recovery-page .card-content {padding:2.5rem;}
+.recovery-page .recovery-field + .recovery-field {margin-top:1.25rem;}
+.recovery-page .recovery-field label {display:block;font-weight:600;margin-bottom:.5rem;}
+.recovery-page .input-wrap input {letter-spacing:normal;text-transform:none;}
+.recovery-page .input-wrap {border-color:var(--muted);}
+.recovery-page .input-wrap:focus-within {border-color:var(--blue);}
+.recovery-page .recovery-message {margin-bottom:1.25rem;}
+.recovery-page .recovery-note {color:var(--muted);}
+.recovery-page .back-button {text-decoration:underline;text-underline-offset:.2em;}
+.recovery-page .card-footer {font-size:.75rem;}
+.recovery-page [hidden] {display:none!important;}
+@media(max-width:600px) {.recovery-page .card-content {padding:2rem 1.5rem;}}

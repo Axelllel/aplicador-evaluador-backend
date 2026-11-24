@@ -14,6 +14,7 @@
     <title>{{ __('sesion.perfiles.titulo') }} · BigBitByte</title>
     @vite('resources/css/student-entry.css')
     @vite('resources/css/ui-standards.css')
+    @vite('resources/js/password-recovery.js')
 </head>
 <body>
 <div class="portal" id="profile-entry">
