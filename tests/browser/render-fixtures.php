@@ -11,6 +11,6 @@ URL::forceRootUrl('http://127.0.0.1:8899');
 $student = ['alumno_id' => 14, 'grupo_id' => 1, 'nombre' => 'Alumno de prueba', 'materia' => 'Curso de historia'];
 $attempt = ['intento_id' => 1, 'examen_id' => 1, 'fecha_inicio' => date('c')];
 $errors = new ViewErrorBag;
-foreach (['student.exam' => 'qa-exam', 'auth.login' => 'qa-login', 'auth.perfiles' => 'qa-perfiles'] as $view => $file) {
+foreach (['student.exam' => 'qa-exam', 'auth.login' => 'qa-login', 'auth.perfiles' => 'qa-perfiles', 'auth.admin-login' => 'qa-admin'] as $view => $file) {
     file_put_contents('public/'.$file.'.html', view($view, compact('student', 'attempt', 'errors'))->render());
 }

@@ -26,7 +26,7 @@
             </div>
 
             <div class="tp-header-actions">
-                <span class="tp-portal-tag"><span class="tp-status-dot" aria-hidden="true"></span>Portal del docente</span>
+                <span class="tp-portal-tag"><span class="tp-status-dot" aria-hidden="true"></span>{{ $rol === \App\Enums\RolPanel::SuperAdmin ? 'Administración del sistema' : 'Portal del docente' }}</span>
                 <span class="tp-header-divider" aria-hidden="true"></span>
                 <button type="button" class="tp-icon-button tp-theme-button" id="tp-theme-toggle"
                         aria-label="Activar modo oscuro" title="Cambiar tema"><svg data-theme-moon xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M20.2 15.4A8.5 8.5 0 0 1 8.6 3.8 9 9 0 1 0 20.2 15.4Z" /></svg><svg data-theme-sun hidden xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M11 1h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM3.5 5l1.4-1.5L7 5.6 5.6 7zM17 18.4l1.4-1.4 2.1 2.1-1.4 1.4zM3.5 19l2.1-2.1L7 18.3l-2.1 2.1zM17 5.6l2.1-2.1L20.5 5l-2.1 2.1z" /></svg></button>
@@ -41,8 +41,8 @@
                     </button>
                     <div id="menu-cuenta" class="tp-account-menu hidden">
                         <p class="tp-account-role">{{ $rol->etiqueta() }}</p>
-                        <a href="{{ route('panel.mfa') }}" class="block py-3">{{ __('mfa.titulo') }}</a>
-                        <form method="POST" action="{{ route('sesion.destroy') }}">
+                        <a href="{{ route(\App\Services\SesionPanelService::rutaMfa()) }}" class="block py-3">{{ __('mfa.titulo') }}</a>
+                        <form method="POST" action="{{ route(\App\Services\SesionPanelService::esAdministracion() ? 'admin.logout' : 'sesion.destroy') }}">
                             @csrf
                             <x-boton type="submit" variante="secundario" accion="cerrar_sesion" ancho="completo" />
                         </form>

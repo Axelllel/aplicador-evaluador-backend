@@ -25,6 +25,7 @@ use App\Http\Controllers\Web\PreguntaController;
 use App\Http\Controllers\Web\RegistroController;
 use App\Http\Controllers\Web\ResultadoController;
 use App\Http\Controllers\Web\SegundoFactorController;
+use App\Http\Controllers\Web\SesionAdministracionController;
 use App\Http\Controllers\Web\SesionController;
 use App\Http\Controllers\Web\StudentPortalController;
 use App\Http\Controllers\Web\SuscripcionController;
@@ -50,10 +51,6 @@ Route::post('/registro', [RegistroController::class, 'store'])->name('registro.s
 // Panel del docente: exige un token vigente en la sesión.
 // TODO(Leonardo Ballestero López): asignar CheckPlanLimits a la creación de alumnos cuando exista ese módulo.
 Route::middleware('panel.sesion')->group(function (): void {
-    Route::get('/administracion/docentes', [AdministracionController::class, 'teachers'])->name('panel.docentes');
-    Route::get('/administracion/pagos', [AdministracionController::class, 'payments'])->name('panel.pagos');
-    Route::patch('/administracion/docentes/{teacher}', [AdministracionController::class, 'teacherStatus'])->whereUuid('teacher')->name('panel.docentes.estado');
-    Route::patch('/administracion/pagos/{payment}', [AdministracionController::class, 'paymentStatus'])->whereNumber('payment')->name('panel.pagos.estado');
     Route::get('/panel', [PanelController::class, 'index'])->name('panel.inicio');
 
     Route::get('/grupos', [GrupoController::class, 'index'])->name('panel.grupos');
@@ -128,4 +125,20 @@ Route::prefix('alumno')->name('student.')->middleware([VerifyStudentSession::cla
     Route::get('/calificaciones', [StudentPortalController::class, 'grades'])->name('grades');
     Route::post('/api/resultado', [StudentPortalController::class, 'result'])->name('result');
     Route::post('/salir', [StudentPortalController::class, 'leave'])->name('leave');
+});
+
+// Acceso administrativo independiente; no se enlaza desde la selección de perfiles.
+Route::get('/administracion/ingreso', [SesionAdministracionController::class, 'create'])->name('admin.login');
+Route::post('/administracion/ingreso', [SesionAdministracionController::class, 'store'])->name('admin.login.store');
+Route::post('/administracion/salir', [SesionAdministracionController::class, 'destroy'])->name('admin.logout');
+Route::middleware('panel.sesion')->group(function (): void {
+    Route::get('/administracion/docentes', [AdministracionController::class, 'teachers'])->name('panel.docentes');
+    Route::get('/administracion/pagos', [AdministracionController::class, 'payments'])->name('panel.pagos');
+    Route::patch('/administracion/docentes/{teacher}', [AdministracionController::class, 'teacherStatus'])->whereUuid('teacher')->name('panel.docentes.estado');
+    Route::patch('/administracion/pagos/{payment}', [AdministracionController::class, 'paymentStatus'])->whereNumber('payment')->name('panel.pagos.estado');
+    Route::get('/administracion/seguridad/doble-factor', [SegundoFactorController::class, 'show'])->name('admin.mfa');
+    Route::post('/administracion/seguridad/doble-factor/alta', [SegundoFactorController::class, 'enroll'])->middleware('throttle:3,1')->name('admin.mfa.enroll');
+    Route::post('/administracion/seguridad/doble-factor/codigo', [SegundoFactorController::class, 'challenge'])->middleware('throttle:3,1')->name('admin.mfa.challenge');
+    Route::post('/administracion/seguridad/doble-factor/verificar', [SegundoFactorController::class, 'verify'])->middleware('throttle:5,1')->name('admin.mfa.verify');
+    Route::delete('/administracion/seguridad/doble-factor', [SegundoFactorController::class, 'destroy'])->name('admin.mfa.destroy');
 });

@@ -20,7 +20,6 @@ use App\Services\ConsultasPanelService;
 use App\Services\ExamenesPanelService;
 use App\Services\PaginadorPanel;
 use App\Services\PlanDocenteService;
-use App\Services\SesionPanelService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -42,9 +41,6 @@ class PanelController extends Controller
      */
     public function index(Request $solicitud): View|RedirectResponse
     {
-        if (session(SesionPanelService::CLAVE.'.docente.rol') === 'super_admin') {
-            return redirect()->route('panel.docentes');
-        }
         $grupos = $this->consultas->grupos();
         $preguntas = $this->consultas->preguntas();
         $examenes = $this->consultas->examenes();

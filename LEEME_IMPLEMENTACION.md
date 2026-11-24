@@ -234,3 +234,8 @@ La capa `resources/css/ui-standards.css` agrega fuentes del sistema, títulos 24
 6. Volver a iniciar sesión para obtener el rol de administrador. Verificar con cuentas de prueba los permisos y una entrega completa.
 
 **Segundo factor telefónico:** Supabase Advanced MFA Phone no está incluido en Free y requiere un complemento pagado además del proveedor SMS. No se activa ni contrata desde este código. Mantener `SUPABASE_MFA_PHONE_ENABLED=false` hasta que el responsable habilite y pruebe ese servicio. Referencias oficiales: https://supabase.com/docs/guides/auth/auth-mfa/phone y https://supabase.com/docs/guides/platform/manage-your-usage/advanced-mfa-phone.
+
+
+### Corrección de separación de accesos
+
+`/login` conserva siempre el portal docente, incluso si la cuenta también está autorizada para administrar. El ingreso administrativo usa exclusivamente `/administracion/ingreso`; no se agrega ningún botón administrativo en la página pública de perfiles. Esa página mantiene solo Docente y Alumno. La API comprueba el permiso real antes de abrir una sesión administrativa. Las sesiones, tokens, retos de segundo factor y salidas de ambos portales se mantienen separados; las sesiones docentes anteriores recuperan su menú sin migraciones ni cambios de permisos.

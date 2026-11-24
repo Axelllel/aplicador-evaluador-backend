@@ -27,6 +27,38 @@ class SesionPanelService
     /** Clave de la sesión donde viven los datos de acceso. */
     public const CLAVE = 'panel_sesion';
 
+    public const CLAVE_ADMIN = 'administracion_sesion';
+
+    public static function esAdministracion(): bool
+    {
+        return request()->is('administracion', 'administracion/*');
+    }
+
+    public static function claveActual(): string
+    {
+        return self::esAdministracion() ? self::CLAVE_ADMIN : self::CLAVE;
+    }
+
+    public static function rutaLogin(): string
+    {
+        return self::esAdministracion() ? 'admin.login' : 'login';
+    }
+
+    public static function rutaInicio(): string
+    {
+        return self::esAdministracion() ? 'panel.docentes' : 'panel.inicio';
+    }
+
+    public static function rutaMfa(): string
+    {
+        return self::esAdministracion() ? 'admin.mfa' : 'panel.mfa';
+    }
+
+    public static function claveReto(): string
+    {
+        return self::esAdministracion() ? 'admin_mfa_challenge' : 'mfa_challenge';
+    }
+
     /** Segundos de margen para no usar un token que está a punto de vencer. */
     private const MARGEN_EN_SEGUNDOS = 30;
 
@@ -67,7 +99,12 @@ class SesionPanelService
     public function iniciar(Request $solicitud, array $respuestaDeLogin): void
     {
         $solicitud->session()->regenerate();
-        $solicitud->session()->put(self::CLAVE, self::datosParaSesion($respuestaDeLogin));
+        // El acceso elegido fija el portal; una capacidad administrativa nunca reemplaza al docente.
+        if (self::esAdministracion() && ($respuestaDeLogin['docente']['rol'] ?? '') !== 'super_admin') {
+            throw new \InvalidArgumentException('La cuenta no tiene permiso administrativo.');
+        }
+        $respuestaDeLogin['docente']['rol'] = self::esAdministracion() ? 'super_admin' : 'docente';
+        $solicitud->session()->put(self::claveActual(), self::datosParaSesion($respuestaDeLogin));
     }
 
     /**
@@ -75,7 +112,7 @@ class SesionPanelService
      */
     public function existe(): bool
     {
-        return is_array(session(self::CLAVE)) && $this->token(false) !== null;
+        return is_array(session(self::claveActual())) && $this->token(false) !== null;
     }
 
     /**
@@ -91,7 +128,7 @@ class SesionPanelService
      */
     public function token(bool $exigirVigencia = true): ?string
     {
-        $datos = session(self::CLAVE);
+        $datos = session(self::claveActual());
 
         if (! is_array($datos) || ! isset($datos['access_token'], $datos['expira_en'])) {
             return null;
@@ -117,7 +154,7 @@ class SesionPanelService
      */
     public function docente(): ?array
     {
-        $datos = session(self::CLAVE);
+        $datos = session(self::claveActual());
 
         if (! is_array($datos) || ! is_array($datos['docente'] ?? null)) {
             return null;
@@ -127,7 +164,7 @@ class SesionPanelService
             'id' => (string) ($datos['docente']['id'] ?? ''),
             'nombre' => (string) ($datos['docente']['nombre'] ?? ''),
             'correo' => (string) ($datos['docente']['correo'] ?? ''),
-            'rol' => ($datos['docente']['rol'] ?? '') === 'super_admin' ? 'super_admin' : 'docente',
+            'rol' => self::esAdministracion() && ($datos['docente']['rol'] ?? '') === 'super_admin' ? 'super_admin' : 'docente',
         ];
     }
 
@@ -146,7 +183,7 @@ class SesionPanelService
      */
     public function olvidar(): void
     {
-        session()->forget(self::CLAVE);
+        session()->forget(self::claveActual());
     }
 
     /**
@@ -158,7 +195,17 @@ class SesionPanelService
             return;
         }
 
+        $otraClave = self::esAdministracion() ? self::CLAVE : self::CLAVE_ADMIN;
+        $otroReto = self::esAdministracion() ? 'mfa_challenge' : 'admin_mfa_challenge';
+        $otraSesion = $solicitud->session()->get($otraClave);
+        $reto = $solicitud->session()->get($otroReto);
         $solicitud->session()->invalidate();
+        if (is_array($otraSesion)) {
+            $solicitud->session()->put($otraClave, $otraSesion);
+            if (is_array($reto)) {
+                $solicitud->session()->put($otroReto, $reto);
+            }
+        }
         $solicitud->session()->regenerateToken();
     }
 }

@@ -21,6 +21,11 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class IniciarSesionRequest extends FormRequest
 {
+    protected function getRedirectUrl(): string
+    {
+        return $this->is('administracion/*') ? route('admin.login') : parent::getRedirectUrl();
+    }
+
     /**
      * Permite que cualquier visitante envíe el formulario de acceso.
      */

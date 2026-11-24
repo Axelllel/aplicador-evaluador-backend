@@ -36,13 +36,19 @@ class RequiereSesionPanel
             $habiaSesion = $this->sesion->existe();
             $this->sesion->olvidar();
 
-            $redireccion = redirect()->guest(route('login'));
+            $redireccion = redirect()->guest(route(SesionPanelService::rutaLogin()));
 
             return $habiaSesion ? $redireccion->with('aviso', __('sesion.vencida')) : $redireccion;
         }
 
-        if (session(SesionPanelService::CLAVE.'.mfa_pendiente') && ! $solicitud->routeIs('panel.mfa*', 'logout')) {
-            return redirect()->route('panel.mfa');
+        if (SesionPanelService::esAdministracion() && ($this->sesion->docente()['rol'] ?? '') !== 'super_admin') {
+            $this->sesion->olvidar();
+
+            return redirect()->route('admin.login');
+        }
+
+        if (session(SesionPanelService::claveActual().'.mfa_pendiente') && ! $solicitud->routeIs('panel.mfa*', 'admin.mfa*', 'sesion.destroy', 'admin.logout')) {
+            return redirect()->route(SesionPanelService::rutaMfa());
         }
 
         $respuesta = $siguiente($solicitud);

@@ -37,7 +37,7 @@ class SegundoFactorController extends Controller
         $data = $request->validate(['telefono' => ['required', 'string', 'regex:/^\+[1-9][0-9]{7,14}$/']]);
         $response = $this->api->post('/auth/mfa/enroll', $data);
 
-        return redirect()->route('panel.mfa')->with($response->exitosa() ? 'exito' : 'error',
+        return redirect()->route(SesionPanelService::rutaMfa())->with($response->exitosa() ? 'exito' : 'error',
             $response->exitosa() ? 'Teléfono agregado. Solicita el código para confirmar su activación.' : 'No se pudo agregar el teléfono. Revisa la configuración del servicio.');
     }
 
@@ -46,29 +46,29 @@ class SegundoFactorController extends Controller
         $data = $request->validate(['factor' => ['required', 'uuid']]);
         $response = $this->api->post('/auth/mfa/'.$data['factor'].'/challenge');
         if ($response->exitosa()) {
-            $request->session()->put('mfa_challenge', ['factor' => $data['factor'], 'id' => $response->cuerpo['data']['id']]);
+            $request->session()->put(SesionPanelService::claveReto(), ['factor' => $data['factor'], 'id' => $response->cuerpo['data']['id']]);
         }
 
-        return redirect()->route('panel.mfa')->with($response->exitosa() ? 'exito' : 'error',
+        return redirect()->route(SesionPanelService::rutaMfa())->with($response->exitosa() ? 'exito' : 'error',
             $response->exitosa() ? 'Verificación preparada. Si elegiste teléfono, el código fue enviado por SMS; si elegiste autenticador, usa el código de tu aplicación.' : 'No se pudo preparar la verificación. Intenta de nuevo.');
     }
 
     public function verify(Request $request): RedirectResponse
     {
         $data = $request->validate(['codigo' => ['required', 'string', 'regex:/^[0-9]{6,10}$/']]);
-        $challenge = $request->session()->get('mfa_challenge');
+        $challenge = $request->session()->get(SesionPanelService::claveReto());
         if (! $challenge) {
-            return redirect()->route('panel.mfa')->with('error', 'Solicita primero un código.');
+            return redirect()->route(SesionPanelService::rutaMfa())->with('error', 'Solicita primero un código.');
         }
         $response = $this->api->post('/auth/mfa/'.$challenge['factor'].'/verify', ['challenge_id' => $challenge['id']] + $data);
         if (! $response->exitosa()) {
-            return redirect()->route('panel.mfa')->with('error', 'Código inválido o vencido. Intenta de nuevo.');
+            return redirect()->route(SesionPanelService::rutaMfa())->with('error', 'Código inválido o vencido. Intenta de nuevo.');
         }
         $tokens = $response->cuerpo['data'];
         $this->session->iniciar($request, $tokens + ['docente' => $this->session->docente(), 'mfa_required' => false]);
-        $request->session()->forget('mfa_challenge');
+        $request->session()->forget(SesionPanelService::claveReto());
 
-        return redirect()->route('panel.inicio')->with('exito', 'Segundo factor verificado.');
+        return redirect()->route(SesionPanelService::rutaInicio())->with('exito', 'Segundo factor verificado.');
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -76,6 +76,6 @@ class SegundoFactorController extends Controller
         $data = $request->validate(['factor' => ['required', 'uuid']]);
         $response = $this->api->solicitar('DELETE', '/auth/mfa/'.$data['factor']);
 
-        return redirect()->route('panel.mfa')->with($response->exitosa() ? 'exito' : 'error', $response->exitosa() ? 'Factor retirado.' : 'Confirma el segundo factor antes de retirarlo.');
+        return redirect()->route(SesionPanelService::rutaMfa())->with($response->exitosa() ? 'exito' : 'error', $response->exitosa() ? 'Factor retirado.' : 'Confirma el segundo factor antes de retirarlo.');
     }
 }

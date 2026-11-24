@@ -10,7 +10,7 @@
     <div class="mx-auto max-w-2xl space-y-6">
         @if ($datos['alta_telefono_habilitada'])
             <x-tarjeta>
-                <form method="POST" action="{{ route('panel.mfa.enroll') }}" class="space-y-4">
+                <form method="POST" action="{{ route(\App\Services\SesionPanelService::rutaMfa().'.enroll') }}" class="space-y-4">
                     @csrf
                     <label for="mfa-phone" class="block font-semibold">{{ __('mfa.telefono') }}</label>
                     <input id="mfa-phone" class="w-full rounded-lg border border-borde p-3" name="telefono" type="tel" autocomplete="tel" required pattern="\+[1-9][0-9]{7,14}" placeholder="+52…">
@@ -25,21 +25,21 @@
             <x-tarjeta class="space-y-4">
                 <p class="font-semibold">{{ $factor['tipo'] === 'phone' ? __('mfa.telefono') : __('mfa.autenticador') }} @if ($factor['telefono_final']) · •••• {{ $factor['telefono_final'] }} @endif</p>
                 <p>{{ $factor['estado'] === 'verified' ? __('mfa.activo') : __('mfa.sin_verificar') }}</p>
-                <form method="POST" action="{{ route('panel.mfa.challenge') }}">
+                <form method="POST" action="{{ route(\App\Services\SesionPanelService::rutaMfa().'.challenge') }}">
                     @csrf<input type="hidden" name="factor" value="{{ $factor['id'] }}">
                     <x-boton type="submit">{{ __('mfa.solicitar') }}</x-boton>
                 </form>
                 @if ($datos['nivel'] === 'aal2')
-                    <form method="POST" action="{{ route('panel.mfa.destroy') }}">
+                    <form method="POST" action="{{ route(\App\Services\SesionPanelService::rutaMfa().'.destroy') }}">
                         @csrf @method('DELETE')<input type="hidden" name="factor" value="{{ $factor['id'] }}">
                         <x-boton type="submit" variante="peligro">{{ __('mfa.retirar') }}</x-boton>
                     </form>
                 @endif
             </x-tarjeta>
         @endforeach
-        @if (session()->has('mfa_challenge'))
+        @if (session()->has(\App\Services\SesionPanelService::claveReto()))
             <x-tarjeta>
-                <form method="POST" action="{{ route('panel.mfa.verify') }}" class="space-y-4">
+                <form method="POST" action="{{ route(\App\Services\SesionPanelService::rutaMfa().'.verify') }}" class="space-y-4">
                     @csrf<label for="mfa-code" class="block font-semibold">{{ __('mfa.codigo') }}</label>
                     <input class="w-full rounded-lg border border-borde p-3" id="mfa-code" name="codigo" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6,10}" required>
                     <x-boton type="submit">{{ __('mfa.verificar') }}</x-boton>
