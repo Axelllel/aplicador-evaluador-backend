@@ -273,7 +273,7 @@ class ResultadosPanelTest extends TestCase
 
         $this->assertSame(['Resultados'], $this->consultar($html, '//aside//a[@aria-current="page"]/span[1]'));
         // Una respuesta sin nota (motivo opcional) y otra con nota (motivo obligatorio).
-        $this->assertSame(['Motivo (opcional)', 'Motivo del cambio'], $this->consultar($html, '//label[starts-with(@for, "motivo-")]'));
+        $this->assertSame(['Motivo del cambio'], $this->consultar($html, '//label[starts-with(@for, "motivo-")]'));
         $this->assertSame(['70'], $this->consultar($html, '//input[@id="calificacion-202"]/@value'));
         // Hay pendientes de opción múltiple: el botón de autocalificar está activo.
         $this->assertCount(1, $this->consultar($html, '//form[contains(@action, "autocalificar")]//button[not(@disabled)]'));
@@ -406,7 +406,7 @@ class ResultadosPanelTest extends TestCase
             ->from($this->urlDelIntento())
             ->patch($this->urlDeLaRespuesta(202), ['calificacion' => '90'])
             ->assertOk()
-            ->assertSee('Escribe el motivo del cambio, porque la pregunta ya tiene calificación.');
+            ->assertSee('Escribe el motivo del cambio, porque esta calificación ya fue revisada por el docente.');
 
         $html = $respuesta->getContent();
 
@@ -612,5 +612,18 @@ class ResultadosPanelTest extends TestCase
     {
         $this->api->responder('GET', '/teacher/exams/999/results', ['message' => 'No disponible.'], 404);
         $this->get('/resultados/999/exportar/pdf')->assertNotFound()->assertDontSee('Ana Pérez');
+    }
+
+    public function test_la_revision_completa_envia_una_sola_peticion_y_conserva_los_campos_si_la_api_rechaza(): void
+    {
+        $this->prepararIntento();
+        $this->api->responder('PATCH', '/teacher/attempts/22/grades', ['data' => ['actualizadas' => 1]]);
+        $url = route('panel.resultados.guardar-revision', ['examen' => 2, 'intento' => 22]);
+        $this->patch($url, ['respuestas' => [201 => ['calificacion' => 90], 202 => ['calificacion' => 70]]])->assertRedirect($this->urlDelIntento())->assertSessionHas('exito');
+        $this->assertSame(['respuestas' => [['id' => 201, 'calificacion' => 90], ['id' => 202, 'calificacion' => 70]]], $this->api->llamadasA('PATCH', '/teacher/attempts/22/grades')[0]['datos']);
+        $this->api->responder('PATCH', '/teacher/attempts/22/grades', ['message' => 'Revisión inválida', 'errors' => ['respuestas.202.motivo' => ['Falta el motivo.']]], 422);
+        $page = $this->followingRedirects()->from($this->urlDelIntento())->patch($url, ['respuestas' => [201 => ['calificacion' => 91], 202 => ['calificacion' => 80]]])->assertOk()->assertSee('Falta el motivo.');
+        $this->assertSame(['91'], $this->consultar($page->getContent(), '//input[@id="calificacion-201"]/@value'));
+        $this->assertSame(['80'], $this->consultar($page->getContent(), '//input[@id="calificacion-202"]/@value'));
     }
 }

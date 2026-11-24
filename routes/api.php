@@ -88,6 +88,7 @@ Route::middleware(VerifySupabaseToken::class)->group(function () {
     Route::get('/v1/teacher/attempts/{attemptId}/incidents', [TeacherResultsController::class, 'incidents'])->whereNumber('attemptId');
     Route::post('/v1/teacher/attempts/{attemptId}/auto-grade', [TeacherResultsController::class, 'autoGrade'])->whereNumber('attemptId');
     Route::post('/v1/teacher/attempts/{attemptId}/prepare-grading', [TeacherResultsController::class, 'prepareGrading'])->whereNumber('attemptId')->middleware('throttle:3,1');
+    Route::patch('/v1/teacher/attempts/{attemptId}/grades', [TeacherResultsController::class, 'gradeBatch'])->whereNumber('attemptId');
     Route::patch('/v1/teacher/answers/{answerId}/grade', [TeacherResultsController::class, 'grade'])->whereNumber('answerId');
 
     Route::get('/v1/teacher/groups/{grupoId}/evaluations', [TeacherEvaluationController::class, 'index'])->whereNumber('grupoId');

@@ -146,3 +146,32 @@ test('eliminar grupos y alumnos requiere una confirmación escrita y muestra el 
  await expect(page.getByRole('heading',{name:'Grupo eliminado',exact:true})).toBeVisible();
  expect(submitted).toBe(1);
 });
+
+test('la revisión se guarda junta y el motivo solo se pide al corregir una nota docente',async({page})=>{
+ await page.goto('/qa-revision.html');
+ await expect(page.locator('textarea[name="motivo"]')).toHaveCount(0);
+ let sent=0;
+ await page.route('**/resultados/1/intentos/1/revision',async route=>{
+  sent++;
+  const data=new URLSearchParams(route.request().postData());
+  expect(data.get('_method')).toBe('PATCH');
+  expect(data.get('respuestas[201][calificacion]')).toBe(sent===1?'50':'60');
+  expect(data.get('respuestas[202][calificacion]')).toBe('85');
+  if(sent===2)expect(data.get('respuestas[201][motivo]')).toBe('Corrección del desarrollo');
+  await route.fulfill({contentType:'text/html; charset=utf-8',body:'<h1>Revisión guardada</h1>'});
+ });
+ await page.getByRole('button',{name:'Guardar toda la revisión',exact:true}).first().click();
+ await expect(page.getByRole('heading',{name:'Revisión guardada'})).toBeVisible();
+ expect(sent).toBe(1);
+ await page.goto('/qa-review-manual.html');
+ const reason=page.locator('#motivo-201');
+ await expect(reason).toBeHidden();
+ await page.locator('#calificacion-201').fill('60');
+ await expect(reason).toBeVisible();
+ await page.getByRole('button',{name:'Guardar toda la revisión',exact:true}).first().click();
+ expect(sent).toBe(1);
+ await reason.fill('Corrección del desarrollo');
+ await page.getByRole('button',{name:'Guardar toda la revisión',exact:true}).last().click();
+ await expect(page.getByRole('heading',{name:'Revisión guardada'})).toBeVisible();
+ expect(sent).toBe(2);
+});

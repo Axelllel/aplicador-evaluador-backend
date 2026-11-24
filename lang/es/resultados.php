@@ -107,7 +107,7 @@ return [
             'motivo' => 'Motivo (opcional)',
             'motivo_obligatorio' => 'Motivo del cambio',
             'motivo_ayuda_nueva' => 'Puedes explicar por qué asignas esta calificación.',
-            'motivo_ayuda_cambio' => 'Obligatorio porque la pregunta ya tiene calificación. Queda en el historial.',
+            'motivo_ayuda_cambio' => 'Solo es obligatorio si cambias una calificación ya revisada por el docente. Queda en el historial.',
             'guardar_pregunta' => 'Guardar calificación de la pregunta :numero',
         ],
     ],
@@ -140,7 +140,16 @@ return [
         ],
     ],
 
+    'revision' => [
+        'titulo' => 'Revisar y guardar',
+        'ayuda' => 'Revisa las calificaciones y guárdalas juntas. El motivo solo se pide al corregir una nota ya revisada por ti.',
+        'guardar' => 'Guardar toda la revisión',
+        'guardar_una' => 'Guardar solo esta pregunta',
+        'guardada' => 'La revisión quedó guardada correctamente.',
+        'sin_cambios' => 'No hay calificaciones nuevas ni cambios que guardar.',
+    ],
+
     'errores' => [
-        'motivo_obligatorio' => 'Escribe el motivo del cambio, porque la pregunta ya tiene calificación.',
+        'motivo_obligatorio' => 'Escribe el motivo del cambio, porque esta calificación ya fue revisada por el docente.',
     ],
 ];
