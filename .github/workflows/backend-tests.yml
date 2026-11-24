@@ -55,7 +55,7 @@ jobs:
       - run: npm ci
       - run: npm run test:js
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      # Ubuntu 24.04 ya incluye Chrome; se usa el navegador del runner.
       - run: npm run test:browser
       - name: Suite con PostgreSQL real y cobertura de servicios y modelos
         run: php vendor/bin/phpunit -c phpunit.coverage.xml --coverage-clover storage/coverage/clover.xml --log-junit storage/coverage/junit.xml
