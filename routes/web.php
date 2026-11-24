@@ -57,6 +57,12 @@ Route::middleware('panel.sesion')->group(function (): void {
     Route::post('/grupos', [GrupoController::class, 'store'])->name('panel.grupos.store');
     Route::get('/grupos/{grupo}/alumnos', [GrupoController::class, 'students'])
         ->whereNumber('grupo')->name('panel.grupos.alumnos');
+    Route::get('/grupos/{grupo}/eliminar', [GrupoController::class, 'confirmarEliminacion'])->whereNumber('grupo')->name('panel.grupos.confirmar-eliminacion');
+    Route::delete('/grupos/{grupo}', [GrupoController::class, 'eliminar'])->whereNumber('grupo')->name('panel.grupos.eliminar');
+    Route::get('/grupos/{grupo}/alumnos/{alumno}/eliminar', [GrupoController::class, 'confirmarEliminacionAlumno'])
+        ->whereNumber(['grupo', 'alumno'])->name('panel.grupos.alumnos.confirmar-eliminacion');
+    Route::delete('/grupos/{grupo}/alumnos/{alumno}', [GrupoController::class, 'eliminarAlumno'])
+        ->whereNumber(['grupo', 'alumno'])->name('panel.grupos.alumnos.eliminar');
 
     Route::get('/banco-de-preguntas', [PreguntaController::class, 'index'])->name('panel.banco-de-preguntas');
     Route::post('/banco-de-preguntas/generar', [AsistenciaIaController::class, 'generate'])->name('panel.ia.generar');

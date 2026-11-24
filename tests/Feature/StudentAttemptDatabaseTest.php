@@ -55,7 +55,7 @@ class StudentAttemptDatabaseTest extends TestCase
                 '20261026213000_restringir_acceso_directo.sql', '20261026214000_rls_docente_grupo_pregunta.sql',
                 '20261026214500_rls_fase2_tablas_restantes.sql', '20261030010000_flujo_examen_evaluacion.sql',
                 '20261109100000_examenes_publicados_portal_alumno.sql', '20261109120000_revision_y_resultados_portal_alumno.sql',
-                '20261109150000_credencial_alumno_pin.sql', '20261120200000_inicio_intento_movil_pin.sql', '20261120130000_asistencia_ia_groq.sql', '20261123010000_control_tiempo_intentos.sql', '20261123020000_recuperacion_pin_controlada.sql', '20261123030000_calificacion_en_segundo_plano.sql', '20261123040000_administracion_controlada.sql', '20261123050000_revocacion_sesiones_docente.sql', '20261124010000_calificacion_relacion_columnas.sql', '20261123060000_evidencia_incidencias.sql'] as $file) {
+                '20261109150000_credencial_alumno_pin.sql', '20261120200000_inicio_intento_movil_pin.sql', '20261120130000_asistencia_ia_groq.sql', '20261123010000_control_tiempo_intentos.sql', '20261123020000_recuperacion_pin_controlada.sql', '20261123030000_calificacion_en_segundo_plano.sql', '20261123040000_administracion_controlada.sql', '20261123050000_revocacion_sesiones_docente.sql', '20261124010000_calificacion_relacion_columnas.sql', '20261124020000_gestion_grupos_alumnos.sql', '20261123060000_evidencia_incidencias.sql'] as $file) {
                 $sql = file_get_contents(base_path('supabase/migrations/'.$file));
                 if ($file === '20261025194447_seguridad_roles.sql' && $this->admin->query("SELECT 1 FROM pg_roles WHERE rolname='laravel_app'")->fetchColumn()) {
                     $sql = str_replace('CREATE ROLE laravel_app', 'ALTER ROLE laravel_app', $sql);
@@ -569,6 +569,161 @@ INSERT INTO public.examen_pregunta(id,apartado_id,pregunta_id,tiempo_segundos,po
         } catch (QueryException $exception) {
             $this->assertSame('P0001', $exception->errorInfo[0]);
         }
+    }
+
+    public function test_group_deletion_cascades_academic_data_but_preserves_other_teachers_students_pins_and_bank(): void
+    {
+        $this->seedDeletionGraph();
+        $this->withoutMiddleware(VerifySupabaseToken::class);
+        $this->actingAs((new Docente)->forceFill(['id' => self::TEACHER]));
+        DB::selectOne("SELECT set_config('app.docente_id',?,false)", [self::TEACHER]);
+        $this->getJson('/api/v1/teacher/groups/1/deletion-preview')->assertOk()->assertJsonPath('data.intentos', 2)->assertJsonPath('data.alumnos', 2);
+        $this->deleteJson('/api/v1/teacher/groups/1', ['confirmacion' => 'no'])->assertUnprocessable();
+        $this->assertSame(2, (int) $this->admin->query('SELECT count(*) FROM public.grupo')->fetchColumn());
+        $this->deleteJson('/api/v1/teacher/groups/1', ['confirmacion' => 'ELIMINAR', 'docente_id' => 'forged'])
+            ->assertOk()->assertJsonPath('data.intentos_eliminados', 2);
+        foreach (['grupo', 'examen', 'intento_examen', 'respuesta_alumno', 'historial_calificacion', 'calificacion_rubro', 'tiempo_pregunta_intento', 'cierre_intento', 'incidencia_proctoring'] as $table) {
+            $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.'.$table)->fetchColumn(), $table.' debe conservar solo el dato del otro grupo.');
+        }
+        $this->assertSame(2, (int) $this->admin->query('SELECT count(*) FROM public.pregunta')->fetchColumn());
+        $this->assertSame(2, (int) $this->admin->query('SELECT count(*) FROM public.alumno')->fetchColumn());
+        $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.credencial_alumno WHERE alumno_id=14')->fetchColumn());
+        $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.pago')->fetchColumn());
+        $this->assertSame(0, (int) $this->admin->query('SELECT count(*) FROM public.trabajo_calificacion WHERE intento_id IN (1,3)')->fetchColumn());
+        $this->assertSame('eliminar_grupo', $this->admin->query('SELECT accion FROM public.evento_eliminacion_grupo')->fetchColumn());
+        $this->assertSame(250, (int) $this->admin->query('SELECT presupuesto_consumido FROM public.solicitud_ia')->fetchColumn());
+        $this->assertNull($this->admin->query('SELECT respuesta_id FROM public.solicitud_ia')->fetchColumn());
+        $this->deleteJson('/api/v1/teacher/groups/1', ['confirmacion' => 'ELIMINAR'])->assertNotFound();
+        $this->deleteJson('/api/v1/teacher/groups/2', ['confirmacion' => 'ELIMINAR'])->assertNotFound();
+    }
+
+    public function test_student_deletion_is_limited_to_one_group_even_when_the_same_pin_has_other_enrollments(): void
+    {
+        $this->seedDeletionGraph();
+        $this->withoutMiddleware(VerifySupabaseToken::class);
+        $this->actingAs((new Docente)->forceFill(['id' => self::TEACHER]));
+        DB::selectOne("SELECT set_config('app.docente_id',?,false)", [self::TEACHER]);
+        $this->deleteJson('/api/v1/teacher/groups/2/students/14', ['confirmacion' => 'ELIMINAR'])->assertNotFound();
+        $this->deleteJson('/api/v1/teacher/groups/1/students/14', ['confirmacion' => 'ELIMINAR'])->assertOk()->assertJsonPath('data.intentos_eliminados', 1);
+        $this->assertSame(0, (int) $this->admin->query('SELECT count(*) FROM public.alumno_grupo WHERE grupo_id=1 AND alumno_id=14')->fetchColumn());
+        $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.alumno_grupo WHERE grupo_id=2 AND alumno_id=14')->fetchColumn());
+        foreach (['intento_examen', 'respuesta_alumno', 'historial_calificacion', 'calificacion_rubro', 'cierre_intento', 'tiempo_pregunta_intento', 'incidencia_proctoring'] as $table) {
+            $this->assertSame(2, (int) $this->admin->query('SELECT count(*) FROM public.'.$table)->fetchColumn(), $table.' conserva al compañero y al otro grupo.');
+        }
+        $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.credencial_alumno WHERE alumno_id=14')->fetchColumn());
+        $this->assertSame(2, (int) $this->admin->query('SELECT count(*) FROM public.examen')->fetchColumn());
+        $this->getJson('/api/v1/teacher/groups/1/students')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', 15);
+    }
+
+    public function test_active_attempts_prevent_both_deletions_and_an_unenrolled_student_cannot_start_an_attempt(): void
+    {
+        $this->fixture();
+        $this->postJson('/api/v1/student/exams/1/start', $this->credentials())->assertCreated();
+        $this->withoutMiddleware(VerifySupabaseToken::class);
+        $this->actingAs((new Docente)->forceFill(['id' => self::TEACHER]));
+        DB::selectOne("SELECT set_config('app.docente_id',?,false)", [self::TEACHER]);
+        $this->deleteJson('/api/v1/teacher/groups/1/students/14', ['confirmacion' => 'ELIMINAR'])->assertConflict();
+        $this->deleteJson('/api/v1/teacher/groups/1', ['confirmacion' => 'ELIMINAR'])->assertConflict();
+        $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.intento_examen')->fetchColumn());
+        $this->assertSame(0, (int) $this->admin->query('SELECT count(*) FROM public.evento_eliminacion_grupo')->fetchColumn());
+        $this->admin->exec("UPDATE public.intento_examen SET estado='anulado'");
+        $this->deleteJson('/api/v1/teacher/groups/1/students/14', ['confirmacion' => 'ELIMINAR'])->assertOk();
+        try {
+            $this->admin->exec('INSERT INTO public.intento_examen(examen_id,alumno_id) VALUES(1,14)');
+            $this->fail('No puede iniciar un alumno sin inscripción.');
+        } catch (PDOException $exception) {
+            $this->assertSame('P0001', $exception->getCode());
+        }
+    }
+
+    public function test_public_roles_cannot_delete_groups_and_the_migration_is_repeatable(): void
+    {
+        $this->fixture();
+        $this->deleteJson('/api/v1/teacher/groups/1', ['confirmacion' => 'ELIMINAR'])->assertUnauthorized();
+        foreach (['anon', 'authenticated'] as $role) {
+            foreach (['SELECT public.fn_eliminar_grupo_docente(1)', 'SELECT public.fn_eliminar_alumno_grupo(1,14)', 'SELECT id FROM public.evento_eliminacion_grupo'] as $query) {
+                $this->admin->exec('SET ROLE '.$role);
+                try {
+                    $this->admin->query($query);
+                    $this->fail('Acceso público indebido.');
+                } catch (PDOException $exception) {
+                    $this->assertSame('42501', $exception->getCode());
+                } finally {
+                    $this->admin->exec('RESET ROLE');
+                }
+            }
+        }
+        $this->admin->exec(file_get_contents(base_path('supabase/migrations/20261124020000_gestion_grupos_alumnos.sql')));
+    }
+
+    public function test_an_empty_group_is_deleted_and_stops_consuming_plan_capacity(): void
+    {
+        $this->fixture();
+        $this->withoutMiddleware(VerifySupabaseToken::class);
+        $this->actingAs((new Docente)->forceFill(['id' => self::TEACHER]));
+        DB::selectOne("SELECT set_config('app.docente_id',?,false)", [self::TEACHER]);
+        $this->admin->exec('DELETE FROM public.examen WHERE id=2');
+        $this->getJson('/api/v1/teacher/groups/2/deletion-preview')->assertOk()->assertJsonPath('data.examenes', 0);
+        $this->deleteJson('/api/v1/teacher/groups/2', ['confirmacion' => 'ELIMINAR'])->assertOk()->assertJsonPath('data.intentos_eliminados', 0);
+        $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.grupo WHERE activo')->fetchColumn());
+        $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.examen')->fetchColumn());
+    }
+
+    public function test_a_failure_after_cascading_deletes_rolls_back_everything(): void
+    {
+        $this->seedDeletionGraph();
+        $this->withoutMiddleware(VerifySupabaseToken::class);
+        $this->actingAs((new Docente)->forceFill(['id' => self::TEACHER]));
+        DB::selectOne("SELECT set_config('app.docente_id',?,false)", [self::TEACHER]);
+        $this->admin->exec("CREATE FUNCTION public.fail_deletion_audit_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Injected test failure'; END; $$;
+CREATE TRIGGER fail_deletion_audit_test BEFORE INSERT ON public.evento_eliminacion_grupo FOR EACH ROW EXECUTE FUNCTION public.fail_deletion_audit_test()");
+        try {
+            $this->deleteJson('/api/v1/teacher/groups/1', ['confirmacion' => 'ELIMINAR'])->assertStatus(503);
+            foreach (['intento_examen', 'respuesta_alumno', 'historial_calificacion', 'calificacion_rubro', 'cierre_intento', 'tiempo_pregunta_intento'] as $table) {
+                $this->assertSame(3, (int) $this->admin->query('SELECT count(*) FROM public.'.$table)->fetchColumn(), 'Debe revertir '.$table);
+            }
+            $this->assertSame(2, (int) $this->admin->query('SELECT count(*) FROM public.grupo')->fetchColumn());
+        } finally {
+            $this->admin->exec('DROP TRIGGER fail_deletion_audit_test ON public.evento_eliminacion_grupo; DROP FUNCTION public.fail_deletion_audit_test()');
+        }
+    }
+
+    public function test_missing_deletion_migration_returns_service_unavailable_without_removing_data(): void
+    {
+        $this->fixture();
+        $this->withoutMiddleware(VerifySupabaseToken::class);
+        $this->actingAs((new Docente)->forceFill(['id' => self::TEACHER]));
+        DB::selectOne("SELECT set_config('app.docente_id',?,false)", [self::TEACHER]);
+        $this->admin->exec('DROP FUNCTION public.fn_eliminar_grupo_docente(bigint)');
+        try {
+            $this->deleteJson('/api/v1/teacher/groups/1', ['confirmacion' => 'ELIMINAR'])->assertStatus(503);
+            $this->assertSame(2, (int) $this->admin->query('SELECT count(*) FROM public.grupo')->fetchColumn());
+        } finally {
+            $this->admin->exec(file_get_contents(base_path('supabase/migrations/20261124020000_gestion_grupos_alumnos.sql')));
+        }
+    }
+
+    private function seedDeletionGraph(): void
+    {
+        $this->fixture();
+        $other = '22222222-2222-4222-8222-222222222222';
+        $this->admin->exec("INSERT INTO auth.users VALUES('$other'); INSERT INTO public.docente(id,nombre,correo) VALUES('$other','Otro docente','otro@example.test');
+UPDATE public.grupo SET docente_id='$other' WHERE id=2;
+INSERT INTO public.alumno_grupo(alumno_id,grupo_id) VALUES(14,2);
+INSERT INTO public.apartado(id,examen_id,tipo,cantidad_preguntas) VALUES(2,2,'abierta',1);
+INSERT INTO public.pregunta(id,docente_id,tipo,enunciado,respuesta_modelo) VALUES(2,'$other','abierta','Otra pregunta','Otra respuesta');
+INSERT INTO public.examen_pregunta(id,apartado_id,pregunta_id,tiempo_segundos,ponderacion,respuesta_modelo_snapshot) VALUES(2,2,2,60,100,'Otra respuesta');
+INSERT INTO public.intento_examen(id,examen_id,alumno_id,estado,fecha_entrega) VALUES(1,1,14,'finalizado',now()),(2,2,14,'finalizado',now()),(3,1,15,'finalizado',now());
+INSERT INTO public.respuesta_alumno(id,intento_id,examen_pregunta_id,respuesta_texto,calificacion_final) VALUES(1,1,1,'Respuesta uno',80),(2,2,2,'Respuesta otro grupo',90),(3,3,1,'Respuesta compañero',70);
+INSERT INTO public.historial_calificacion(respuesta_alumno_id,calificacion_nueva,modificado_por,motivo) VALUES(1,80,'".self::TEACHER."','Revisión'),(2,90,'$other','Otra revisión'),(3,70,'".self::TEACHER."','Revisión compañero');
+INSERT INTO public.cierre_intento(intento_id,motivo,fecha_limite) VALUES(1,'entrega_alumno',now()),(2,'entrega_alumno',now()),(3,'entrega_alumno',now());
+INSERT INTO public.tiempo_pregunta_intento(intento_id,examen_pregunta_id,primer_acceso,fecha_limite) VALUES(1,1,now(),now()+interval '1 minute'),(2,2,now(),now()+interval '1 minute'),(3,1,now(),now()+interval '1 minute');
+INSERT INTO public.incidencia_proctoring(intento_id,tipo_alerta) VALUES(1,'cambio_pestana'),(2,'cambio_pestana'),(3,'cambio_pestana');
+INSERT INTO public.evaluacion(id,grupo_id,nombre,numero) VALUES(1,1,'Parcial',1),(2,2,'Otro parcial',1);
+INSERT INTO public.rubro_evaluacion(id,evaluacion_id,tipo,porcentaje) VALUES(1,1,'examen',100),(2,2,'examen',100);
+INSERT INTO public.calificacion_rubro(rubro_id,alumno_id,valor) VALUES(1,14,80),(1,15,70),(2,14,90);
+INSERT INTO public.trabajo_calificacion(intento_id,respuesta_id,tipo,clave) VALUES(1,1,'ia','respuesta:1'),(2,2,'ia','respuesta:2'),(3,3,'ia','respuesta:3');
+INSERT INTO public.solicitud_ia(id,docente_id,tipo,huella,modelo,respuesta_id,reserva_tokens,presupuesto_consumido,tokens_consumidos,estado) VALUES('33333333-3333-4333-8333-333333333333','".self::TEACHER."','calificacion','huella','modelo',1,100,250,250,'completada');");
     }
 
     public function test_teacher_analytics_and_exports_are_scoped_to_the_authenticated_owner_and_missing_answers_count_zero(): void
