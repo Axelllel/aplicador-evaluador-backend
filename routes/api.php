@@ -28,9 +28,9 @@ use Illuminate\Support\Facades\Route;
 Route::post('/v1/auth/logout', LogoutController::class)->middleware([VerifySupabaseToken::class.':logout', 'throttle:10,1']);
 
 // Auth: limites publicos; no exponer existencia de cuentas.
-Route::post('/v1/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
-Route::post('/v1/auth/register', [SupabaseAccountController::class, 'register'])->middleware('throttle:3,1');
-Route::post('/v1/auth/recover', [SupabaseAccountController::class, 'recover'])->middleware('throttle:3,1');
+Route::post('/v1/auth/login', [AuthController::class, 'login'])->middleware('throttle:auth-login');
+Route::post('/v1/auth/register', [SupabaseAccountController::class, 'register'])->middleware('throttle:auth-register');
+Route::post('/v1/auth/recover', [SupabaseAccountController::class, 'recover'])->middleware('throttle:auth-recover');
 Route::middleware(NoStoreResponse::class)->group(function () {
     Route::post('/v1/grupos/unirse', [StudentJoinController::class, 'store'])->middleware('throttle:student-entry');
     Route::post('/v1/student/dashboard', [StudentDashboardController::class, 'show'])->middleware('throttle:student-entry');

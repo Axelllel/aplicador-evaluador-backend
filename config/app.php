@@ -67,6 +67,9 @@ return [
 
     'timezone' => 'UTC',
 
+    // Límite de intentos de login, registro y recuperación (apagar solo en desarrollo o demostraciones).
+    'auth_throttle' => (bool) env('AUTH_THROTTLE_ENABLED', true),
+
     // Zona en la que el docente escribe y lee las fechas de los exámenes; se guardan en UTC.
     'timezone_docente' => env('APP_TIMEZONE_DOCENTE', 'America/Mexico_City'),
 

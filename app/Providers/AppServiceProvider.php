@@ -22,6 +22,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Límites de acceso del docente (login, registro y recuperación). En desarrollo o demostraciones se pueden
+        // apagar con AUTH_THROTTLE_ENABLED=false; en producción deben quedar activos (valor por defecto).
+        foreach (['auth-login' => 5, 'auth-register' => 3, 'auth-recover' => 3] as $nombre => $maximo) {
+            RateLimiter::for($nombre, fn (Request $request) => config('app.auth_throttle', true)
+                ? Limit::perMinute($maximo)->by($nombre.':'.$request->ip())
+                : Limit::none());
+        }
         RateLimiter::for('student-entry', function (Request $request): array {
             $student = $request->hasSession() ? $request->session()->get('bbb.student.alumno_id') : null;
             $pin = $request->input('codigo_acceso', '');
