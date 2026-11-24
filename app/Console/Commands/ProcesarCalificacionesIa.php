@@ -11,6 +11,7 @@ use App\Services\DatabaseUserContext;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class ProcesarCalificacionesIa extends Command
@@ -46,7 +47,9 @@ class ProcesarCalificacionesIa extends Command
                 }
             } catch (IaException $exception) {
                 // Una respuesta revisada manualmente ya no requiere IA.
-                $error = $exception->httpStatus === 404 ? null : ($exception->httpStatus === 429 ? 'limite' : 'proveedor_no_disponible');
+                $error = match ($exception->httpStatus) {
+                    404 => null, 429 => 'limite', 502 => 'formato_ia', default => 'proveedor_no_disponible'
+                };
             } catch (Throwable $exception) {
                 $error = 'procesamiento_no_completado';
             } finally {
@@ -54,6 +57,7 @@ class ProcesarCalificacionesIa extends Command
             }
             DB::selectOne('SELECT public.fn_resolver_trabajo_calificacion(?::bigint,?::uuid,?::text)', [$job->trabajo_id, $job->reserva, $error]);
             if ($error) {
+                Log::warning('Calificación automática pendiente de reintento.', ['trabajo_id' => $job->trabajo_id, 'tipo' => $job->tipo, 'motivo' => $error]);
                 $this->warn('Una tarea quedó pendiente de reintento; la revisión manual sigue disponible.');
             }
         }

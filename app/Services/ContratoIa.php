@@ -44,12 +44,13 @@ class ContratoIa
         $validator = Validator::make($data, [
             'preguntas' => ['required', 'array', 'list', 'size:'.$count],
             'preguntas.*.enunciado' => ['required', 'string', 'min:3', 'max:4000'],
-            'preguntas.*.respuesta_modelo' => ['required', 'string', 'max:6000'],
+            // Los pares ya definen la respuesta correcta; no exigir que el proveedor la duplique.
+            'preguntas.*.respuesta_modelo' => [$type === 'relacion_columnas' ? 'nullable' : 'required', 'string', 'max:6000'],
             'preguntas.*.opciones' => ['present', 'array', 'list', 'max:10'],
             'preguntas.*.opciones.*' => ['required', 'string', 'max:1000', 'not_regex:/[\r\n]/'],
             'preguntas.*.pares' => ['present', 'array', 'list', 'max:10'],
-            'preguntas.*.pares.*.izquierda' => ['required', 'string', 'max:1000'],
-            'preguntas.*.pares.*.derecha' => ['required', 'string', 'max:1000'],
+            'preguntas.*.pares.*.izquierda' => ['required', 'string', 'max:1000', 'not_regex:/[\r\n]/'],
+            'preguntas.*.pares.*.derecha' => ['required', 'string', 'max:1000', 'not_regex:/[\r\n]/'],
         ]);
         if ($validator->fails()) {
             throw new IaException('Las preguntas generadas no cumplen el formato requerido. No se agregaron al banco.', 502);
@@ -58,12 +59,13 @@ class ContratoIa
         $seen = [];
         foreach ($validator->validated()['preguntas'] as $question) {
             $prompt = trim($question['enunciado']);
-            $model = trim($question['respuesta_modelo']);
+            $model = trim($question['respuesta_modelo'] ?? '');
             $options = array_map('trim', $question['opciones']);
-            $pairs = $question['pares'];
+            $pairs = array_map(fn (array $pair): array => ['izquierda' => trim($pair['izquierda']), 'derecha' => trim($pair['derecha'])], $question['pares']);
             if (isset($seen[mb_strtolower($prompt)]) || ($type === 'opcion_multiple' &&
                 (count($options) < 2 || count(array_unique($options)) !== count($options) || ! in_array($model, $options, true))) ||
-                ($type === 'relacion_columnas' && count($pairs) < 2) ||
+                ($type === 'relacion_columnas' && (count($pairs) < 2 ||
+                    count(array_unique(array_column($pairs, 'izquierda'))) !== count($pairs))) ||
                 ($type !== 'opcion_multiple' && $options !== []) || ($type !== 'relacion_columnas' && $pairs !== [])) {
                 throw new IaException('La IA generó preguntas repetidas o alternativas incompatibles. No se agregaron al banco.', 502);
             }

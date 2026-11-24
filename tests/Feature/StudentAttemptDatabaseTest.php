@@ -16,6 +16,8 @@ namespace Tests\Feature;
 use App\Http\Middleware\VerifySupabaseToken;
 use App\Models\Docente;
 use App\Services\CredencialAlumnoService;
+use App\Services\DatabaseUserContext;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -53,7 +55,7 @@ class StudentAttemptDatabaseTest extends TestCase
                 '20261026213000_restringir_acceso_directo.sql', '20261026214000_rls_docente_grupo_pregunta.sql',
                 '20261026214500_rls_fase2_tablas_restantes.sql', '20261030010000_flujo_examen_evaluacion.sql',
                 '20261109100000_examenes_publicados_portal_alumno.sql', '20261109120000_revision_y_resultados_portal_alumno.sql',
-                '20261109150000_credencial_alumno_pin.sql', '20261120200000_inicio_intento_movil_pin.sql', '20261120130000_asistencia_ia_groq.sql', '20261123010000_control_tiempo_intentos.sql', '20261123020000_recuperacion_pin_controlada.sql', '20261123030000_calificacion_en_segundo_plano.sql', '20261123040000_administracion_controlada.sql', '20261123050000_revocacion_sesiones_docente.sql', '20261123060000_evidencia_incidencias.sql'] as $file) {
+                '20261109150000_credencial_alumno_pin.sql', '20261120200000_inicio_intento_movil_pin.sql', '20261120130000_asistencia_ia_groq.sql', '20261123010000_control_tiempo_intentos.sql', '20261123020000_recuperacion_pin_controlada.sql', '20261123030000_calificacion_en_segundo_plano.sql', '20261123040000_administracion_controlada.sql', '20261123050000_revocacion_sesiones_docente.sql', '20261124010000_calificacion_relacion_columnas.sql', '20261123060000_evidencia_incidencias.sql'] as $file) {
                 $sql = file_get_contents(base_path('supabase/migrations/'.$file));
                 if ($file === '20261025194447_seguridad_roles.sql' && $this->admin->query("SELECT 1 FROM pg_roles WHERE rolname='laravel_app'")->fetchColumn()) {
                     $sql = str_replace('CREATE ROLE laravel_app', 'ALTER ROLE laravel_app', $sql);
@@ -510,6 +512,63 @@ INSERT INTO public.examen_pregunta(id,apartado_id,pregunta_id,tiempo_segundos,po
             ->assertOk()->assertJsonPath('data.calificacion', 8.5)->assertJsonPath('data.estado', 'aproximado');
         $this->admin->exec("UPDATE public.examen SET resultado_visible='final' WHERE id=1");
         $this->postJson('/api/v2/student/attempts/result', ['token_sesion' => $token])->assertForbidden();
+    }
+
+    public function test_matching_submission_is_graded_proportionally_and_reprocessing_preserves_teacher_grades(): void
+    {
+        $this->fixture();
+        $pairs = [['izquierda' => 'Variable', 'derecha' => 'Valor modificable'], ['izquierda' => 'Constante', 'derecha' => 'Valor fijo']];
+        $statement = $this->admin->prepare("UPDATE public.pregunta SET tipo='relacion_columnas',opciones=?::jsonb,respuesta_modelo=? WHERE id=1");
+        $model = "Variable = Valor modificable\nConstante = Valor fijo";
+        $statement->execute([json_encode($pairs), $model]);
+        $statement = $this->admin->prepare('UPDATE public.examen_pregunta SET respuesta_modelo_snapshot=? WHERE id=1');
+        $statement->execute([$model]);
+        $this->admin->exec("UPDATE public.apartado SET tipo='relacion_columnas' WHERE id=1");
+        Http::preventStrayRequests();
+        $token = $this->postJson('/api/v1/student/exams/1/start', $this->credentials())->assertCreated()->json('data.token_sesion');
+        $this->postJson('/api/v2/student/attempts/open-question', ['token_sesion' => $token, 'examen_pregunta_id' => 1])->assertOk();
+        $this->postJson('/api/v2/student/attempts/answers', ['token_sesion' => $token, 'examen_pregunta_id' => 1, 'respuesta_texto' => '["Valor fijo","Valor fijo"]'])->assertOk();
+        $this->postJson('/api/v2/student/attempts/finish', ['token_sesion' => $token])->assertOk();
+        $this->artisan('examenes:procesar-calificaciones')->assertSuccessful();
+        $this->assertEquals(50, $this->admin->query('SELECT calificacion_final FROM public.respuesta_alumno')->fetchColumn());
+        $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.historial_calificacion')->fetchColumn());
+        Http::assertNothingSent();
+        $this->actingAs((new Docente)->forceFill(['id' => self::TEACHER]));
+        $context = app(DatabaseUserContext::class);
+        $context->ejecutarComoDocente(fn () => DB::selectOne("SELECT public.fn_calificar_respuesta(1,80,'Revisión del docente')"));
+        $context->ejecutarComoDocente(fn () => DB::selectOne('SELECT public.fn_preparar_calificacion_intento(1)'));
+        $this->artisan('examenes:procesar-calificaciones')->assertSuccessful();
+        $this->assertEquals(80, $this->admin->query('SELECT calificacion_final FROM public.respuesta_alumno')->fetchColumn());
+        $this->assertSame(2, (int) $this->admin->query('SELECT count(*) FROM public.historial_calificacion')->fetchColumn());
+    }
+
+    public function test_matching_reference_is_frozen_and_unknown_answer_formats_are_not_given_a_fabricated_zero(): void
+    {
+        $this->fixture();
+        $this->actingAs((new Docente)->forceFill(['id' => self::TEACHER]));
+        $this->admin->exec("INSERT INTO public.intento_examen(id,examen_id,alumno_id,estado,fecha_entrega) VALUES(1,1,14,'finalizado',now())");
+        $pairs = [['izquierda' => 'Variable', 'derecha' => 'Referencia modificada'], ['izquierda' => 'Constante', 'derecha' => 'Otra modificación']];
+        $model = "Variable = Valor modificable\nConstante = Valor fijo";
+        $q = $this->admin->prepare("UPDATE public.pregunta SET tipo='relacion_columnas',opciones=?::jsonb WHERE id=1");
+        $q->execute([json_encode($pairs)]);
+        $q = $this->admin->prepare('UPDATE public.examen_pregunta SET respuesta_modelo_snapshot=? WHERE id=1');
+        $q->execute([$model]);
+        $this->admin->exec("INSERT INTO public.respuesta_alumno(id,intento_id,examen_pregunta_id,respuesta_texto) VALUES(1,1,1,'formato anterior desconocido')");
+        $context = app(DatabaseUserContext::class);
+        $this->assertSame(0, (int) $context->ejecutarComoDocente(fn () => DB::selectOne('SELECT public.fn_autocalificar_intento(1) AS n'))->n);
+        $this->assertNull($this->admin->query('SELECT calificacion_final FROM public.respuesta_alumno')->fetchColumn());
+        $q = $this->admin->prepare('UPDATE public.respuesta_alumno SET respuesta_texto=? WHERE id=1');
+        $q->execute(['{"Variable":"Valor modificable","Constante":"Valor fijo"}']);
+        $this->assertSame(1, (int) $context->ejecutarComoDocente(fn () => DB::selectOne('SELECT public.fn_autocalificar_intento(1) AS n'))->n);
+        $this->assertEquals(100, $this->admin->query('SELECT calificacion_final FROM public.respuesta_alumno')->fetchColumn());
+        $this->admin->exec("INSERT INTO auth.users VALUES('22222222-2222-4222-8222-222222222222'); INSERT INTO public.docente(id,nombre,correo) VALUES('22222222-2222-4222-8222-222222222222','Otro','otro@example.test')");
+        $this->actingAs((new Docente)->forceFill(['id' => '22222222-2222-4222-8222-222222222222']));
+        try {
+            $context->ejecutarComoDocente(fn () => DB::selectOne('SELECT public.fn_preparar_calificacion_intento(1)'));
+            $this->fail('No debe preparar intentos ajenos.');
+        } catch (QueryException $exception) {
+            $this->assertSame('P0001', $exception->errorInfo[0]);
+        }
     }
 
     public function test_teacher_analytics_and_exports_are_scoped_to_the_authenticated_owner_and_missing_answers_count_zero(): void

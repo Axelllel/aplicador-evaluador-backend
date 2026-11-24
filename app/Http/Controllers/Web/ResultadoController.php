@@ -152,4 +152,15 @@ class ResultadoController extends Controller
             __('mensajes.error.autocalificacion_fallida'),
         );
     }
+
+    public function evaluar(int $examen, int $intento): RedirectResponse
+    {
+        abort_if($this->resultados->intento($examen, $intento) === null, 404);
+
+        return $this->redirigirSegunRespuesta(
+            $this->api->post('/teacher/attempts/'.$intento.'/prepare-grading'),
+            redirect()->route('panel.resultados.intento', ['examen' => $examen, 'intento' => $intento]),
+            __('ia.encolada'), null, __('ia.error'),
+        );
+    }
 }

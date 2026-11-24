@@ -10,3 +10,4 @@ import './form-feedback';
 import './payment-simulation';
 
 import './ai-feedback';
+import './grading-status';

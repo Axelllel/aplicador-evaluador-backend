@@ -49,7 +49,7 @@ class PaymentSimulationTest extends TestCase
         $this->withSession(['_old_input' => ['numero_tarjeta' => '4242424242424242', 'cvv' => '123']])
             ->get('/suscripcion/planes/pago?grupos=3&alumnos=25&preguntas=150')
             ->assertOk()->assertSee('Activar plan')->assertDontSee('Simular y activar mi plan')->assertSee('Transferencia SPEI')
-            ->assertDontSee('4242 4242 4242 4242')->assertSee('No se realizará ningún cargo.')->assertSee('$181.00')->assertDontSee('value="4242424242424242"', false)->assertDontSee('value="123"', false);
+            ->assertDontSee('4242 4242 4242 4242')->assertDontSee('Se valida el formato de los datos.')->assertDontSee('No se crearán grupos automáticamente.')->assertSee('$181.00')->assertDontSee('value="4242424242424242"', false)->assertDontSee('value="123"', false);
     }
 
     public function test_api_requires_authentication(): void
