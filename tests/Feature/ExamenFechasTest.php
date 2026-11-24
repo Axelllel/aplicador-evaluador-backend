@@ -115,6 +115,24 @@ class ExamenFechasTest extends TestCase
         $this->post('/examenes', $this->datos(['nombre' => str_repeat('a', 30)]))->assertSessionHasNoErrors();
     }
 
+    public function test_un_error_de_publicar_no_abre_el_recuadro_del_alta(): void
+    {
+        $this->api->responder('POST', '/teacher/exams/1/publish', ['message' => 'El examen necesita al menos un apartado.'], 409);
+
+        $this->from('/examenes')->post('/examenes/1/publicar')->assertSessionHas('error');
+
+        $this->get('/examenes')->assertOk()->assertDontSee('data-error-summary', false)->assertDontSee('No se pudo crear el examen.');
+    }
+
+    public function test_un_error_del_alta_si_se_muestra_dentro_del_formulario(): void
+    {
+        $this->api->responder('POST', '/teacher/exams', ['message' => 'Grupo no disponible.'], 404);
+
+        $this->from('/examenes')->post('/examenes', $this->datos())->assertSessionHas('alta_fallida');
+
+        $this->get('/examenes')->assertOk()->assertSee('data-error-summary', false)->assertSee('No se pudo crear el examen.');
+    }
+
     public function test_el_error_regresa_al_formulario_y_no_al_inicio(): void
     {
         $respuesta = $this->from('/examenes')->post('/examenes', $this->datos(['fecha_apertura' => '1900-01-01T08:00']));

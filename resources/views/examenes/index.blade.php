@@ -36,15 +36,15 @@
                 <form method="POST" action="{{ route('panel.examenes.store') }}" class="tp-exam-form space-y-6" data-submit-message="{{ __('examenes.nuevo.creando') }}">
                     @csrf
 
-                    @if ($errors->any() || session('error') || session('aviso'))
+                    @if ($errors->any() || session('alta_fallida'))
                         <div role="alert" tabindex="-1" data-error-summary class="rounded-lg border border-error bg-error/10 p-3 text-sm text-error">
                             <p class="font-semibold">{{ __('examenes.errores.resumen') }}</p>
                             <ul class="mt-1 list-disc pl-5">
                                 @foreach ($errors->all() as $mensajeDeError)
                                     <li>{{ $mensajeDeError }}</li>
                                 @endforeach
-                                @if (session('error')) <li>{{ session('error') }}</li> @endif
-                                @if (session('aviso')) <li>{{ session('aviso') }}</li> @endif
+                                @if (session('alta_fallida') && session('error')) <li>{{ session('error') }}</li> @endif
+                                @if (session('alta_fallida') && session('aviso')) <li>{{ session('aviso') }}</li> @endif
                             </ul>
                         </div>
                     @endif

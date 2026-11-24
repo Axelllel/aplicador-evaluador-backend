@@ -75,7 +75,8 @@ class ExamenController extends Controller
         );
 
         // Con error se regresa al formulario, no al inicio de la página.
-        return $respuesta->exitosa() ? $redireccion : $redireccion->withFragment('nuevo-examen');
+        // «alta_fallida» marca que el aviso pertenece al formulario de alta y no a Publicar o Eliminar.
+        return $respuesta->exitosa() ? $redireccion : $redireccion->withFragment('nuevo-examen')->with('alta_fallida', true);
     }
 
     /**
