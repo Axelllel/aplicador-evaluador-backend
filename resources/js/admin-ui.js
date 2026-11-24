@@ -7,8 +7,8 @@ if (root) {
     const applyTheme = dark => {
         root.classList.toggle(admin ? 'tp-dark' : 'dark', dark);
         if (theme) {
-            theme.querySelector('[data-theme-moon]').hidden = dark;
-            theme.querySelector('[data-theme-sun]').hidden = !dark;
+            theme.querySelector('[data-theme-moon]').toggleAttribute('hidden', dark);
+            theme.querySelector('[data-theme-sun]').toggleAttribute('hidden', !dark);
             theme.setAttribute('aria-label', dark ? theme.dataset.labelLight : theme.dataset.labelDark);
         }
         try { localStorage.setItem('bbb-theme', dark ? 'dark' : 'light'); } catch { /* El acceso funciona sin persistencia local. */ }
