@@ -93,6 +93,7 @@
                                     data-copiar-aviso="aviso-folio-copiado"
                                     class="tp-secondary-action"
                                 />
+                                <x-boton variante="peligro" icono="trash" :href="route('panel.grupos.confirmar-eliminacion', $grupo['id'])">{{ __('grupos.eliminacion.eliminar_grupo') }}</x-boton>
                             </div>
                         </x-tarjeta>
                     @endforeach

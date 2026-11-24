@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ConfirmarRetiroRequest;
+use App\Services\GestionGruposService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -12,6 +14,11 @@ use Illuminate\Support\Str;
 /** El docente autoriza explicitamente a un alumno para UN examen. */
 class TeacherStudentController extends Controller
 {
+    public function destroy(ConfirmarRetiroRequest $request, int $grupoId, int $alumnoId, GestionGruposService $gestion): JsonResponse
+    {
+        return response()->json(['data' => $gestion->retirarAlumno($grupoId, $alumnoId)]);
+    }
+
     public function index(Request $request, int $grupoId): JsonResponse
     {
         $esGrupoPropio = DB::table('grupo')
@@ -29,6 +36,7 @@ class TeacherStudentController extends Controller
             ->groupBy('i.alumno_id')
             ->select('i.alumno_id')
             ->selectRaw('count(*) as total');
+        $intentos->selectRaw("count(*) FILTER (WHERE i.estado='en_progreso') as en_curso");
 
         $alumnos = DB::table('alumno_grupo as ag')
             ->join('alumno as a', 'a.id', '=', 'ag.alumno_id')
@@ -38,6 +46,7 @@ class TeacherStudentController extends Controller
             ->orderBy('a.id')
             ->select('a.id', 'a.nombre', 'ag.fecha_union')
             ->selectRaw('coalesce(intentos.total, 0) as intentos_en_grupo')
+            ->selectRaw('coalesce(intentos.en_curso, 0) as intentos_en_curso')
             ->get();
 
         return response()->json(['data' => $alumnos]);
@@ -50,19 +59,28 @@ class TeacherStudentController extends Controller
             ->where('e.id', $examenId)->where('g.docente_id', $uid)
             ->where('g.activo', true)->where('e.publicado', true)
             ->first(['e.id', 'e.grupo_id', 'e.fecha_cierre']);
-        if (!$examen) return response()->json(['message' => 'Examen no disponible.'], 404);
+        if (! $examen) {
+            return response()->json(['message' => 'Examen no disponible.'], 404);
+        }
         $inscrito = DB::table('alumno_grupo')->where('grupo_id', $examen->grupo_id)
             ->where('alumno_id', $alumnoId)->exists();
-        if (!$inscrito) return response()->json(['message' => 'Alumno no inscrito en el grupo.'], 404);
+        if (! $inscrito) {
+            return response()->json(['message' => 'Alumno no inscrito en el grupo.'], 404);
+        }
         if (strtotime($examen->fecha_cierre) <= time()) {
             return response()->json(['message' => 'El examen ya cerro.'], 409);
         }
         // El pase es un secreto cifrado: no confundirlo con el folio publico del grupo.
+        $version = DB::selectOne('SELECT public.fn_version_credencial_alumno(?::bigint) AS version', [$alumnoId])->version;
+        if ($version === null) {
+            return response()->json(['message' => 'El alumno requiere una credencial activa.'], 409);
+        }
         $vence = min(time() + 1800, strtotime($examen->fecha_cierre));
         $pase = Crypt::encryptString(json_encode([
             'kind' => 'bbb-exam-grant-v1', 'exam' => $examenId, 'student' => $alumnoId,
-            'teacher' => $uid, 'exp' => $vence, 'nonce' => Str::random(24),
+            'teacher' => $uid, 'credential_version' => (int) $version, 'exp' => $vence, 'nonce' => Str::random(24),
         ], JSON_THROW_ON_ERROR));
+
         return response()->json(['data' => ['pase' => $pase, 'vence_unix' => $vence,
             'alumno_id' => $alumnoId, 'examen_id' => $examenId]]);
     }

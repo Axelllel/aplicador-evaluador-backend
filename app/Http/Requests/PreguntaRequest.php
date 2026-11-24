@@ -60,8 +60,8 @@ class PreguntaRequest extends FormRequest
             'opciones_lista.*' => ['required', 'string', 'max:2000', 'not_regex:/[\r\n]/'],
             'correcta' => [Rule::requiredIf($estructurado && $tipo === 'opcion_multiple'), 'nullable', 'integer', 'min:0', 'max:9'],
             'pares_lista' => [Rule::requiredIf($estructurado && $tipo === 'relacion_columnas'), 'nullable', 'array', 'list', 'min:2', 'max:10'],
-            'pares_lista.*.izquierda' => ['required', 'string', 'max:2000'],
-            'pares_lista.*.derecha' => ['required', 'string', 'max:2000'],
+            'pares_lista.*.izquierda' => ['required', 'string', 'max:2000', 'not_regex:/[\r\n]/'],
+            'pares_lista.*.derecha' => ['required', 'string', 'max:2000', 'not_regex:/[\r\n]/'],
             'enunciado' => ReglasPregunta::enunciado(),
             'lenguaje' => [
                 Rule::requiredIf($tipo === 'programacion'),

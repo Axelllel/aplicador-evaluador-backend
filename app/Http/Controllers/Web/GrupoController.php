@@ -17,6 +17,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\RespondeConApi;
+use App\Http\Requests\ConfirmarRetiroRequest;
 use App\Http\Requests\GrupoRequest;
 use App\Services\CodigoQrService;
 use App\Services\ConsultasPanelService;
@@ -35,8 +36,7 @@ class GrupoController extends Controller
         private readonly PanelApiService $api,
         private readonly ConsultasPanelService $consultas,
         private readonly CodigoQrService $codigoQr,
-    ) {
-    }
+    ) {}
 
     /**
      * Muestra el formulario de nuevo grupo y los grupos con su folio y QR.
@@ -82,5 +82,40 @@ class GrupoController extends Controller
             'grupo' => $grupo,
             'alumnos' => $this->consultas->estudiantesDelGrupo($grupoId),
         ]);
+    }
+
+    public function confirmarEliminacion(int $grupo): View
+    {
+        $respuesta = $this->api->get('/teacher/groups/'.$grupo.'/deletion-preview');
+        abort_if($respuesta->esNoEncontrada(), 404);
+        abort_unless($respuesta->exitosa(), 503, __('mensajes.error.servicio'));
+
+        return view('grupos.eliminar', ['grupo' => $respuesta->datos()]);
+    }
+
+    public function eliminar(ConfirmarRetiroRequest $request, int $grupo): RedirectResponse
+    {
+        return $this->redirigirSegunRespuesta(
+            $this->api->solicitar('DELETE', '/teacher/groups/'.$grupo, $request->validated()),
+            redirect()->route('panel.grupos'), __('grupos.eliminacion.grupo_eliminado'),
+        );
+    }
+
+    public function confirmarEliminacionAlumno(int $grupo, int $alumno): View
+    {
+        $actual = $this->consultas->grupos()->firstWhere('id', $grupo);
+        abort_if($actual === null, 404);
+        $estudiante = $this->consultas->estudiantesDelGrupo($grupo)->firstWhere('id', $alumno);
+        abort_if($estudiante === null, 404);
+
+        return view('grupos.eliminar-alumno', ['grupo' => $actual, 'alumno' => $estudiante]);
+    }
+
+    public function eliminarAlumno(ConfirmarRetiroRequest $request, int $grupo, int $alumno): RedirectResponse
+    {
+        return $this->redirigirSegunRespuesta(
+            $this->api->solicitar('DELETE', '/teacher/groups/'.$grupo.'/students/'.$alumno, $request->validated()),
+            redirect()->route('panel.grupos.alumnos', $grupo), __('grupos.eliminacion.alumno_eliminado'),
+        );
     }
 }

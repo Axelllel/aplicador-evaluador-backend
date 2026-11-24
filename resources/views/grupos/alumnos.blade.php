@@ -1,10 +1,10 @@
 {{--
     Archivo: alumnos.blade.php
     Módulo: resources/views/grupos
-    Descripción: Lista de alumnos inscritos en un grupo del docente.
-    Autor: Axel (Axelllel)
-    Creado: 09/11/2026
-    Modificado: 20/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+    Descripción: Vista del módulo grupos de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
 --}}
 <x-layouts.panel titulo="Alumnos del grupo" descripcion="Consulta los alumnos inscritos.">
     <div class="space-y-6">
@@ -28,6 +28,7 @@
                             <th class="px-3 py-3 font-semibold">Alumno</th>
                             <th class="px-3 py-3 font-semibold">Registro</th>
                             <th class="px-3 py-3 font-semibold">Intentos registrados</th>
+                            <th class="px-3 py-3 font-semibold">{{ __('grupos.eliminacion.acciones') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-linea">
@@ -39,6 +40,7 @@
                                 </td>
                                 <td class="px-3 py-4 text-secundario">{{ \Illuminate\Support\Carbon::parse($alumno['fecha_union'])->format('d/m/Y') }}</td>
                                 <td class="px-3 py-4 text-secundario">{{ $alumno['intentos_en_grupo'] }}</td>
+                                <td class="px-3 py-4"><x-boton variante="peligro" icono="trash" :href="route('panel.grupos.alumnos.confirmar-eliminacion', ['grupo' => $grupo['id'], 'alumno' => $alumno['id']])" aria-label="{{ __('grupos.eliminacion.eliminar_nombre', ['nombre' => $alumno['nombre']]) }}">{{ __('grupos.eliminacion.eliminar_alumno') }}</x-boton></td>
                             </tr>
                         @endforeach
                     </tbody>

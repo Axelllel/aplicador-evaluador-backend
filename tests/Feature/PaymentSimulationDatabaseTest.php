@@ -6,7 +6,7 @@
  * Descripción: Ejecuta migraciones y compras en PostgreSQL desechable, con RLS y permisos reales.
  * Autor: Axel Rebollo Zeferino
  * Creado: 20/11/2026
- * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Revisión de integración
  */
 
 declare(strict_types=1);
@@ -61,7 +61,7 @@ SQL);
             $this->db->exec(str_replace('CREATE EXTENSION IF NOT EXISTS pgcrypto;', '', $base));
             foreach (['20261025194447_seguridad_roles.sql', '20261026213000_restringir_acceso_directo.sql',
                 '20261026214000_rls_docente_grupo_pregunta.sql', '20261026214500_rls_fase2_tablas_restantes.sql',
-                '20261109051000_pagos_referencias_externas.sql', '20261120120000_confirmar_pago_simulado.sql'] as $migration) {
+                '20261109051000_pagos_referencias_externas.sql', '20261120120000_confirmar_pago_simulado.sql', '20261123050000_revocacion_sesiones_docente.sql'] as $migration) {
                 $sql = file_get_contents(base_path('supabase/migrations/'.$migration));
                 if ($migration === '20261025194447_seguridad_roles.sql' && $this->db->query("SELECT 1 FROM pg_roles WHERE rolname='laravel_app'")->fetchColumn()) {
                     $sql = str_replace('CREATE ROLE laravel_app', 'ALTER ROLE laravel_app', $sql);
@@ -173,11 +173,16 @@ SQL);
         $this->actingAs(new GenericUser(['id' => self::TEACHER]));
         $this->postJson('/api/v1/teacher/payments/simulate', ['operacion_id' => self::OPERATION,
             'grupos' => 3, 'alumnos' => 25, 'preguntas' => 150, 'metodo_pago' => 'tarjeta',
-            'titular' => 'Prueba', 'correo_facturacion' => 'prueba@example.test', 'numero_tarjeta' => '4242424242424242',
+            'titular' => 'Prueba', 'correo_facturacion' => 'prueba@example.test', 'numero_tarjeta' => '4111111111111111',
             'cvv' => '123', 'vencimiento' => '12/39', 'monto' => '0.01'])->assertCreated()->assertJsonPath('data.grupos', 3);
         $this->getJson('/api/v1/teacher/payments')->assertOk()->assertJsonPath('data.0.es_plan_actual', true)
             ->assertJsonPath('data.0.proveedor_pago', 'simulador_bigbitbyte');
         $this->assertSame(1, (int) $this->db->query('SELECT count(*) FROM public.pago')->fetchColumn());
+        $details = json_decode($this->db->query('SELECT detalle_simulacion FROM public.pago')->fetchColumn(), true);
+        $this->assertSame('1111', $details['ultimos_cuatro']);
+        $this->assertArrayNotHasKey('numero_tarjeta', $details);
+        $this->assertArrayNotHasKey('cvv', $details);
+        Http::assertNothingSent();
         DB::disconnect('payment_testing');
     }
 

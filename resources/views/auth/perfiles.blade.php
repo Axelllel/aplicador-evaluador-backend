@@ -1,10 +1,10 @@
 {{--
     Archivo: perfiles.blade.php
     Módulo: resources/views/auth
-    Descripción: Selector de perfil (docente o alumno) previo al ingreso, con cambio de tema.
-    Autor: Axel (Axelllel)
-    Creado: 09/11/2026
-    Modificado: 20/11/2026 · Leonardo Ballestero López · Cabecera de archivo y color por token
+    Descripción: Vista del módulo auth de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
 --}}
 <!doctype html>
 <html lang="es">
@@ -13,6 +13,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ __('sesion.perfiles.titulo') }} · BigBitByte</title>
     @vite('resources/css/student-entry.css')
+    @vite('resources/css/ui-standards.css')
 </head>
 <body>
 <div class="portal" id="profile-entry">

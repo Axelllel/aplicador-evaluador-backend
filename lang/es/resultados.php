@@ -13,6 +13,8 @@
 declare(strict_types=1);
 
 return [
+    'exportar_excel' => 'Descargar Excel',
+    'exportar_pdf' => 'Descargar PDF',
     'titulo' => 'Resultados',
     'descripcion' => 'Revisa los intentos de tus alumnos y califica sus respuestas.',
     'opcion_examen' => ':examen · :grupo',
@@ -73,11 +75,17 @@ return [
         'entrega' => 'Fecha de entrega',
         'escala' => 'Escala de calificación',
         'avance' => ':calificadas de :total preguntas calificadas.',
-        'sin_responder' => '{1} El alumno no respondió 1 pregunta. Cuenta como 0 en la nota final y no necesita calificarse.|[2,*] El alumno no respondió :cantidad preguntas. Cuentan como 0 en la nota final y no necesitan calificarse.',
+        'sin_responder' => '{1} El alumno no respondió 1 pregunta; cuenta como cero en la nota final.|[2,*] El alumno no respondió :cantidad preguntas; cuentan como cero en la nota final.',
         'no_calificable' => 'Podrás calificar este intento cuando el alumno lo entregue.',
-        'autocalificar' => 'Autocalificar opción múltiple',
-        'autocalificar_ayuda' => 'Compara cada respuesta de opción múltiple con la respuesta modelo. Las preguntas abiertas se califican a mano.',
-        'autocalificar_sin_pendientes' => 'No hay respuestas de opción múltiple sin calificar.',
+        'autocalificar' => 'Calificar preguntas objetivas',
+        'autocalificar_ayuda' => 'Compara las opciones múltiples y calcula el porcentaje de pares correctos en relación de columnas. Las propuestas de IA quedan para tu revisión.',
+        'autocalificar_sin_pendientes' => 'No hay preguntas objetivas pendientes de calificar.',
+        'revision_columnas' => 'Revisión de relación de columnas',
+        'elemento' => 'Elemento',
+        'relacion_correcta' => 'Relación correcta',
+        'formato_historico' => 'Esta respuesta usa un formato anterior que requiere revisión manual.',
+        'ver_original' => 'Ver respuesta original',
+        'referencia_manual' => 'Referencia histórica: revisar manualmente',
         'respuestas' => 'Respuestas del alumno',
         'sin_respuestas' => 'El alumno no registró respuestas en este intento.',
         'pregunta' => 'Pregunta :numero',
@@ -99,7 +107,7 @@ return [
             'motivo' => 'Motivo (opcional)',
             'motivo_obligatorio' => 'Motivo del cambio',
             'motivo_ayuda_nueva' => 'Puedes explicar por qué asignas esta calificación.',
-            'motivo_ayuda_cambio' => 'Obligatorio porque la pregunta ya tiene calificación. Queda en el historial.',
+            'motivo_ayuda_cambio' => 'Solo es obligatorio si cambias una calificación ya revisada por el docente. Queda en el historial.',
             'guardar_pregunta' => 'Guardar calificación de la pregunta :numero',
         ],
     ],
@@ -120,6 +128,10 @@ return [
             'salida_pantalla' => 'Salida de pantalla',
             'conexion' => 'Problema de conexión',
             'otro' => 'Otra incidencia',
+            'rostro_no_detectado' => 'Rostro no detectado',
+            'multiples_rostros' => 'Varios rostros detectados',
+            'camara_desactivada' => 'Cámara desactivada',
+            'movimiento' => 'Movimiento detectado',
         ],
         'severidades' => [
             'baja' => 'Baja',
@@ -128,7 +140,16 @@ return [
         ],
     ],
 
+    'revision' => [
+        'titulo' => 'Revisar y guardar',
+        'ayuda' => 'Revisa las calificaciones y guárdalas juntas. El motivo solo se pide al corregir una nota ya revisada por ti.',
+        'guardar' => 'Guardar toda la revisión',
+        'guardar_una' => 'Guardar solo esta pregunta',
+        'guardada' => 'La revisión quedó guardada correctamente.',
+        'sin_cambios' => 'No hay calificaciones nuevas ni cambios que guardar.',
+    ],
+
     'errores' => [
-        'motivo_obligatorio' => 'Escribe el motivo del cambio, porque la pregunta ya tiene calificación.',
+        'motivo_obligatorio' => 'Escribe el motivo del cambio, porque esta calificación ya fue revisada por el docente.',
     ],
 ];

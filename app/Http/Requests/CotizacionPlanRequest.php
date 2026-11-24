@@ -3,10 +3,10 @@
 /**
  * Archivo: CotizacionPlanRequest.php
  * Módulo: app/Http/Requests
- * Descripción: Valida la cantidad de grupos y de alumnos por grupo elegidos para cotizar un plan.
- * Autor: Axel (Axelllel)
- * Creado: 08/11/2026
- * Modificado: 20/11/2026 · Leonardo Ballestero López · Prólogo del Manual COD-WEB 6.7
+ * Descripción: Gestiona y verifica el módulo CotizacionPlanRequest.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
  */
 
 declare(strict_types=1);

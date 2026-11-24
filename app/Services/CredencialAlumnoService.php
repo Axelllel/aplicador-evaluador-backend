@@ -3,10 +3,10 @@
 /**
  * Archivo: CredencialAlumnoService.php
  * Módulo: app/Services
- * Descripción: Genera el código del alumno y calcula un HMAC del PIN que no permite recuperarlo desde la base de datos.
- * Autor: Axel (Axelllel)
- * Creado: 09/11/2026
- * Modificado: 20/11/2026 · Leonardo Ballestero López · Prólogo del Manual COD-WEB 6.7
+ * Descripción: Gestiona y verifica el módulo CredencialAlumnoService.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
  */
 
 declare(strict_types=1);

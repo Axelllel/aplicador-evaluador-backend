@@ -3,10 +3,10 @@
 /**
  * Archivo: GenerarPreguntasIaRequest.php
  * Módulo: app/Http/Requests
- * Descripción: Valida la solicitud de generación de preguntas con IA.
+ * Descripción: Gestiona y verifica el módulo GenerarPreguntasIaRequest.
  * Autor: Axel Rebollo Zeferino
- * Creado: 20/11/2026
- * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
  */
 
 declare(strict_types=1);

@@ -17,6 +17,19 @@ class StudentExamController extends Controller
     {
         // No exponer SQL, datos ni detalles de otros alumnos.
         $state = $e->errorInfo[0] ?? '';
+        $timeErrors = ['P1010' => ['ATTEMPT_EXPIRED', 'El tiempo del examen terminó.'],
+            'P1011' => ['QUESTION_EXPIRED', 'El tiempo de esta pregunta terminó.'],
+            'P1012' => ['QUESTION_NOT_OPEN', 'Abre la pregunta antes de responder.']];
+        if (isset($timeErrors[$state])) {
+            return response()->json(['code' => $timeErrors[$state][0], 'message' => $timeErrors[$state][1]], 409)
+                ->header('Cache-Control', 'no-store');
+        }
+        if ($state === 'P1004') {
+            return response()->json(['code' => 'GRANT_REVOKED', 'message' => 'El pase ya no está vigente. Ingresa con tu código personal.'], 403);
+        }
+        if ($state === '42883') {
+            return response()->json(['code' => 'MIGRATION_REQUIRED', 'message' => 'Falta aplicar la migración de control de tiempo.'], 503);
+        }
 
         return response()->json(['message' => 'Solicitud no autorizada o examen no disponible.',
             'code' => $state === 'P0001' ? 'EXAM_UNAVAILABLE' : 'REQUEST_FAILED'],
@@ -41,8 +54,8 @@ class StudentExamController extends Controller
         }
         // El pase no autoriza mas de un intento, aun si se reutiliza.
         try {
-            $row = DB::selectOne('SELECT * FROM public.fn_iniciar_intento(?, ?, ?)', [
-                $grant['exam'], $grant['student'], $input['plataforma'],
+            $row = DB::selectOne('SELECT * FROM public.fn_iniciar_intento_pase(?::bigint, ?::bigint, ?::text, ?::bigint)', [
+                $grant['exam'], $grant['student'], $input['plataforma'], is_int($grant['credential_version'] ?? null) ? $grant['credential_version'] : null,
             ]);
         } catch (QueryException $e) {
             return $this->sqlError($e);
@@ -54,8 +67,27 @@ class StudentExamController extends Controller
 
     public function questions(Request $request): JsonResponse
     {
+        return $this->readQuestions($request, false);
+    }
+
+    public function questionsV2(Request $request): JsonResponse
+    {
+        return $this->readQuestions($request, true);
+    }
+
+    private function readQuestions(Request $request, bool $timed): JsonResponse
+    {
         $input = $request->validate(['token_sesion' => ['required', 'uuid']]);
         try {
+            $time = $timed
+                ? json_decode(DB::selectOne('SELECT public.fn_activar_tiempo_por_pregunta(?::uuid) AS data', [$input['token_sesion']], false)->data, true, 512, JSON_THROW_ON_ERROR)
+                : $this->timeData($input['token_sesion']);
+            if ($time['estado'] !== 'en_progreso') {
+                return response()->json(['code' => $timed ? 'ATTEMPT_CLOSED' : 'EXAM_UNAVAILABLE', 'message' => 'El examen ya fue entregado.'], $timed ? 409 : 403)->header('Cache-Control', 'no-store');
+            }
+            if (! $timed && $time['control_por_pregunta']) {
+                return response()->json(['code' => 'UPGRADE_REQUIRED', 'message' => 'Este intento usa tiempo por pregunta. Continúa en la versión actualizada de la aplicación.'], 409)->header('Cache-Control', 'no-store');
+            }
             $row = DB::selectOne('SELECT public.fn_preguntas_portal_alumno(CAST(? AS uuid)) AS data', [$input['token_sesion']], false);
         } catch (QueryException $e) {
             if (($e->errorInfo[0] ?? '') === '42883') {
@@ -68,11 +100,68 @@ class StudentExamController extends Controller
             return $this->sqlError($e)->header('Cache-Control', 'no-store');
         }
 
-        return response()->json(['data' => json_decode($row->data, false, 512, JSON_THROW_ON_ERROR)])
-            ->header('Cache-Control', 'no-store');
+        $data = json_decode($row->data, false, 512, JSON_THROW_ON_ERROR);
+        if ($timed) {
+            // El listado no revela consignas futuras: abrir cada pregunta fija su primer acceso en BD.
+            $data->preguntas = array_map(fn ($question) => (object) [
+                'examen_pregunta_id' => $question->examen_pregunta_id, 'apartado_id' => $question->apartado_id,
+                'tipo' => $question->tipo, 'tiempo_segundos' => $question->tiempo_segundos,
+            ], $data->preguntas);
+            $data->version_contrato = 2;
+            $data->requiere_abrir_pregunta = true;
+        }
+        $data->tiempo = $time;
+
+        return response()->json(['data' => $data])->header('Cache-Control', 'no-store');
+    }
+
+    private function timeData(string $token, ?int $question = null): array
+    {
+        $row = DB::selectOne('SELECT public.fn_tiempo_intento(CAST(? AS uuid), CAST(? AS bigint)) AS data', [$token, $question], false);
+
+        return json_decode($row->data, true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    public function time(Request $request): JsonResponse
+    {
+        $input = $request->validate(['token_sesion' => ['required', 'uuid']]);
+        try {
+            return response()->json(['data' => $this->timeData($input['token_sesion'])])->header('Cache-Control', 'no-store');
+        } catch (QueryException $e) {
+            return $this->sqlError($e);
+        }
+    }
+
+    public function openQuestion(Request $request): JsonResponse
+    {
+        $input = $request->validate(['token_sesion' => ['required', 'uuid'], 'examen_pregunta_id' => ['required', 'integer', 'min:1']]);
+        try {
+            $time = $this->timeData($input['token_sesion'], (int) $input['examen_pregunta_id']);
+            $question = $time['pregunta'] ?? null;
+            if (($question['tipo'] ?? '') === 'relacion_columnas' && isset($question['opciones'][0]['izquierda'], $question['opciones'][0]['derecha'])) {
+                $pairs = $question['opciones'];
+                $right = array_values(array_unique(array_column($pairs, 'derecha')));
+                sort($right, SORT_NATURAL | SORT_FLAG_CASE);
+                $time['pregunta']['opciones'] = ['izquierda' => array_column($pairs, 'izquierda'), 'derecha' => $right];
+            }
+
+            return response()->json(['data' => $time])->header('Cache-Control', 'no-store');
+        } catch (QueryException $e) {
+            return $this->sqlError($e);
+        }
     }
 
     public function answer(Request $request): JsonResponse
+    {
+        return $this->saveAnswer($request, false);
+    }
+
+    public function answerV2(Request $request): JsonResponse
+    {
+        return $this->saveAnswer($request, true);
+    }
+
+    private function saveAnswer(Request $request, bool $timed): JsonResponse
     {
         $input = $request->validate([
             'token_sesion' => ['required', 'uuid'],
@@ -80,10 +169,15 @@ class StudentExamController extends Controller
             'respuesta_texto' => ['required', 'string', 'max:20000'],
         ]);
         try {
-            $row = DB::selectOne('SELECT public.fn_registrar_respuesta(CAST(? AS uuid), CAST(? AS bigint), CAST(? AS text)) AS id', [
+            $function = $timed ? 'fn_registrar_respuesta_temporizada' : 'fn_registrar_respuesta_compatible';
+            $row = DB::selectOne("SELECT public.{$function}(CAST(? AS uuid), CAST(? AS bigint), CAST(? AS text)) AS id", [
                 $input['token_sesion'], $input['examen_pregunta_id'], $input['respuesta_texto'],
             ]);
         } catch (QueryException $e) {
+            if (($e->errorInfo[0] ?? '') === 'P1010') {
+                $this->timeData($input['token_sesion']);
+            }
+
             return $this->sqlError($e);
         }
 
@@ -119,13 +213,18 @@ class StudentExamController extends Controller
     {
         $input = $request->validate([
             'token_sesion' => ['required', 'uuid'],
-            'tipo_alerta' => ['required', 'in:cambio_pestana,salida_pantalla,conexion,otro'],
+            'tipo_alerta' => ['required', 'in:cambio_pestana,salida_pantalla,conexion,rostro_no_detectado,multiples_rostros,camara_desactivada,movimiento,otro'],
             'nivel_severidad' => ['required', 'in:baja,media,alta'],
             'evidencia_url' => ['nullable', 'url:https', 'max:2048'],
+            'evidencia_detalle' => ['sometimes', 'array:tecnologia,rostros,duracion_segundos,confianza'],
+            'evidencia_detalle.tecnologia' => ['sometimes', 'string', 'max:80'],
+            'evidencia_detalle.rostros' => ['sometimes', 'integer', 'min:0', 'max:100'],
+            'evidencia_detalle.duracion_segundos' => ['sometimes', 'integer', 'min:0', 'max:86400'],
+            'evidencia_detalle.confianza' => ['sometimes', 'numeric', 'min:0', 'max:1'],
         ]);
         try {
-            $row = DB::selectOne('SELECT public.fn_registrar_incidencia(CAST(? AS uuid), ?, ?, ?) AS id', [
-                $input['token_sesion'], $input['tipo_alerta'], $input['nivel_severidad'], $input['evidencia_url'] ?? null,
+            $row = DB::selectOne('SELECT public.fn_registrar_incidencia_evidencia(CAST(? AS uuid), ?, ?, ?, ?::jsonb) AS id', [
+                $input['token_sesion'], $input['tipo_alerta'], $input['nivel_severidad'], $input['evidencia_url'] ?? null, json_encode((object) ($input['evidencia_detalle'] ?? [])),
             ]);
         } catch (QueryException $e) {
             return $this->sqlError($e);

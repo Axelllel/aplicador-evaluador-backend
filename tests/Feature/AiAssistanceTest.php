@@ -3,10 +3,10 @@
 /**
  * Archivo: AiAssistanceTest.php
  * Módulo: tests/Feature
- * Descripción: Pruebas de la asistencia de IA del panel docente.
+ * Descripción: Gestiona y verifica el módulo AiAssistanceTest.
  * Autor: Axel Rebollo Zeferino
- * Creado: 20/11/2026
- * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
  */
 
 declare(strict_types=1);
@@ -181,6 +181,55 @@ class AiAssistanceTest extends TestCase
         $this->post(route('panel.ia.sugerir', ['examen' => 2, 'intento' => 22, 'respuesta' => 201]))
             ->assertSessionHas('ia_respuesta', 201)->assertSessionHas('ia_error', 'IA no disponible.');
         $this->get(route('panel.resultados.intento', ['examen' => 2, 'intento' => 22]))->assertOk()->assertSee('IA no disponible.');
+    }
+
+    public function test_matching_generation_derives_the_reference_from_pairs_without_requiring_a_duplicate_answer(): void
+    {
+        $pairs = [['izquierda' => ' Variable ', 'derecha' => ' Valor modificable '], ['izquierda' => 'Constante', 'derecha' => 'Valor fijo']];
+        foreach (['', null] as $empty) {
+            $result = (new ContratoIa)->questions(['preguntas' => [['enunciado' => 'Relaciona los conceptos.', 'respuesta_modelo' => $empty, 'opciones' => [], 'pares' => $pairs]]], 'relacion_columnas', 1);
+            $this->assertSame("Variable = Valor modificable\nConstante = Valor fijo", $result['preguntas'][0]['respuesta_modelo']);
+            $this->assertSame('Variable', $result['preguntas'][0]['opciones'][0]['izquierda']);
+        }
+    }
+
+    public function test_matching_generation_rejects_ambiguous_pairs(): void
+    {
+        $this->expectException(IaException::class);
+        (new ContratoIa)->questions(['preguntas' => [['enunciado' => 'Relaciona los conceptos.', 'respuesta_modelo' => '', 'opciones' => [],
+            'pares' => [['izquierda' => 'Concepto', 'derecha' => 'Uno'], ['izquierda' => 'Concepto', 'derecha' => 'Dos']]]]], 'relacion_columnas', 1);
+    }
+
+    public function test_ai_proposal_is_shown_as_a_provisional_total_before_teacher_approval(): void
+    {
+        $this->prepareAnswer($this->proposal() + ['proveedor' => 'groq']);
+        $this->get(route('panel.resultados.intento', ['examen' => 2, 'intento' => 22]))
+            ->assertOk()->assertSee('8.5')->assertSee('Evaluación lista')->assertSee('pendiente de revisión docente');
+        $this->assertSame([], $this->api->llamadasA('PATCH', '/teacher/answers/201/grade'));
+    }
+
+    public function test_matching_review_renders_labels_and_selections_instead_of_raw_json(): void
+    {
+        $this->prepareAnswer();
+        $this->api->responder('GET', '/teacher/attempts/22/answers', ['data' => ['intento' => ['id' => 22, 'examen_id' => 2, 'estado' => 'finalizado'],
+            'respuestas' => [['id' => 201, 'tipo' => 'relacion_columnas', 'enunciado' => 'Relaciona los conceptos.',
+                'respuesta_texto' => '["Valor fijo","Valor fijo"]', 'respuesta_modelo_snapshot' => "Variable = Valor modificable\nConstante = Valor fijo",
+                'opciones' => [['izquierda' => 'Variable', 'derecha' => 'Valor modificable'], ['izquierda' => 'Constante', 'derecha' => 'Valor fijo']],
+                'calificacion_final' => null, 'revisada_manual' => false, 'ponderacion' => 100]]]]);
+        $this->get(route('panel.resultados.intento', ['examen' => 2, 'intento' => 22]))
+            ->assertOk()->assertSee('Revisión de relación de columnas')->assertSee('Relación correcta')->assertSee('Variable')
+            ->assertDontSee('[&quot;Valor fijo&quot;', false);
+    }
+
+    public function test_whole_attempt_reprocessing_is_explicit_and_checks_the_exam_relationship(): void
+    {
+        $this->prepareAnswer();
+        $this->api->responder('POST', '/teacher/attempts/22/prepare-grading', ['data' => ['tareas_preparadas' => 2]], 202);
+        $this->post(route('panel.resultados.evaluar', ['examen' => 99, 'intento' => 22]))->assertNotFound();
+        $this->assertSame([], $this->api->llamadasA('POST', '/teacher/attempts/22/prepare-grading'));
+        $this->post(route('panel.resultados.evaluar', ['examen' => 2, 'intento' => 22]))
+            ->assertRedirect(route('panel.resultados.intento', ['examen' => 2, 'intento' => 22]));
+        $this->assertCount(1, $this->api->llamadasA('POST', '/teacher/attempts/22/prepare-grading'));
     }
 
     private function generation(): array

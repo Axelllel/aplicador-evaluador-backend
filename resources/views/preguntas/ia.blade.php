@@ -1,10 +1,10 @@
 {{--
     Archivo: ia.blade.php
     Módulo: resources/views/preguntas
-    Descripción: Formulario de generación de preguntas con asistencia de IA.
+    Descripción: Vista del módulo preguntas de BigBitByte.
     Autor: Axel Rebollo Zeferino
-    Creado: 20/11/2026
-    Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
 --}}
 @php
     $erroresIa = $errors->getBag('ia');

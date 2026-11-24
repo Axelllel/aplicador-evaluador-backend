@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ConfirmarRetiroRequest;
+use App\Services\GestionGruposService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +12,16 @@ use Illuminate\Support\Str;
 
 class TeacherGroupController extends Controller
 {
+    public function deletionPreview(int $grupoId, GestionGruposService $gestion): JsonResponse
+    {
+        return response()->json(['data' => $gestion->resumen($grupoId)]);
+    }
+
+    public function destroy(ConfirmarRetiroRequest $request, int $grupoId, GestionGruposService $gestion): JsonResponse
+    {
+        return response()->json(['data' => $gestion->retirarGrupo($grupoId)]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         // La identidad procede del middleware que valida Supabase Auth.
@@ -47,7 +59,7 @@ class TeacherGroupController extends Controller
                 ->where('id', $docenteId)
                 ->first();
 
-            if (!$docente || $docente->estado_pago !== 'activo' || !$docente->paquete_id) {
+            if (! $docente || $docente->estado_pago !== 'activo' || ! $docente->paquete_id) {
                 return response()->json([
                     'status' => 'error',
                     'code' => 403,
@@ -60,7 +72,7 @@ class TeacherGroupController extends Controller
                 ->where('id', $docente->paquete_id)
                 ->first();
 
-            if (!$paquete) {
+            if (! $paquete) {
                 return response()->json([
                     'status' => 'error',
                     'code' => 403,
@@ -78,7 +90,7 @@ class TeacherGroupController extends Controller
                 ->whereRaw('fecha_fin_vigencia > CURRENT_TIMESTAMP')
                 ->exists();
 
-            if (!$pagoVigente) {
+            if (! $pagoVigente) {
                 return response()->json([
                     'status' => 'error',
                     'code' => 403,

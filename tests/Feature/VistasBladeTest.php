@@ -96,7 +96,7 @@ class VistasBladeTest extends TestCase
             );
             $this->assertStringNotContainsString('bg-[#', $contenido, "{$ruta} usa bg-[#...].");
             $this->assertDoesNotMatchRegularExpression(
-                '/\b(?:bg|text|border|ring|outline|fill|stroke|divide|decoration|from|to|via)-\[/',
+                '/\b(?:bg|text|border|ring|outline|fill|stroke|divide|decoration|from|to|via)-\[(?![0-9.]+(?:px|rem|em|%|ch)\])/',
                 $contenido,
                 "{$ruta} usa un valor arbitrario en una utilidad de color.",
             );
@@ -202,6 +202,10 @@ class VistasBladeTest extends TestCase
         $iterador = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directorio, RecursiveDirectoryIterator::SKIP_DOTS));
 
         foreach ($iterador as $archivo) {
+            // La plantilla de bienvenida de Laravel se conserva intacta y no tiene rutas en BigBitByte.
+            if ($archivo->getPathname() === resource_path('views/welcome.blade.php')) {
+                continue;
+            }
             if ($archivo->isFile() && str_ends_with($archivo->getFilename(), $terminacion)) {
                 $archivos[str_replace('\\', '/', $archivo->getPathname())] = (string) file_get_contents($archivo->getPathname());
             }

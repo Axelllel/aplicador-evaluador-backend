@@ -3,15 +3,19 @@ Archivo: entry.blade.php
 Módulo: resources/views/student
 Descripción: Ingreso de alumnos mediante folio/QR y nombre; usa la API existente.
 Nota: No crea cuentas ni autoriza intentos de examen.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Revisión de integración
 --}}
 <!doctype html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#1F2937"><meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" content="{{ collect(app(\App\Services\PaletaColoresService::class)->colores())->firstWhere('token', 'primario')['hex'] }}"><meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Ingreso del estudiante · BigBitByte</title>
     @vite(['resources/css/student-entry.css', 'resources/js/student-entry.js'])
+    @vite('resources/css/ui-standards.css')
 </head>
 <body>
 <div class="portal" id="student-entry" data-join-url="{{ route('student.join') }}" data-validate-url="{{ route('student.validate-folio') }}">

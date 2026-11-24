@@ -25,9 +25,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class RequiereSesionPanel
 {
-    public function __construct(private readonly SesionPanelService $sesion)
-    {
-    }
+    public function __construct(private readonly SesionPanelService $sesion) {}
 
     /**
      * Deja pasar solo si hay un token vigente; si había uno vencido avisa en el inicio de sesión.
@@ -38,9 +36,19 @@ class RequiereSesionPanel
             $habiaSesion = $this->sesion->existe();
             $this->sesion->olvidar();
 
-            $redireccion = redirect()->guest(route('login'));
+            $redireccion = redirect()->guest(route(SesionPanelService::rutaLogin()));
 
             return $habiaSesion ? $redireccion->with('aviso', __('sesion.vencida')) : $redireccion;
+        }
+
+        if (SesionPanelService::esAdministracion() && ($this->sesion->docente()['rol'] ?? '') !== 'super_admin') {
+            $this->sesion->olvidar();
+
+            return redirect()->route('admin.login');
+        }
+
+        if (session(SesionPanelService::claveActual().'.mfa_pendiente') && ! $solicitud->routeIs('panel.mfa*', 'admin.mfa*', 'sesion.destroy', 'admin.logout')) {
+            return redirect()->route(SesionPanelService::rutaMfa());
         }
 
         $respuesta = $siguiente($solicitud);

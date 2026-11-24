@@ -20,6 +20,7 @@ use App\Services\ConsultasPanelService;
 use App\Services\ExamenesPanelService;
 use App\Services\PaginadorPanel;
 use App\Services\PlanDocenteService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -33,13 +34,12 @@ class PanelController extends Controller
         private readonly PlanDocenteService $planes,
         private readonly ExamenesPanelService $examenes,
         private readonly PaginadorPanel $paginador,
-    ) {
-    }
+    ) {}
 
     /**
      * Muestra el panel del docente autenticado.
      */
-    public function index(Request $solicitud): View
+    public function index(Request $solicitud): View|RedirectResponse
     {
         $grupos = $this->consultas->grupos();
         $preguntas = $this->consultas->preguntas();

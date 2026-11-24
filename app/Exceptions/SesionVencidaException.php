@@ -40,7 +40,7 @@ class SesionVencidaException extends RuntimeException
         app(SesionPanelService::class)->cerrar($solicitud);
 
         return redirect()
-            ->route('login')
+            ->route(SesionPanelService::rutaLogin())
             ->with('aviso', __('sesion.vencida'));
     }
 }

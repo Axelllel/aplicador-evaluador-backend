@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'automatic_grading' => env('AI_AUTOMATIC_GRADING', true),
     'enabled' => env('AI_ENABLED', true),
     'key' => env('GROQ_API_KEY'),
     'model' => env('GROQ_MODEL', 'openai/gpt-oss-120b'),

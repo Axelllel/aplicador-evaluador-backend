@@ -3,10 +3,10 @@
 /**
  * Archivo: AiDatabaseTest.php
  * Módulo: tests/Feature
- * Descripción: Pruebas de las funciones de IA en la base de datos.
+ * Descripción: Gestiona y verifica el módulo AiDatabaseTest.
  * Autor: Axel Rebollo Zeferino
- * Creado: 20/11/2026
- * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ class AiDatabaseTest extends TestCase
             $this->admin->exec(str_replace('CREATE EXTENSION IF NOT EXISTS pgcrypto;', '', file_get_contents(base_path('supabase/migrations/20261025191750_estructura_base_datos.sql'))));
             foreach (['20261025194447_seguridad_roles.sql', '20261026213000_restringir_acceso_directo.sql',
                 '20261026214000_rls_docente_grupo_pregunta.sql', '20261026214500_rls_fase2_tablas_restantes.sql',
-                '20261030010000_flujo_examen_evaluacion.sql', '20261120130000_asistencia_ia_groq.sql'] as $file) {
+                '20261030010000_flujo_examen_evaluacion.sql', '20261120130000_asistencia_ia_groq.sql', '20261123010000_control_tiempo_intentos.sql', '20261123030000_calificacion_en_segundo_plano.sql', '20261123050000_revocacion_sesiones_docente.sql', '20261124010000_calificacion_relacion_columnas.sql'] as $file) {
                 $sql = file_get_contents(base_path('supabase/migrations/'.$file));
                 if ($file === '20261025194447_seguridad_roles.sql' && $this->admin->query("SELECT 1 FROM pg_roles WHERE rolname='laravel_app'")->fetchColumn()) {
                     $sql = str_replace('CREATE ROLE laravel_app', 'ALTER ROLE laravel_app', $sql);
@@ -113,6 +113,37 @@ INSERT INTO public.respuesta_alumno(id,intento_id,examen_pregunta_id,respuesta_t
         $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.historial_calificacion')->fetchColumn());
         $this->postJson('/api/v1/teacher/ai/answers/1')->assertNotFound();
         $this->getJson('/api/v1/teacher/exams/1/results')->assertOk()->assertJsonPath('data.resultados.0.calificacion', 9);
+        $this->assertGroqCalls(1);
+    }
+
+    public function test_historical_submission_can_be_prepared_once_and_the_worker_produces_a_proposal_for_teacher_review(): void
+    {
+        $this->assertSame(0, (int) $this->admin->query('SELECT count(*) FROM public.trabajo_calificacion')->fetchColumn());
+        $this->postJson('/api/v1/teacher/attempts/1/prepare-grading')->assertAccepted()->assertJsonPath('data.tareas_preparadas', 2);
+        $this->postJson('/api/v1/teacher/attempts/1/prepare-grading')->assertAccepted()->assertJsonPath('data.tareas_preparadas', 0);
+        $this->assertSame(2, (int) $this->admin->query('SELECT count(*) FROM public.trabajo_calificacion')->fetchColumn());
+        $this->artisan('examenes:procesar-calificaciones')->assertSuccessful();
+        $this->assertGroqCalls(1);
+        $this->assertEquals(85, $this->admin->query('SELECT puntaje_ia FROM public.respuesta_alumno')->fetchColumn());
+        $this->assertNull($this->admin->query('SELECT calificacion_final FROM public.respuesta_alumno')->fetchColumn());
+        $this->getJson('/api/v1/teacher/attempts/1/answers')->assertOk()->assertJsonPath('data.intento.ia_automatica_disponible', true)
+            ->assertJsonPath('data.respuestas.0.estado_ia', 'completo');
+        $this->provider(self::OTHER);
+        $this->postJson('/api/v1/teacher/attempts/1/prepare-grading')->assertNotFound();
+        $this->assertGroqCalls(0);
+    }
+
+    public function test_matching_generation_accepts_an_empty_reference_and_preserves_pairs_in_the_web_editor(): void
+    {
+        $pairs = [['izquierda' => 'Variable', 'derecha' => 'Valor modificable'], ['izquierda' => 'Constante', 'derecha' => 'Valor fijo']];
+        $this->provider(output: ['preguntas' => [['enunciado' => 'Relaciona los conceptos.', 'respuesta_modelo' => '', 'opciones' => [], 'pares' => $pairs]]]);
+        $this->withSession([SesionPanelService::CLAVE => SesionPanelService::datosParaSesion([
+            'access_token' => 'fake-token', 'refresh_token' => 'fake-refresh', 'expires_in' => 3600,
+            'docente' => ['id' => self::TEACHER, 'nombre' => 'Docente', 'correo' => 'private@example.test'],
+        ])]);
+        $this->post(route('panel.ia.generar'), array_replace($this->generation(), ['tipo' => 'relacion_columnas']))
+            ->assertRedirect()->assertSessionMissing('ia_error')->assertSessionHas('ia_borradores.preguntas.0.opciones', $pairs);
+        $this->post(route('panel.ia.borrador', ['indice' => 0]))->assertRedirect()->assertSessionHasInput('pares_lista', $pairs);
         $this->assertGroqCalls(1);
     }
 
@@ -241,6 +272,58 @@ INSERT INTO public.respuesta_alumno(id,intento_id,examen_pregunta_id,respuesta_t
         Http::fake(['auth.example.test/*' => Http::response([], 401)]);
         $this->withToken('bad-token')->postJson('/api/v1/teacher/ai/answers/1')->assertUnauthorized();
         $this->assertGroqCalls(0);
+    }
+
+    public function test_primera_revision_de_nota_automatica_no_pide_motivo_y_una_correccion_posterior_si(): void
+    {
+        $this->admin->exec('UPDATE public.respuesta_alumno SET calificacion_final=80,revisada_manual=false WHERE id=1');
+        $this->patchJson('/api/v1/teacher/answers/1/grade', ['calificacion' => 90])->assertOk();
+        $this->assertSame('Primera revisión docente.', $this->admin->query('SELECT motivo FROM public.historial_calificacion')->fetchColumn());
+        $this->patchJson('/api/v1/teacher/answers/1/grade', ['calificacion' => 90])->assertOk()->assertJsonPath('data.actualizadas', 0);
+        $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.historial_calificacion')->fetchColumn());
+        $this->patchJson('/api/v1/teacher/answers/1/grade', ['calificacion' => 70])->assertUnprocessable()->assertJsonValidationErrors('respuestas.1.motivo');
+        $this->patchJson('/api/v1/teacher/answers/1/grade', ['calificacion' => 70, 'motivo' => 'Corrección tras revisar el desarrollo'])->assertOk();
+        $this->assertEquals(70, $this->admin->query('SELECT calificacion_final FROM public.respuesta_alumno WHERE id=1')->fetchColumn());
+    }
+
+    private function segundaRespuestaParaRevision(): void
+    {
+        $this->admin->exec("INSERT INTO public.pregunta(id,docente_id,tipo,enunciado,respuesta_modelo) VALUES(2,'".self::TEACHER."','abierta','Otra pregunta','Referencia');
+INSERT INTO public.examen_pregunta(id,apartado_id,pregunta_id,tiempo_segundos,ponderacion,respuesta_modelo_snapshot) VALUES(2,1,2,60,50,'Referencia');
+INSERT INTO public.respuesta_alumno(id,intento_id,examen_pregunta_id,respuesta_texto,calificacion_final,revisada_manual) VALUES(2,1,2,'Respuesta',50,true);");
+    }
+
+    public function test_guardado_conjunto_es_atomico_y_no_duplica_revisiones_sin_cambios(): void
+    {
+        $this->segundaRespuestaParaRevision();
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [
+            ['id' => 1, 'calificacion' => 85], ['id' => 2, 'calificacion' => 60],
+        ]])->assertUnprocessable()->assertJsonValidationErrors('respuestas.2.motivo');
+        $this->assertNull($this->admin->query('SELECT calificacion_final FROM public.respuesta_alumno WHERE id=1')->fetchColumn());
+        $this->assertSame(0, (int) $this->admin->query('SELECT count(*) FROM public.historial_calificacion')->fetchColumn());
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [
+            ['id' => 1, 'calificacion' => 85], ['id' => 2, 'calificacion' => 50],
+        ]])->assertOk()->assertJsonPath('data.actualizadas', 1);
+        $this->assertEquals(85, $this->admin->query('SELECT calificacion_final FROM public.respuesta_alumno WHERE id=1')->fetchColumn());
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [
+            ['id' => 1, 'calificacion' => 85], ['id' => 2, 'calificacion' => 50],
+        ]])->assertOk()->assertJsonPath('data.actualizadas', 0);
+        $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.historial_calificacion')->fetchColumn());
+    }
+
+    public function test_guardado_conjunto_rechaza_respuestas_ajenas_duplicadas_y_notas_invalidas(): void
+    {
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [
+            ['id' => 1, 'calificacion' => 85], ['id' => 999, 'calificacion' => 50],
+        ]])->assertNotFound();
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [
+            ['id' => 1, 'calificacion' => 85], ['id' => 1, 'calificacion' => 50],
+        ]])->assertUnprocessable();
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [['id' => 1, 'calificacion' => 101]]])->assertUnprocessable();
+        $this->provider(self::OTHER);
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [['id' => 1, 'calificacion' => 85]]])->assertNotFound();
+        $this->assertNull($this->admin->query('SELECT calificacion_final FROM public.respuesta_alumno WHERE id=1')->fetchColumn());
+        $this->assertSame(0, (int) $this->admin->query('SELECT count(*) FROM public.historial_calificacion')->fetchColumn());
     }
 
     private function provider(string $teacher = self::TEACHER, ?array $output = null, ?callable $during = null): void

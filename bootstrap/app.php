@@ -27,7 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->dontFlash(['numero_tarjeta', 'cvv', 'clabe']);
+        $exceptions->dontFlash(['numero_tarjeta', 'cvv', 'clabe', 'codigo_acceso', 'token_sesion', 'referencia_identidad', 'referencia_canal', 'codigo', 'telefono']);
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );

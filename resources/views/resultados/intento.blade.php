@@ -24,7 +24,7 @@
         <x-boton variante="secundario" icono="clipboard-document-check" :href="route('panel.resultados', ['examen' => $examenId])">{{ __('resultados.intento.volver') }}</x-boton>
     </div>
 
-    <section aria-labelledby="titulo-resumen-del-intento" class="space-y-4">
+    <section aria-labelledby="titulo-resumen-del-intento" class="space-y-4" @if ($detalle['evaluacion_en_proceso'] ?? false) data-grading-pending @endif>
         <h2 id="titulo-resumen-del-intento" class="text-xl font-semibold text-primario">{{ __('resultados.intento.resumen') }}</h2>
 
         <x-tarjeta class="space-y-4">
@@ -34,7 +34,12 @@
                     @if ($detalle['estado_de_nota'] === 'calificada')
                         <p class="text-2xl font-semibold text-primario">{{ __('resultados.nota.valor', ['nota' => $detalle['nota'], 'maximo' => $maximo]) }}</p>
                     @elseif ($detalle['estado_de_nota'] === 'pendiente')
-                        <x-insignia tono="aviso">{{ __('resultados.nota.pendiente') }}</x-insignia>
+                        @if (($detalle['nota_provisional'] ?? null) !== null)
+                            <p class="text-2xl font-semibold text-primario">{{ __('resultados.nota.valor', ['nota' => $detalle['nota_provisional'], 'maximo' => $maximo]) }}</p>
+                            <x-insignia tono="aviso">{{ __('ia.provisional') }}</x-insignia>
+                        @else
+                            <x-insignia tono="aviso">{{ __('resultados.nota.pendiente') }}</x-insignia>
+                        @endif
                     @else
                         <p class="text-base text-texto-suave">{{ __('resultados.nota.sin_entregar') }}</p>
                     @endif
@@ -63,6 +68,19 @@
             @endif
 
             @if ($detalle['puede_calificar'])
+                @if ($detalle['evaluacion_en_proceso'] ?? false)
+                    <p role="status" class="text-sm text-texto-suave">{{ __('ia.actualizacion') }}</p>
+                @endif
+                @if (($detalle['ia_automatica_disponible'] ?? null) === false && ($detalle['requiere_ia'] ?? false))
+                    <p role="status" class="text-sm text-texto-suave">{{ __('ia.no_configurada') }}</p>
+                @endif
+                @if ($detalle['puede_preparar_evaluacion'] ?? false)
+                    <form method="POST" action="{{ route('panel.resultados.evaluar', ['examen' => $examenId, 'intento' => $intentoId]) }}" class="space-y-2">
+                        @csrf
+                        <x-boton type="submit" icono="arrow-path">{{ __('ia.preparar') }}</x-boton>
+                        <p class="text-sm text-texto-suave">{{ __('ia.preparar_ayuda') }}</p>
+                    </form>
+                @endif
                 <form method="POST" action="{{ route('panel.resultados.autocalificar', ['examen' => $examenId, 'intento' => $intentoId]) }}" class="space-y-2">
                     @csrf
                     <x-boton type="submit" variante="secundario" :disabled="! $detalle['puede_autocalificar']">{{ __('resultados.intento.autocalificar') }}</x-boton>
@@ -76,6 +94,14 @@
         </x-tarjeta>
     </section>
 
+    @if ($detalle['puede_calificar'] && $detalle['respuestas']->isNotEmpty())
+        <form id="revision-completa" method="POST" action="{{ route('panel.resultados.guardar-revision', ['examen' => $examenId, 'intento' => $intentoId]) }}" class="tp-review-toolbar" data-review-batch hidden>
+            @csrf @method('PATCH')
+            <div><h2>{{ __('resultados.revision.titulo') }}</h2><p>{{ __('resultados.revision.ayuda') }}</p><p data-review-message role="alert" hidden></p></div>
+            <x-boton type="submit" accion="guardar">{{ __('resultados.revision.guardar') }}</x-boton>
+        </form>
+    @endif
+
     <section aria-labelledby="titulo-respuestas" class="space-y-4">
         <h2 id="titulo-respuestas" class="text-xl font-semibold text-primario">{{ __('resultados.intento.respuestas') }}</h2>
 
@@ -85,6 +111,9 @@
                 $conError = $errors->hasBag($bolsa);
                 $erroresDeLaRespuesta = $errors->getBag($bolsa);
                 $yaCalificada = $respuesta['calificacion'] !== null;
+                $revisadaManual = $respuesta['origen'] === 'manual';
+                $errorNotaConjunta = $errors->first('respuestas.'.$respuesta['id'].'.calificacion');
+                $errorMotivoConjunto = $errors->first('respuestas.'.$respuesta['id'].'.motivo');
             @endphp
             <x-tarjeta id="respuesta-{{ $respuesta['id'] }}" class="space-y-4">
                 <div class="flex flex-wrap items-center justify-between gap-2">
@@ -97,6 +126,23 @@
 
                 <p class="font-semibold text-primario">{{ $respuesta['enunciado'] }}</p>
 
+                @if (($respuesta['columnas'] ?? null) !== null)
+                    <div class="overflow-x-auto rounded-lg border border-borde">
+                        <table class="w-full text-left text-sm" aria-label="{{ __('resultados.intento.revision_columnas') }}">
+                            <thead><tr class="border-b border-borde"><th scope="col" class="p-3">{{ __('resultados.intento.elemento') }}</th><th scope="col" class="p-3">{{ __('resultados.intento.respuesta_alumno') }}</th><th scope="col" class="p-3">{{ __('resultados.intento.relacion_correcta') }}</th></tr></thead>
+                            <tbody>@foreach ($respuesta['columnas']['filas'] as $par)
+                                <tr class="border-b border-borde last:border-0"><th scope="row" class="p-3 font-semibold">{{ $par['izquierda'] }}</th><td class="p-3">{{ $par['respuesta'] ?? __('resultados.intento.sin_respuesta') }}</td><td class="p-3">{{ $par['modelo'] ?? __('resultados.intento.referencia_manual') }}</td></tr>
+                            @endforeach</tbody>
+                        </table>
+                    </div>
+                    @if (! $respuesta['columnas']['formato_reconocido'])
+                        <p class="text-sm text-texto-suave">{{ __('resultados.intento.formato_historico') }}</p>
+                        <details><summary>{{ __('resultados.intento.ver_original') }}</summary><p class="whitespace-pre-wrap break-all">{{ $respuesta['respuesta'] }}</p></details>
+                    @endif
+                    @if (! $respuesta['columnas']['referencia_reconocida'])
+                        <details><summary>{{ __('resultados.intento.respuesta_modelo') }}</summary><p class="whitespace-pre-wrap break-all">{{ $respuesta['modelo'] ?? __('resultados.intento.referencia_manual') }}</p></details>
+                    @endif
+                @else
                 <div class="space-y-1">
                     <p class="text-sm text-texto-suave">{{ __('resultados.intento.respuesta_alumno') }}</p>
                     <p class="whitespace-pre-line rounded-lg border border-borde bg-white p-3">{{ $respuesta['respuesta'] ?? __('resultados.intento.sin_respuesta') }}</p>
@@ -107,6 +153,7 @@
                         <p class="text-sm text-texto-suave">{{ __('resultados.intento.respuesta_modelo') }}</p>
                         <p class="whitespace-pre-line rounded-lg border border-borde bg-white p-3">{{ $respuesta['modelo'] }}</p>
                     </div>
+                @endif
                 @endif
 
                 <ul class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-primario">
@@ -125,6 +172,10 @@
 
                 @if ((int) session('ia_respuesta', 0) === $respuesta['id'] && session('ia_error'))
                     <x-alerta tipo="error" :autoocultar="false">{{ session('ia_error') }}</x-alerta>
+                @endif
+                @if (in_array($respuesta['estado_ia'] ?? '', ['pendiente', 'procesando', 'fallido'], true) && !isset($respuesta['ia']) && $respuesta['calificacion'] === null)
+                    <x-alerta tipo="info" :autoocultar="false">{{ __('ia.proceso.'.($respuesta['estado_ia'])) }}</x-alerta>
+                    @if ($respuesta['error_ia'] ?? null)<p class="text-sm text-texto-suave">{{ __('ia.errores.'.$respuesta['error_ia']) }}</p>@endif
                 @endif
                 @if (isset($respuesta['ia']))
                     <aside class="tp-ai-proposal" aria-labelledby="ia-titulo-{{ $respuesta['id'] }}">
@@ -150,6 +201,9 @@
                         action="{{ route('panel.resultados.calificar', ['examen' => $examenId, 'intento' => $intentoId, 'respuesta' => $respuesta['id']]) }}"
                         novalidate
                         class="max-w-xl space-y-4 border-t border-borde pt-4"
+                        data-review-answer="{{ $respuesta['id'] }}"
+                        data-review-manual="{{ $revisadaManual ? '1' : '0' }}"
+                        data-review-original="{{ $respuesta['calificacion_texto'] ?? '' }}"
                     >
                         @csrf
                         @method('PATCH')
@@ -160,27 +214,31 @@
                             id="calificacion-{{ $respuesta['id'] }}"
                             :etiqueta="__('resultados.intento.form.calificacion')"
                             :ayuda="__('resultados.intento.form.calificacion_ayuda')"
-                            :error="$erroresDeLaRespuesta->first('calificacion')"
-                            :valor="$conError ? (string) old('calificacion', '') : (string) ($respuesta['calificacion_texto'] ?? $respuesta['ia']['puntaje'] ?? '')"
+                            :error="$errorNotaConjunta ?: $erroresDeLaRespuesta->first('calificacion')"
+                            :valor="$conError ? (string) old('calificacion', '') : (string) old('respuestas.'.$respuesta['id'].'.calificacion', $respuesta['calificacion_texto'] ?? $respuesta['ia']['puntaje'] ?? '')"
                             min="0"
                             max="100"
                             step="0.01"
                             inputmode="decimal"
                         />
 
-                        <x-campo-area
-                            nombre="motivo"
-                            id="motivo-{{ $respuesta['id'] }}"
-                            :etiqueta="$yaCalificada ? __('resultados.intento.form.motivo_obligatorio') : __('resultados.intento.form.motivo')"
-                            :ayuda="$yaCalificada ? __('resultados.intento.form.motivo_ayuda_cambio') : __('resultados.intento.form.motivo_ayuda_nueva')"
-                            :error="$erroresDeLaRespuesta->first('motivo')"
-                            :valor="$conError ? (string) old('motivo', '') : (isset($respuesta['ia']) && ! $yaCalificada ? __('ia.motivo', ['explicacion' => \Illuminate\Support\Str::limit($respuesta['ia']['justificacion'] ?? '', 1700)]) : '')"
-                            :filas="2"
-                            maxlength="2000"
-                        />
+                        @if ($revisadaManual)
+                        <div data-review-reason>
+                            <x-campo-area
+                                nombre="motivo"
+                                id="motivo-{{ $respuesta['id'] }}"
+                                :etiqueta="__('resultados.intento.form.motivo_obligatorio')"
+                                :ayuda="__('resultados.intento.form.motivo_ayuda_cambio')"
+                                :error="$errorMotivoConjunto ?: $erroresDeLaRespuesta->first('motivo')"
+                                :valor="$conError ? (string) old('motivo', '') : (string) old('respuestas.'.$respuesta['id'].'.motivo', '')"
+                                :filas="2"
+                                maxlength="2000"
+                            />
+                        </div>
+                        @endif
 
                         <div class="flex justify-end">
-                            <x-boton type="submit" accion="guardar" ancho="movil" aria-label="{{ __('resultados.intento.form.guardar_pregunta', ['numero' => $respuesta['numero']]) }}" />
+                            <x-boton type="submit" variante="secundario" icono="check-circle" ancho="movil" aria-label="{{ __('resultados.intento.form.guardar_pregunta', ['numero' => $respuesta['numero']]) }}">{{ __('resultados.revision.guardar_una') }}</x-boton>
                         </div>
                     </form>
                 @endif
@@ -191,6 +249,10 @@
             </x-tarjeta>
         @endforelse
     </section>
+
+    @if ($detalle['puede_calificar'] && $detalle['respuestas']->isNotEmpty())
+        <div class="tp-review-footer" data-review-batch-footer hidden><x-boton type="submit" form="revision-completa" accion="guardar">{{ __('resultados.revision.guardar') }}</x-boton></div>
+    @endif
 
     <section aria-labelledby="titulo-incidencias" class="space-y-4">
         <h2 id="titulo-incidencias" class="text-xl font-semibold text-primario">{{ __('resultados.incidencias.encabezado') }}</h2>
@@ -204,7 +266,14 @@
                 <x-tabla :titulo="__('resultados.incidencias.tabla.titulo')" :columnas="array_values(__('resultados.incidencias.tabla.columnas'))">
                     @foreach ($incidencias as $incidencia)
                         <x-tabla.fila>
-                            <x-tabla.celda>{{ __('resultados.incidencias.tipos.'.$incidencia['tipo']) }}</x-tabla.celda>
+                            <x-tabla.celda>{{ __('resultados.incidencias.tipos.'.$incidencia['tipo']) }}
+                                @if (!empty($incidencia['evidencia']))
+                                    <details><summary>Ver observación</summary>
+                                        <p>Detección automática para revisión; no determina una infracción.</p>
+                                        <p>{{ $incidencia['evidencia']['rostros'] ?? '—' }} rostro(s) · {{ $incidencia['evidencia']['duracion_segundos'] ?? '—' }} s</p>
+                                    </details>
+                                @endif
+                            </x-tabla.celda>
                             <x-tabla.celda>
                                 <x-insignia :tono="$tonosDeSeveridad[$incidencia['severidad']] ?? 'neutro'">{{ __('resultados.incidencias.severidades.'.$incidencia['severidad']) }}</x-insignia>
                             </x-tabla.celda>

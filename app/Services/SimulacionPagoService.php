@@ -3,10 +3,10 @@
 /**
  * Archivo: SimulacionPagoService.php
  * Módulo: app/Services
- * Descripción: Simula el pago de un plan y activa la suscripción sin cobro bancario.
+ * Descripción: Gestiona y verifica el módulo SimulacionPagoService.
  * Autor: Axel Rebollo Zeferino
- * Creado: 20/11/2026
- * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
  */
 
 declare(strict_types=1);
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
 
 class SimulacionPagoService
 {
-    /** La función recibe únicamente datos de facturación y terminaciones de prueba. */
+    /** La función recibe datos de facturación y terminaciones; nunca el número completo ni CVV. */
     public function confirmar(array $datos): array
     {
         $detalle = [

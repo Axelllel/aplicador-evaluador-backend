@@ -47,3 +47,12 @@ Thumbs.db
 !**/.env.example
 /supabase/snippets/
 /supabase/snippets/
+
+# Informes generados de cobertura
+/storage/coverage/
+
+/public/qa-*.html
+/test-results/
+/playwright-report/
+
+!scripts/activacion.env.example

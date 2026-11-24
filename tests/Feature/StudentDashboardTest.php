@@ -3,10 +3,10 @@
 /**
  * Archivo: StudentDashboardTest.php
  * Módulo: tests/Feature
- * Descripción: Verifica que el panel móvil del alumno resuelve la identidad con folio y PIN y no con un id del cliente.
- * Autor: Axel (Axelllel)
- * Creado: 19/11/2026
- * Modificado: 20/11/2026 · Leonardo Ballestero López · Prólogo del Manual COD-WEB 6.7
+ * Descripción: Gestiona y verifica el módulo StudentDashboardTest.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
  */
 
 declare(strict_types=1);
@@ -20,6 +20,12 @@ use Tests\TestCase;
 
 class StudentDashboardTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        DB::shouldReceive('getConnections')->andReturn([]);
+    }
+
     public function test_el_panel_resuelve_la_identidad_con_pin_y_no_con_el_id_del_cliente(): void
     {
         config(['services.student_pin.pepper' => 'clave-de-prueba']);

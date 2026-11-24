@@ -33,7 +33,7 @@ class ResultadosPanelService
 
     public const NOTA_ANULADO = 'anulado';
 
-    public function __construct(private readonly ConsultasPanelService $consultas) {}
+    public function __construct(private readonly ConsultasPanelService $consultas, private readonly RelacionColumnasService $columnas) {}
 
     /**
      * Reúne todo lo que muestra la página de un intento: el detalle (nota, respuestas, permisos) y sus incidencias.
@@ -61,7 +61,7 @@ class ResultadosPanelService
             return null;
         }
 
-        $intento = $this->consultas->intentosDelExamen($examenId)->firstWhere('id', $intentoId) ?? [];
+        $intento = ($this->consultas->intentosDelExamen($examenId)->firstWhere('id', $intentoId) ?? []) + $respuestas['intento'];
 
         return $this->detalle($resultados['examen'], $resultado, $intento, $respuestas['respuestas']) + [
             'examen' => (string) ($resultados['examen']['nombre'] ?? ''),
@@ -69,6 +69,7 @@ class ResultadosPanelService
                 'tipo' => (string) $incidencia['tipo_alerta'],
                 'severidad' => (string) $incidencia['nivel_severidad'],
                 'fecha' => $this->fecha($incidencia['fecha_hora'] ?? null),
+                'evidencia' => $incidencia['evidencia_detalle'] ?? [],
             ])->values(),
         ];
     }
@@ -179,6 +180,11 @@ class ResultadosPanelService
             return [
                 ...($ia === null ? [] : ['ia' => $ia]),
                 'id' => (int) $respuesta['id'],
+                'estado_ia' => $respuesta['estado_ia'] ?? null,
+                'estado_automatico' => $respuesta['estado_automatico'] ?? $respuesta['estado_ia'] ?? null,
+                'error_ia' => $respuesta['error_ia'] ?? null,
+                'columnas' => $respuesta['tipo'] === 'relacion_columnas'
+                    ? $this->columnas->revision($texto, $modelo, $respuesta['opciones'] ?? []) : null,
                 'numero' => $posicion + 1,
                 'tipo' => (string) $respuesta['tipo'],
                 'enunciado' => (string) $respuesta['enunciado'],
@@ -199,6 +205,9 @@ class ResultadosPanelService
         });
 
         $total = (int) ($resultado['total_preguntas'] ?? $lista->count());
+        $estimable = $finalizado && $estadoDeNota !== self::NOTA_CALIFICADA && $lista->isNotEmpty()
+            && $lista->every(fn (array $fila): bool => $fila['calificacion'] !== null || isset($fila['ia']['puntaje']));
+        $provisional = $estimable ? $this->numero($lista->sum(fn (array $fila): float => (float) ($fila['calificacion'] ?? $fila['ia']['puntaje']) * (float) $fila['ponderacion'] / 100 * $factor)) : null;
 
         return [
             'alumno' => (string) $resultado['nombre'],
@@ -209,13 +218,21 @@ class ResultadosPanelService
             'escala' => $escala,
             'estado_de_nota' => $estadoDeNota,
             'nota' => $estadoDeNota === self::NOTA_CALIFICADA ? $this->numero((float) $resultado['calificacion']) : null,
+            'nota_provisional' => $provisional,
+            'evaluacion_en_proceso' => $finalizado && $lista->contains(fn (array $fila): bool => $fila['calificacion'] === null
+                && ! isset($fila['ia']) && in_array($fila['estado_automatico'], ['pendiente', 'procesando'], true)),
+            'ia_automatica_disponible' => $intento['ia_automatica_disponible'] ?? null,
+            'requiere_ia' => $finalizado && $lista->contains(fn (array $fila): bool => $fila['calificacion'] === null
+                && ! isset($fila['ia']) && in_array($fila['tipo'], ['abierta', 'programacion'], true)),
+            'puede_preparar_evaluacion' => $finalizado && $lista->contains(fn (array $fila): bool => $fila['calificacion'] === null && ! isset($fila['ia']) &&
+                in_array($fila['estado_automatico'], [null, 'fallido', 'completo'], true)),
             'calificadas' => (int) ($resultado['calificadas'] ?? 0),
             'total_preguntas' => $total,
             'respuestas' => $lista,
             'sin_responder' => max(0, $total - $lista->count()),
             'puede_calificar' => $finalizado,
             'puede_autocalificar' => $finalizado && $lista->contains(
-                fn (array $fila): bool => $fila['tipo'] === 'opcion_multiple' && $fila['calificacion'] === null,
+                fn (array $fila): bool => in_array($fila['tipo'], ['opcion_multiple', 'relacion_columnas'], true) && $fila['calificacion'] === null,
             ),
         ];
     }

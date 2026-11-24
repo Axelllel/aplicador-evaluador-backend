@@ -4,6 +4,8 @@ namespace App\Http\Middleware;
 
 use App\Models\Docente;
 use App\Services\DatabaseUserContext;
+use App\Services\RevocacionSesionService;
+use App\Services\SegundoFactorService;
 use Closure;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
@@ -60,12 +62,26 @@ class VerifySupabaseToken
             ], 401);
         }
 
-        if ($context === 'short') {
+        $request->attributes->set('supabase_user', $response->json());
+        $mfa = app(SegundoFactorService::class);
+        if (! in_array($context, ['mfa', 'logout'], true) && $mfa->required($response->json(), $token)) {
+            return response()->json(['message' => 'Confirma el segundo factor para continuar.', 'code' => 'MFA_REQUIRED'], 403)->header('Cache-Control', 'no-store');
+        }
+        if ($context === 'logout') {
+            return $next($request);
+        }
+        if (app(RevocacionSesionService::class)->revoked($token)) {
+            return response()->json(['message' => 'Token revocado. Inicia sesión de nuevo.', 'code' => 'TOKEN_REVOKED'], 401)->header('Cache-Control', 'no-store');
+        }
+        if (in_array($context, ['short', 'mfa'], true)) {
             // La IA espera una red externa. Solo autenticar aquí; sus servicios abren
             // transacciones RLS cortas para cada operación de base de datos.
             $docente = app(DatabaseUserContext::class)->ejecutarConDocenteVerificado($userId, fn () => Docente::find($userId));
             if (! $docente) {
                 return response()->json(['message' => 'Docente no registrado.'], 403);
+            }
+            if ($docente->suspendido_en !== null) {
+                return response()->json(['message' => 'Cuenta suspendida.', 'code' => 'ACCOUNT_SUSPENDED'], 403);
             }
             Auth::setUser($docente);
             $request->setUserResolver(fn () => $docente);
@@ -85,6 +101,9 @@ class VerifySupabaseToken
                     ], 403);
                 }
 
+                if ($docente->suspendido_en !== null) {
+                    return response()->json(['message' => 'Cuenta suspendida.', 'code' => 'ACCOUNT_SUSPENDED'], 403);
+                }
                 Auth::setUser($docente);
                 $request->setUserResolver(fn () => $docente);
 

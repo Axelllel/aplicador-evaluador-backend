@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Services\ConsultasPanelService;
+use App\Services\RelacionColumnasService;
 use App\Services\ResultadosPanelService;
 use Tests\Support\PanelApiFalso;
 use Tests\TestCase;
@@ -28,7 +29,7 @@ class ResultadosPanelServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->servicio = new ResultadosPanelService(new ConsultasPanelService(new PanelApiFalso()));
+        $this->servicio = new ResultadosPanelService(new ConsultasPanelService(new PanelApiFalso), new RelacionColumnasService);
     }
 
     public function test_el_estado_de_la_nota_depende_del_estado_del_intento_y_de_las_preguntas_calificadas(): void

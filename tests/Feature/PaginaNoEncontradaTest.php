@@ -20,6 +20,7 @@ class PaginaNoEncontradaTest extends TestCase
 {
     public function test_una_direccion_inexistente_muestra_la_pagina_en_espanol(): void
     {
+        $this->withoutVite();
         $this->get('/no-existe-esta-pagina')
             ->assertNotFound()
             ->assertSee('lang="es"', false)

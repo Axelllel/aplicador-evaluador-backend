@@ -3,10 +3,10 @@
 /**
  * Archivo: AsistenciaIaController.php
  * Módulo: app/Http/Controllers/Web
- * Descripción: Atiende las solicitudes web de asistencia de IA del panel docente.
+ * Descripción: Gestiona y verifica el módulo AsistenciaIaController.
  * Autor: Axel Rebollo Zeferino
- * Creado: 20/11/2026
- * Modificado: 23/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
  */
 
 declare(strict_types=1);

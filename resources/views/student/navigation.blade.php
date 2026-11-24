@@ -1,3 +1,11 @@
+{{--
+    Archivo: navigation.blade.php
+    Módulo: resources/views/student
+    Descripción: Vista del módulo student de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
+--}}
 <header class="sh-header">
     <div class="sh-brand-area">
         <button class="sh-icon-button sh-menu-button" id="bbb-menu-toggle" type="button" aria-expanded="false" aria-controls="student-navigation" aria-label="Abrir menú">☰</button>
@@ -19,7 +27,7 @@
     </div>
     <nav aria-label="Menú principal">
         <a class="sh-nav-item {{ $activePage === 'home' ? 'sh-nav-active' : '' }}" href="{{ route('student.home') }}" @if ($activePage === 'home') aria-current="page" @endif>⌂ &nbsp; Inicio</a>
-        <a class="sh-nav-item" href="{{ $activePage === 'home' ? '' : route('student.home', ['grupo' => $student['grupo_id']]) }}#bbb-pending">▤ &nbsp; Exámenes por materia</a>
+        <a class="sh-nav-item" href="{{ $activePage === 'home' ? '' : route('student.home', ['grupo' => $student['grupo_id']]) }}#student-pending">▤ &nbsp; Exámenes por materia</a>
         <a class="sh-nav-item {{ $activePage === 'grades' ? 'sh-nav-active' : '' }}" href="{{ route('student.grades') }}" @if ($activePage === 'grades') aria-current="page" @endif>▥ &nbsp; Calificaciones</a>
         <button class="sh-nav-item" id="bbb-groups-open" type="button" aria-haspopup="dialog" aria-controls="bbb-groups-dialog"><x-icon name="user-group" /> Mis grupos</button>
         <button class="sh-nav-item sh-nav-join" type="button" data-open-join-group aria-haspopup="dialog" aria-controls="bbb-join-group-dialog"><x-icon name="plus" /> Unirse a un grupo</button>
@@ -44,18 +52,18 @@
 
     <div class="mt-6 grid gap-3">
         @foreach ($groups as $group)
-            <a class="block rounded-xl border border-[var(--sh-border)] bg-[var(--sh-pale)] p-5 hover:border-blue-400"
-               href="{{ $activePage === 'grades' ? route('student.grades', ['grupo' => $group['grupo_id']]) : route('student.home', ['grupo' => $group['grupo_id']]).'#bbb-pending' }}"
+            <a class="block rounded-xl border border-(--sh-border) bg-(--sh-pale) p-5 hover:border-acento"
+               href="{{ $activePage === 'grades' ? route('student.grades', ['grupo' => $group['grupo_id']]) : route('student.home', ['grupo' => $group['grupo_id']]).'#student-pending' }}"
                @if ($group['grupo_id'] === $student['grupo_id']) aria-current="true" @endif>
                 @if ($group['grupo_id'] === $student['grupo_id'])
                     <span class="ei-state ei-state-available"><span aria-hidden="true"></span> Grupo actual</span>
                 @endif
                 <h3 class="mt-2 text-xl font-bold">Grupo #{{ $group['grupo_id'] }}</h3>
-                <p class="mt-2 text-xs text-[var(--sh-muted)]">{{ $group['materia'] }}</p>
+                <p class="mt-2 text-xs text-(--sh-muted)">{{ $group['materia'] }}</p>
                 @if (!empty($group['folio_codigo']))
-                    <p class="mt-4 border-t border-[var(--sh-border)] pt-3 font-mono text-xs text-[var(--sh-blue)]">{{ $group['folio_codigo'] }}</p>
+                    <p class="mt-4 border-t border-(--sh-border) pt-3 font-mono text-xs text-(--sh-blue)">{{ $group['folio_codigo'] }}</p>
                 @endif
-                <span class="mt-3 block text-xs text-[var(--sh-blue)]">Ver exámenes →</span>
+                <span class="mt-3 block text-xs text-(--sh-blue)">Ver exámenes →</span>
             </a>
         @endforeach
     </div>
@@ -78,12 +86,12 @@
     <h2 id="bbb-join-group-title">Unirse a un grupo</h2>
     <form id="bbb-join-group-form" class="mt-5">
         <label for="bbb-join-folio" class="mb-2 block text-xs font-semibold">Folio del grupo</label>
-        <input id="bbb-join-folio" name="folio_codigo" class="w-full rounded-lg border border-[var(--sh-border)] bg-[var(--sh-panel)] px-3 py-2.5 text-sm"
+        <input id="bbb-join-folio" name="folio_codigo" class="w-full rounded-lg border border-(--sh-border) bg-(--sh-panel) px-3 py-2.5 text-sm"
                type="text" pattern="[A-Za-z0-9]{4,20}" minlength="4" maxlength="20" placeholder="Escribe el folio de tu docente"
                autocapitalize="characters" autocomplete="off" spellcheck="false" required autofocus>
         <button class="sh-dialog-action sh-dialog-secondary" id="bbb-join-scan" type="button"><x-icon name="qr-code" /> Escanear QR</button>
         <video class="mt-3 w-full rounded-lg" id="bbb-join-video" autoplay playsinline muted hidden></video>
-        <p id="bbb-join-scan-status" class="mt-3 text-xs text-[var(--sh-muted)]" role="status"></p>
+        <p id="bbb-join-scan-status" class="mt-3 text-xs text-(--sh-muted)" role="status"></p>
         <p class="bbb-warn" id="bbb-join-group-error" role="alert" hidden></p>
         <button class="sh-dialog-action disabled:opacity-60" id="bbb-join-confirm" type="submit">Agregar grupo →</button>
     </form>

@@ -41,6 +41,8 @@
         <section aria-labelledby="titulo-intentos" class="space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <h2 id="titulo-intentos" class="text-xl font-semibold text-primario">{{ __('resultados.intentos.encabezado', ['examen' => $examen['nombre']]) }}</h2>
+                <x-boton variante="secundario" :href="route('panel.resultados.exportar', ['examen' => $examen['id'], 'formato' => 'xlsx'])">{{ __('resultados.exportar_excel') }}</x-boton>
+                <x-boton variante="secundario" :href="route('panel.resultados.exportar', ['examen' => $examen['id'], 'formato' => 'pdf'])">{{ __('resultados.exportar_pdf') }}</x-boton>
                 <x-boton variante="secundario" accion="estadisticas" :href="route('panel.estadisticas', ['examen' => $examen['id']])" />
             </div>
 

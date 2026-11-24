@@ -35,6 +35,7 @@ return [
         ],
     ],
     'supabase' => [
+        'mfa_phone_enabled' => env('SUPABASE_MFA_PHONE_ENABLED', false),
         'url' => env('SUPABASE_URL'),
         'key' => env('SUPABASE_PUBLISHABLE_KEY'),
     ],

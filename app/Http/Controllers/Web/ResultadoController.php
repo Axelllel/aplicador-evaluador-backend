@@ -19,6 +19,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\RespondeConApi;
 use App\Http\Requests\CalificarRespuestaRequest;
 use App\Services\ConsultasPanelService;
+use App\Services\ExportacionResultadosService;
 use App\Services\PaginadorPanel;
 use App\Services\PanelApiService;
 use App\Services\ResultadosPanelService;
@@ -26,6 +27,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Controla las páginas de Resultados y la calificación de respuestas.
@@ -39,8 +41,7 @@ class ResultadoController extends Controller
         private readonly ConsultasPanelService $consultas,
         private readonly ResultadosPanelService $resultados,
         private readonly PaginadorPanel $paginador,
-    ) {
-    }
+    ) {}
 
     /**
      * Muestra el selector de examen y la tabla de intentos del examen elegido (15 filas por página); sin examen
@@ -71,6 +72,17 @@ class ResultadoController extends Controller
             'resumen' => $this->resultados->resumen($filas),
             'intentos' => $this->paginador->paginar($filas, $solicitud->integer('page', 1)),
         ]);
+    }
+
+    public function exportar(int $examen, string $formato, ExportacionResultadosService $exportador): Response
+    {
+        abort_unless(in_array($formato, ['xlsx', 'pdf'], true), 404);
+        $datos = $this->consultas->resultadosDelExamen($examen);
+        abort_if($datos === null, 404);
+        $fechas = $this->consultas->intentosDelExamen($examen)->keyBy('id');
+        $filas = $datos['resultados']->map(fn (array $fila): array => $fila + ['fecha_entrega' => $fechas->get($fila['intento_id'])['fecha_entrega'] ?? null]);
+
+        return $exportador->download($datos['examen'], $filas, $formato);
     }
 
     /**
@@ -108,7 +120,7 @@ class ResultadoController extends Controller
         $datos = $solicitud->validated();
         $motivo = trim((string) ($datos['motivo'] ?? ''));
 
-        if ($actual['calificacion_final'] !== null && $motivo === '') {
+        if (($actual['revisada_manual'] ?? false) && $actual['calificacion_final'] !== null && (float) $actual['calificacion_final'] !== (float) $datos['calificacion'] && $motivo === '') {
             throw ValidationException::withMessages(['motivo' => __('resultados.errores.motivo_obligatorio')])
                 ->errorBag(CalificarRespuestaRequest::PREFIJO_DE_BOLSA.$respuesta);
         }
@@ -122,6 +134,36 @@ class ResultadoController extends Controller
             null,
             __('mensajes.error.calificacion_no_guardada'),
         );
+    }
+
+    public function guardarRevision(Request $solicitud, int $examen, int $intento): RedirectResponse
+    {
+        $detalle = $this->resultados->intento($examen, $intento);
+        abort_if($detalle === null, 404);
+        abort_unless($detalle['puede_calificar'], 422);
+        $datos = $solicitud->validate([
+            'respuestas' => ['required', 'array', 'min:1', 'max:200'],
+            'respuestas.*.calificacion' => ['nullable', 'numeric', 'between:0,100', 'decimal:0,2'],
+            'respuestas.*.motivo' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $actuales = $detalle['respuestas']->keyBy('id');
+        $notas = [];
+        foreach ($datos['respuestas'] as $id => $nota) {
+            abort_unless(ctype_digit((string) $id) && $actuales->has((int) $id), 404);
+            if (($nota['calificacion'] ?? null) === null) {
+                continue;
+            }
+            $notas[] = ['id' => (int) $id] + $nota;
+        }
+        $destino = redirect()->route('panel.resultados.intento', ['examen' => $examen, 'intento' => $intento]);
+        if ($notas === []) {
+            return $destino->with('info', __('resultados.revision.sin_cambios'));
+        }
+        $respuesta = $this->api->patch('/teacher/attempts/'.$intento.'/grades', ['respuestas' => $notas]);
+
+        return $this->redirigirSegunRespuesta($respuesta, $destino,
+            (int) $respuesta->dato('actualizadas', 0) > 0 ? __('resultados.revision.guardada') : __('resultados.revision.sin_cambios'),
+            null, __('mensajes.error.calificacion_no_guardada'));
     }
 
     /**
@@ -138,6 +180,17 @@ class ResultadoController extends Controller
             trans_choice('mensajes.exito.autocalificado', $cantidad, ['cantidad' => $cantidad]),
             null,
             __('mensajes.error.autocalificacion_fallida'),
+        );
+    }
+
+    public function evaluar(int $examen, int $intento): RedirectResponse
+    {
+        abort_if($this->resultados->intento($examen, $intento) === null, 404);
+
+        return $this->redirigirSegunRespuesta(
+            $this->api->post('/teacher/attempts/'.$intento.'/prepare-grading'),
+            redirect()->route('panel.resultados.intento', ['examen' => $examen, 'intento' => $intento]),
+            __('ia.encolada'), null, __('ia.error'),
         );
     }
 }

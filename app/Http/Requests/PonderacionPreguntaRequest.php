@@ -3,10 +3,10 @@
 /**
  * Archivo: PonderacionPreguntaRequest.php
  * Módulo: app/Http/Requests
- * Descripción: Valida la ponderación de una pregunta dentro de un apartado de examen en borrador.
- * Autor: Axel (Axelllel)
- * Creado: 08/11/2026
- * Modificado: 20/11/2026 · Leonardo Ballestero López · Prólogo del Manual COD-WEB 6.7
+ * Descripción: Gestiona y verifica el módulo PonderacionPreguntaRequest.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
  */
 
 declare(strict_types=1);

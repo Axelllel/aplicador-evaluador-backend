@@ -227,6 +227,7 @@ class SesionControllerTest extends TestCase
 
     public function test_cerrar_sesion_invalida_la_sesion_renueva_el_token_csrf_y_avisa(): void
     {
+        $this->api->responder('POST', '/auth/logout', ['data' => ['token_revocado' => true]]);
         $this->conSesionDelPanel()->withSession(['otro_dato' => 'x']);
         $this->startSession();
         $tokenCsrfAnterior = csrf_token();
@@ -242,6 +243,7 @@ class SesionControllerTest extends TestCase
 
     public function test_despues_de_cerrar_sesion_el_panel_ya_no_abre(): void
     {
+        $this->api->responder('POST', '/auth/logout', ['data' => ['token_revocado' => true]]);
         $this->conSesionDelPanel()->post('/logout');
 
         $this->get('/panel')->assertRedirect(route('login'));

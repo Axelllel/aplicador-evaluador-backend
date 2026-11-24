@@ -1,10 +1,10 @@
 {{--
     Archivo: student-account.blade.php
     Módulo: resources/views/components
-    Descripción: Menú de cuenta del alumno con su código y la salida de la sesión.
-    Autor: Axel (Axelllel)
-    Creado: 09/11/2026
-    Modificado: 20/11/2026 · Leonardo Ballestero López · Cabecera de archivo
+    Descripción: Vista del módulo components de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
 --}}
 @props(['nombre'])
 

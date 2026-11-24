@@ -11,10 +11,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#1F2937">
+    <meta name="theme-color" content="{{ collect(app(\App\Services\PaletaColoresService::class)->colores())->firstWhere('token', 'primario')['hex'] }}">
     <title>{{ __('sesion.titulo') }} · {{ __('panel.nombre_sistema') }}</title>
     {{-- Reutiliza los mismos estilos del ingreso del alumno; sin afectar al resto del panel. --}}
     @vite(['resources/css/student-entry.css', 'resources/js/app.js'])
+    @vite('resources/css/ui-standards.css')
     <style>
         .teacher-login .card-content { padding-top: 43px; padding-bottom: 32px; }
         .teacher-login .teacher-welcome-icon svg { width: 29px; height: 29px; }
