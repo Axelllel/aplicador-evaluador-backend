@@ -59,8 +59,12 @@ class RecuperacionContrasenaService
 
     public function cambiar(#[\SensitiveParameter] string $token, #[\SensitiveParameter] string $password, string $email): void
     {
-        Cache::lock('password-reset:'.hash('sha256', $token), 30)->block(3, function () use ($token, $password, $email): void {
-            $user = $this->validar($token);
+        $user = $this->validar($token);
+        $session = $this->revocacion->sessionId($token) ?? $token;
+        Cache::lock('password-reset:'.hash('sha256', $session), 30)->block(3, function () use ($token, $password, $email, $user): void {
+            if ($user['expira'] <= time() || $this->revocacion->revoked($token)) {
+                $this->invalido();
+            }
             if (! hash_equals(mb_strtolower($user['email']), mb_strtolower($email))) {
                 $this->invalido();
             }

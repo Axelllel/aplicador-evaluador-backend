@@ -50,7 +50,7 @@ class RecuperacionContrasenaTest extends TestCase
 
     private function token(string $method = 'recovery', int $age = 0): string
     {
-        return 'header.'.rtrim(strtr(base64_encode(json_encode(['sub' => self::UID, 'exp' => time() + 3600,
+        return 'header.'.rtrim(strtr(base64_encode(json_encode(['sub' => self::UID, 'session_id' => '22222222-2222-4222-8222-222222222222', 'exp' => time() + 3600,
             'amr' => [['method' => $method, 'timestamp' => time() - $age]]])), '+/', '-_'), '=').'.verified-by-provider';
     }
 
@@ -70,7 +70,7 @@ class RecuperacionContrasenaTest extends TestCase
         $this->post('/recuperar-contrasena', ['email' => self::EMAIL])->assertRedirect(route('password.confirm'))
             ->assertSessionHas(Recovery::SOLICITUD.'.email', self::EMAIL);
         $this->get('/recuperar-contrasena/confirmar')->assertOk()->assertSee('…@outlook.com')->assertDontSee(self::EMAIL)
-            ->assertHeader('Cache-Control', 'no-store, private');
+            ->assertHeader('Cache-Control', 'no-store, private')->assertHeader('Referrer-Policy', 'no-referrer');
         Http::assertNothingSent();
     }
 
