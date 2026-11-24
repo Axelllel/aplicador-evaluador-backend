@@ -22,6 +22,7 @@ use App\Http\Controllers\Web\GrupoController;
 use App\Http\Controllers\Web\GuiaEstiloController;
 use App\Http\Controllers\Web\PanelController;
 use App\Http\Controllers\Web\PreguntaController;
+use App\Http\Controllers\Web\RecuperacionContrasenaController;
 use App\Http\Controllers\Web\RegistroController;
 use App\Http\Controllers\Web\ResultadoController;
 use App\Http\Controllers\Web\SegundoFactorController;
@@ -47,6 +48,17 @@ Route::post('/login', [SesionController::class, 'store'])->name('sesion.store');
 Route::post('/logout', [SesionController::class, 'destroy'])->name('sesion.destroy');
 Route::get('/registro', [RegistroController::class, 'create'])->name('registro');
 Route::post('/registro', [RegistroController::class, 'store'])->name('registro.store');
+
+// Recuperación separada del login; nunca inicia una sesión del portal.
+Route::middleware(NoStoreResponse::class)->group(function (): void {
+    Route::get('/recuperar-contrasena', [RecuperacionContrasenaController::class, 'create'])->name('password.request');
+    Route::post('/recuperar-contrasena', [RecuperacionContrasenaController::class, 'preparar'])->middleware('throttle:10,1')->name('password.prepare');
+    Route::get('/recuperar-contrasena/confirmar', [RecuperacionContrasenaController::class, 'confirmar'])->name('password.confirm');
+    Route::post('/recuperar-contrasena/confirmar', [RecuperacionContrasenaController::class, 'enviar'])->middleware('throttle:5,1')->name('password.email');
+    Route::get('/restablecer-contrasena', [RecuperacionContrasenaController::class, 'reset'])->name('password.reset');
+    Route::post('/restablecer-contrasena/verificar', [RecuperacionContrasenaController::class, 'verificar'])->middleware('throttle:10,1')->name('password.verify');
+    Route::post('/restablecer-contrasena', [RecuperacionContrasenaController::class, 'actualizar'])->middleware('throttle:5,1')->name('password.update');
+});
 
 // Panel del docente: exige un token vigente en la sesión.
 // TODO(Leonardo Ballestero López): asignar CheckPlanLimits a la creación de alumnos cuando exista ese módulo.

@@ -14,6 +14,9 @@ class NoStoreResponse
     {
         $response = $next($request);
         $response->headers->set('Cache-Control', 'no-store, private');
+        if ($request->is('recuperar-contrasena*', 'restablecer-contrasena*')) {
+            $response->headers->set('Referrer-Policy', 'no-referrer');
+        }
 
         return $response;
     }

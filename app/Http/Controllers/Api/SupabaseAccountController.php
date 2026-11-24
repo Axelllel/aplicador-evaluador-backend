@@ -78,7 +78,7 @@ class SupabaseAccountController extends Controller
 
     public function recover(Request $request): JsonResponse
     {
-        $data = $request->validate(['email' => ['required', 'email', 'max:150']]);
+        $data = $request->validate(['email' => ['required', 'email', 'max:150'], 'web_redirect' => ['sometimes', 'boolean']]);
         $url = config('services.supabase.url');
         $key = config('services.supabase.key');
         if (! $url || ! $key) {
@@ -86,7 +86,7 @@ class SupabaseAccountController extends Controller
         }
         try {
             $response = Http::acceptJson()->withHeaders(['apikey' => $key])->timeout(10)
-                ->post(rtrim($url, '/').'/auth/v1/recover', ['email' => $data['email']]);
+                ->post(rtrim($url, '/').'/auth/v1/recover'.(! empty($data['web_redirect']) ? '?'.http_build_query(['redirect_to' => config('services.supabase.password_reset_url')]) : ''), ['email' => $data['email']]);
         } catch (Throwable $e) {
             return response()->json(['message' => 'Servicio Auth no disponible.'], 503);
         }

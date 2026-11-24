@@ -136,6 +136,8 @@
                             @enderror
                         </div>
 
+                        <p class="teacher-register"><a href="{{ route('password.request') }}">{{ __('recuperacion.olvidaste') }}</a></p>
+
                         <button type="submit" class="primary-button teacher-signin-button w-full">
                             {{ __('acciones.iniciar_sesion') }} <span aria-hidden="true">→</span>
                         </button>

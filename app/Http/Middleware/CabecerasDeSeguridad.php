@@ -36,7 +36,9 @@ class CabecerasDeSeguridad
 
         $respuesta->headers->set('X-Content-Type-Options', 'nosniff');
         $respuesta->headers->set('X-Frame-Options', 'DENY');
-        $respuesta->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        if (! $respuesta->headers->has('Referrer-Policy')) {
+            $respuesta->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        }
         // La cámara se permite solo a este sitio: el alumno escanea el QR del grupo.
         $respuesta->headers->set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
 

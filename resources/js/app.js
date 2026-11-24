@@ -17,3 +17,5 @@ import './grading-status';
 import './admin-ui';
 
 import './review-batch';
+
+import './password-recovery';

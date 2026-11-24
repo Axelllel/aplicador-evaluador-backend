@@ -35,6 +35,7 @@ return [
         ],
     ],
     'supabase' => [
+        'password_reset_url' => env('SUPABASE_PASSWORD_RESET_URL', rtrim(env('RENDER_EXTERNAL_URL', env('APP_URL', 'http://localhost')), '/').'/restablecer-contrasena'),
         'mfa_phone_enabled' => env('SUPABASE_MFA_PHONE_ENABLED', false),
         'url' => env('SUPABASE_URL'),
         'key' => env('SUPABASE_PUBLISHABLE_KEY'),
