@@ -186,3 +186,8 @@ form label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 9
 .admin-login .card-footer svg {width:1rem;height:1rem;}
 .admin-login [hidden] {display:none!important;}
 @media(max-width:600px) {.admin-login .card-content {padding:2rem 1.5rem 1.75rem;}}
+
+.admin-login:not(.dark) {--muted:#4b5563;}
+.admin-login .input-wrap {border-color:var(--muted);}
+.admin-login .input-wrap:focus-within {border-color:var(--blue);}
+.admin-login :is(.eyebrow,.card-footer) {color:var(--muted);font-size:.75rem;}

@@ -19,12 +19,15 @@ test('panel administrativo con indicadores, temas y navegación adaptable',async
    await expect(menu).toBeFocused();
    await expect(menu).toHaveAttribute('aria-expanded','false');
   }
-  await page.screenshot({path:testInfo.outputPath(`admin-resumen-${width}.png`),fullPage:true});
+  await page.screenshot({path:testInfo.outputPath(`admin-resumen-${width}.png`),fullPage:true,animations:'disabled'});
  }
  await page.setViewportSize({width:1440,height:1000});
  await page.getByRole('button',{name:'Activar modo oscuro'}).click();
  await expect(page.locator('[data-admin-shell]')).toHaveClass(/tp-dark/);
- await page.screenshot({path:testInfo.outputPath('admin-resumen-oscuro.png'),fullPage:true});
+ await expect(page.locator('[data-admin-shell]')).toHaveCSS('background-color','rgb(12, 21, 35)');
+ await expect(page.locator('[data-theme-sun]')).toBeVisible();
+ await expect(page.locator('[data-theme-moon]')).toBeHidden();
+ await page.screenshot({path:testInfo.outputPath('admin-resumen-oscuro.png'),fullPage:true,animations:'disabled'});
  await page.reload();
  await expect(page.getByRole('button',{name:'Activar modo claro'})).toBeVisible();
  expect(errors).toEqual([]);
@@ -39,7 +42,7 @@ test('la gestión se abre en un diálogo y exige un motivo antes de cambiar el e
  await expect(dialog.getByRole('textbox',{name:'Motivo del cambio'})).toBeVisible();
  await page.setViewportSize({width:375,height:900});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
- await page.screenshot({path:testInfo.outputPath('admin-docente-dialogo-movil.png'),fullPage:true});
+ await page.screenshot({path:testInfo.outputPath('admin-docente-dialogo-movil.png'),fullPage:false,animations:'disabled'});
  await page.keyboard.press('Escape');
  await expect(page.locator('dialog[open]')).toHaveCount(0);
  await page.goto('/qa-admin-payments.html');
@@ -56,7 +59,7 @@ test('la gestión se abre en un diálogo y exige un motivo antes de cambiar el e
   await route.fulfill({contentType:'text/html',body:'<h1>Estado actualizado</h1>'});
  });
  await dialog.getByRole('textbox',{name:'Motivo del cambio'}).fill('Verificado por administración');
- await page.screenshot({path:testInfo.outputPath('admin-pago-dialogo-movil.png'),fullPage:true});
+ await page.screenshot({path:testInfo.outputPath('admin-pago-dialogo-movil.png'),fullPage:false,animations:'disabled'});
  await dialog.getByRole('button',{name:'Guardar',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Estado actualizado'})).toBeVisible();
 });
@@ -68,5 +71,7 @@ test('el login administrativo conserva el diseño docente y su formulario separa
  await expect(page.locator('form[action$="/login"]')).toHaveCount(0);
  await page.getByRole('button',{name:'Activar modo oscuro'}).click();
  await expect(page.locator('[data-admin-login]')).toHaveClass(/dark/);
- await page.screenshot({path:testInfo.outputPath('admin-login-oscuro.png'),fullPage:true});
+ await expect(page.locator('[data-admin-login]')).toHaveCSS('background-color','rgb(12, 21, 35)');
+ await expect(page.locator('[data-theme-sun]')).toBeVisible();
+ await page.screenshot({path:testInfo.outputPath('admin-login-oscuro.png'),fullPage:true,animations:'disabled'});
 });
