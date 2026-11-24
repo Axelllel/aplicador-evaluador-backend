@@ -173,11 +173,16 @@ SQL);
         $this->actingAs(new GenericUser(['id' => self::TEACHER]));
         $this->postJson('/api/v1/teacher/payments/simulate', ['operacion_id' => self::OPERATION,
             'grupos' => 3, 'alumnos' => 25, 'preguntas' => 150, 'metodo_pago' => 'tarjeta',
-            'titular' => 'Prueba', 'correo_facturacion' => 'prueba@example.test', 'numero_tarjeta' => '4242424242424242',
+            'titular' => 'Prueba', 'correo_facturacion' => 'prueba@example.test', 'numero_tarjeta' => '4111111111111111',
             'cvv' => '123', 'vencimiento' => '12/39', 'monto' => '0.01'])->assertCreated()->assertJsonPath('data.grupos', 3);
         $this->getJson('/api/v1/teacher/payments')->assertOk()->assertJsonPath('data.0.es_plan_actual', true)
             ->assertJsonPath('data.0.proveedor_pago', 'simulador_bigbitbyte');
         $this->assertSame(1, (int) $this->db->query('SELECT count(*) FROM public.pago')->fetchColumn());
+        $details = json_decode($this->db->query('SELECT detalle_simulacion FROM public.pago')->fetchColumn(), true);
+        $this->assertSame('1111', $details['ultimos_cuatro']);
+        $this->assertArrayNotHasKey('numero_tarjeta', $details);
+        $this->assertArrayNotHasKey('cvv', $details);
+        Http::assertNothingSent();
         DB::disconnect('payment_testing');
     }
 

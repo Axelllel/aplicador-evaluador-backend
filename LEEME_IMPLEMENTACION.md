@@ -239,3 +239,8 @@ La capa `resources/css/ui-standards.css` agrega fuentes del sistema, títulos 24
 ### Corrección de separación de accesos
 
 `/login` conserva siempre el portal docente, incluso si la cuenta también está autorizada para administrar. El ingreso administrativo usa exclusivamente `/administracion/ingreso`; no se agrega ningún botón administrativo en la página pública de perfiles. Esa página mantiene solo Docente y Alumno. La API comprueba el permiso real antes de abrir una sesión administrativa. Las sesiones, tokens, retos de segundo factor y salidas de ambos portales se mantienen separados; las sesiones docentes anteriores recuperan su menú sin migraciones ni cambios de permisos.
+
+
+### Formato de tarjetas en la simulación
+
+La simulación acepta números de 13 a 19 dígitos con control Luhn válido, vencimiento en el mes actual o futuro y código de seguridad de tres dígitos (cuatro para el formato American Express de 15 dígitos). Se retira la lista de dos números obligatorios. Se admiten espacios y guiones en la captura. La validación confirma estructura, sin comprobar emisión, saldo ni autorización bancaria. La compra continúa identificada como simulada; activa las capacidades elegidas y conserva la idempotencia. La BD recibe solo la terminación de cuatro dígitos; no se guardan ni se repueblan el número completo o CVV. No requiere SQL ni nuevas variables.

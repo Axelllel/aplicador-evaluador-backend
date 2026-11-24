@@ -14,3 +14,8 @@ $errors = new ViewErrorBag;
 foreach (['student.exam' => 'qa-exam', 'auth.login' => 'qa-login', 'auth.perfiles' => 'qa-perfiles', 'auth.admin-login' => 'qa-admin'] as $view => $file) {
     file_put_contents('public/'.$file.'.html', view($view, compact('student', 'attempt', 'errors'))->render());
 }
+
+file_put_contents('public/qa-payment.html', view('suscripcion.pago', [
+    'grupos' => 3, 'alumnos' => 25, 'preguntas' => 150, 'precioCentavos' => 18100,
+    'operacionId' => '11111111-1111-4111-8111-111111111111', 'errors' => $errors,
+])->render());

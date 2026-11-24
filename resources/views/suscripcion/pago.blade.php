@@ -36,10 +36,10 @@
                 <fieldset class="space-y-4" data-payment-fields="tarjeta">
                     <legend class="font-semibold">{{ __('suscripcion.simulacion.datos_tarjeta') }}</legend>
                     <p class="tp-payment-help">{{ __('suscripcion.simulacion.tarjeta_prueba') }}</p>
-                    <x-campo-texto nombre="numero_tarjeta" :valor="''" :etiqueta="__('suscripcion.simulacion.numero')" autocomplete="off" inputmode="numeric" maxlength="23" placeholder="4242 4242 4242 4242" data-payment-required />
+                    <x-campo-texto nombre="numero_tarjeta" :valor="''" :etiqueta="__('suscripcion.simulacion.numero')" autocomplete="off" inputmode="numeric" maxlength="23" placeholder="13 a 19 dígitos" data-payment-required />
                     <div class="grid gap-4 md:grid-cols-2">
                         <x-campo-texto nombre="vencimiento" :etiqueta="__('suscripcion.simulacion.vencimiento')" autocomplete="off" inputmode="numeric" maxlength="5" placeholder="12/30" data-payment-required />
-                        <x-campo-texto nombre="cvv" :valor="''" tipo="password" :etiqueta="__('suscripcion.simulacion.cvv')" autocomplete="off" inputmode="numeric" maxlength="3" placeholder="123" data-payment-required />
+                        <x-campo-texto nombre="cvv" :valor="''" tipo="password" :etiqueta="__('suscripcion.simulacion.cvv')" autocomplete="off" inputmode="numeric" maxlength="4" placeholder="3 o 4 dígitos" data-payment-required />
                     </div>
                 </fieldset>
                 <fieldset class="space-y-4" data-payment-fields="spei">

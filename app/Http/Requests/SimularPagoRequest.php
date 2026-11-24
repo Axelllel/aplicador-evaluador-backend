@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Rules\FormatoNumeroTarjeta;
 use App\Services\CotizacionPlanService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -35,9 +36,9 @@ class SimularPagoRequest extends FormRequest
             'metodo_pago' => ['required', Rule::in(['tarjeta', 'spei'])],
             'titular' => ['required', 'string', 'min:2', 'max:150'],
             'correo_facturacion' => ['required', 'email', 'max:254'],
-            'numero_tarjeta' => ['exclude_unless:metodo_pago,tarjeta', 'required', 'string', 'regex:/^\d{16}$/', Rule::in(['4242424242424242', '5555555555554444'])],
+            'numero_tarjeta' => ['exclude_unless:metodo_pago,tarjeta', 'bail', 'required', 'string', new FormatoNumeroTarjeta],
             'vencimiento' => ['exclude_unless:metodo_pago,tarjeta', 'required', 'string', 'regex:/^(0[1-9]|1[0-2])\/\d{2}$/'],
-            'cvv' => ['exclude_unless:metodo_pago,tarjeta', 'required', 'string', 'regex:/^\d{3}$/'],
+            'cvv' => ['exclude_unless:metodo_pago,tarjeta', 'required', 'string', 'regex:/^[0-9]{3,4}$/D'],
             'banco' => ['exclude_unless:metodo_pago,spei', 'required', Rule::in(['Banco de prueba A', 'Banco de prueba B'])],
             'clabe' => ['exclude_unless:metodo_pago,spei', 'required', 'string', 'regex:/^\d{18}$/'],
         ];
@@ -54,9 +55,16 @@ class SimularPagoRequest extends FormRequest
     {
         return [function (Validator $validator): void {
             if ($this->input('metodo_pago') === 'tarjeta' && ! $validator->errors()->has('vencimiento')) {
-                $date = \DateTimeImmutable::createFromFormat('!m/y', (string) $this->input('vencimiento'));
-                if (! $date || $date < now()->startOfMonth()->toDateTimeImmutable()) {
-                    $validator->errors()->add('vencimiento', 'La tarjeta de prueba está vencida. Usa el mes actual o uno posterior.');
+                [$month, $year] = array_map('intval', explode('/', (string) $this->input('vencimiento')));
+                if ((2000 + $year) * 12 + $month < now()->year * 12 + now()->month) {
+                    $validator->errors()->add('vencimiento', 'La tarjeta está vencida. Usa el mes actual o uno posterior.');
+                }
+            }
+            if ($this->input('metodo_pago') === 'tarjeta' && ! $validator->errors()->has('numero_tarjeta') && ! $validator->errors()->has('cvv')) {
+                $amex = preg_match('/^3[47][0-9]{13}$/D', (string) $this->input('numero_tarjeta')) === 1;
+                $length = $amex ? 4 : 3;
+                if (strlen((string) $this->input('cvv')) !== $length) {
+                    $validator->errors()->add('cvv', 'Esta tarjeta requiere un código de seguridad de '.$length.' dígitos.');
                 }
             }
             if ($this->input('metodo_pago') === 'spei' && ! $validator->errors()->has('clabe')) {
@@ -76,10 +84,8 @@ class SimularPagoRequest extends FormRequest
     {
         return [
             '*.required' => 'Completa este campo.',
-            'numero_tarjeta.in' => 'Usa una tarjeta de prueba: 4242 4242 4242 4242 o 5555 5555 5555 4444.',
-            'numero_tarjeta.regex' => 'Escribe los 16 dígitos de la tarjeta de prueba.',
             'vencimiento.regex' => 'Usa el formato MM/AA, por ejemplo 12/30.',
-            'cvv.regex' => 'El CVV de prueba debe tener 3 dígitos.',
+            'cvv.regex' => 'El código de seguridad debe tener 3 o 4 dígitos, según la tarjeta.',
             'clabe.regex' => 'La CLABE de prueba debe tener 18 dígitos.',
         ];
     }

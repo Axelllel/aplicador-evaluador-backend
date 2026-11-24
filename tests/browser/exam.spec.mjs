@@ -54,3 +54,26 @@ test('el administrador tiene formulario independiente y no aparece en los acceso
   await page.screenshot({path:testInfo.outputPath(`administracion-${width}.png`),fullPage:true});
  }
 });
+
+test('pago simulado sin tarjeta obligatoria y con código de cuatro dígitos',async({page},testInfo)=>{
+ await page.goto('/qa-payment.html');
+ await expect(page.getByText('4242 4242 4242 4242',{exact:false})).toHaveCount(0);
+ await expect(page.getByText('No se realizará ningún cargo.',{exact:false})).toBeVisible();
+ for(const width of [1366,375]){
+  await page.setViewportSize({width,height:900});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
+  await page.screenshot({path:testInfo.outputPath(`pago-${width}.png`),fullPage:true});
+ }
+ await page.getByLabel('Nombre del titular').fill('Docente de prueba');
+ await page.getByLabel('Correo de facturación').fill('prueba@example.test');
+ await page.getByLabel('Número de tarjeta',{exact:true}).fill('378282246310005');
+ await page.getByLabel('Vencimiento (MM/AA)',{exact:true}).fill('12/39');
+ await page.getByLabel('Código de seguridad (CVV/CID)',{exact:true}).fill('9876');
+ await page.route('**/suscripcion/planes/pago/simular',async route=>{
+  const data=new URLSearchParams(route.request().postData());
+  expect(data.get('numero_tarjeta')).toBe('378282246310005');expect(data.get('cvv')).toBe('9876');
+  await route.fulfill({contentType:'text/html',body:'<h1>Plan activado exitosamente</h1>'});
+ });
+ await page.getByRole('button',{name:'Activar plan',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Plan activado exitosamente'})).toBeVisible();
+});

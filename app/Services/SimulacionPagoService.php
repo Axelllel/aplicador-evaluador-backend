@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
 
 class SimulacionPagoService
 {
-    /** La función recibe únicamente datos de facturación y terminaciones de prueba. */
+    /** La función recibe datos de facturación y terminaciones; nunca el número completo ni CVV. */
     public function confirmar(array $datos): array
     {
         $detalle = [
