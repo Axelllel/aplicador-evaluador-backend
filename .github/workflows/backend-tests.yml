@@ -1,0 +1,72 @@
+name: Backend y cobertura
+on:
+  pull_request:
+    branches: [main, staging]
+  push:
+    branches: [main, staging, feat/complete-manual-requirements]
+permissions:
+  contents: read
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    name: Pruebas y cobertura 70
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18-bookworm
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: [55440:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=
+      ATTEMPT_TEST_PG_PORT: 55440
+      AI_TEST_PG_PORT: 55440
+      PAYMENT_TEST_PG_PORT: 55440
+      BACKUP_TEST_PG_PORT: 55440
+      BACKUP_TEST_PG_BIN: /usr/lib/postgresql/18/bin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, dom, pdo_pgsql, pdo_sqlite, zip, bcmath, gd, sodium
+          coverage: pcov
+          tools: composer:v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Herramientas de respaldo PostgreSQL 18
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          curl --fail --silent --show-error https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc >/dev/null
+          echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-18
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer audit --locked
+      - run: npm ci
+      - run: npm run test:js
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - name: Suite con PostgreSQL real y cobertura de servicios y modelos
+        run: php vendor/bin/phpunit -c phpunit.coverage.xml --coverage-clover storage/coverage/clover.xml --log-junit storage/coverage/junit.xml
+      - name: Exigir cobertura mínima del manual
+        run: php scripts/check-coverage.php
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidencia-pruebas-cobertura
+          path: |
+            storage/coverage/
+            test-results/
+            playwright-report/
+          if-no-files-found: error

@@ -31,6 +31,9 @@ class Panel extends Component
         public RolPanel $rol = RolPanel::Docente,
         public ?string $descripcion = null,
     ) {
+        if ($rol === RolPanel::Docente && session(SesionPanelService::CLAVE.'.docente.rol') === 'super_admin') {
+            $this->rol = RolPanel::SuperAdmin;
+        }
     }
 
     /**

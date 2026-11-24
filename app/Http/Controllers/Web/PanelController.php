@@ -20,6 +20,8 @@ use App\Services\ConsultasPanelService;
 use App\Services\ExamenesPanelService;
 use App\Services\PaginadorPanel;
 use App\Services\PlanDocenteService;
+use App\Services\SesionPanelService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -33,14 +35,16 @@ class PanelController extends Controller
         private readonly PlanDocenteService $planes,
         private readonly ExamenesPanelService $examenes,
         private readonly PaginadorPanel $paginador,
-    ) {
-    }
+    ) {}
 
     /**
      * Muestra el panel del docente autenticado.
      */
-    public function index(Request $solicitud): View
+    public function index(Request $solicitud): View|RedirectResponse
     {
+        if (session(SesionPanelService::CLAVE.'.docente.rol') === 'super_admin') {
+            return redirect()->route('panel.docentes');
+        }
         $grupos = $this->consultas->grupos();
         $preguntas = $this->consultas->preguntas();
         $examenes = $this->consultas->examenes();

@@ -41,6 +41,7 @@
                     </button>
                     <div id="menu-cuenta" class="tp-account-menu hidden">
                         <p class="tp-account-role">{{ $rol->etiqueta() }}</p>
+                        <a href="{{ route('panel.mfa') }}" class="block py-3">{{ __('mfa.titulo') }}</a>
                         <form method="POST" action="{{ route('sesion.destroy') }}">
                             @csrf
                             <x-boton type="submit" variante="secundario" accion="cerrar_sesion" ancho="completo" />

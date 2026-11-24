@@ -6,6 +6,7 @@
  * Descripción: Valida el flujo de simulación, confirmaciones y privacidad de datos de prueba.
  * Autor: Axel Rebollo Zeferino
  * Creado: 20/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Revisión de integración
  */
 
 declare(strict_types=1);
@@ -92,6 +93,7 @@ class PaymentSimulationTest extends TestCase
 
     public function test_persistence_receives_only_last_four_not_card_number_or_cvv(): void
     {
+        DB::shouldReceive('getConnections')->andReturn([]);
         DB::shouldReceive('selectOne')->once()->with(Mockery::type('string'), Mockery::on(function (array $bindings): bool {
             $json = json_encode($bindings);
 

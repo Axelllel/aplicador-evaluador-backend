@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * Archivo: StudentAttemptTest.php
+ * Módulo: tests/Feature
+ * Descripción: Gestiona y verifica el módulo StudentAttemptTest.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
+ */
+
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use Illuminate\Database\QueryException;
@@ -9,6 +20,12 @@ use Tests\TestCase;
 
 class StudentAttemptTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        DB::shouldReceive('getConnections')->andReturn([]);
+    }
+
     #[DataProvider('invalidCredentials')]
     public function test_start_rejects_missing_or_invalid_credentials_with_422(array $body, array $errors): void
     {

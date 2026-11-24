@@ -126,6 +126,9 @@
                 @if ((int) session('ia_respuesta', 0) === $respuesta['id'] && session('ia_error'))
                     <x-alerta tipo="error" :autoocultar="false">{{ session('ia_error') }}</x-alerta>
                 @endif
+                @if (in_array($respuesta['estado_ia'] ?? '', ['pendiente', 'procesando', 'fallido'], true) && !isset($respuesta['ia']) && $respuesta['calificacion'] === null)
+                    <x-alerta tipo="info" :autoocultar="false">{{ __('ia.proceso.'.($respuesta['estado_ia'])) }}</x-alerta>
+                @endif
                 @if (isset($respuesta['ia']))
                     <aside class="tp-ai-proposal" aria-labelledby="ia-titulo-{{ $respuesta['id'] }}">
                         <p class="tp-section-label">{{ __('ia.propuesta') }}</p>
@@ -204,7 +207,14 @@
                 <x-tabla :titulo="__('resultados.incidencias.tabla.titulo')" :columnas="array_values(__('resultados.incidencias.tabla.columnas'))">
                     @foreach ($incidencias as $incidencia)
                         <x-tabla.fila>
-                            <x-tabla.celda>{{ __('resultados.incidencias.tipos.'.$incidencia['tipo']) }}</x-tabla.celda>
+                            <x-tabla.celda>{{ __('resultados.incidencias.tipos.'.$incidencia['tipo']) }}
+                                @if (!empty($incidencia['evidencia']))
+                                    <details><summary>Ver observación</summary>
+                                        <p>Detección automática para revisión; no determina una infracción.</p>
+                                        <p>{{ $incidencia['evidencia']['rostros'] ?? '—' }} rostro(s) · {{ $incidencia['evidencia']['duracion_segundos'] ?? '—' }} s</p>
+                                    </details>
+                                @endif
+                            </x-tabla.celda>
                             <x-tabla.celda>
                                 <x-insignia :tono="$tonosDeSeveridad[$incidencia['severidad']] ?? 'neutro'">{{ __('resultados.incidencias.severidades.'.$incidencia['severidad']) }}</x-insignia>
                             </x-tabla.celda>

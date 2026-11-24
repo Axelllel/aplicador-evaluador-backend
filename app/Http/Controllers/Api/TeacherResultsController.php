@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\ExportacionResultadosService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\Response;
 
 class TeacherResultsController extends Controller
 {
@@ -23,8 +25,9 @@ class TeacherResultsController extends Controller
             return response()->json(['message' => 'Examen no disponible.'], 404);
         }
         $rows = DB::table('intento_examen as i')->join('alumno as a', 'a.id', '=', 'i.alumno_id')
+            ->leftJoin('cierre_intento as c', 'c.intento_id', '=', 'i.id')
             ->where('i.examen_id', $examId)->orderBy('i.id')
-            ->get(['i.id', 'i.alumno_id', 'a.nombre', 'i.numero_intento', 'i.estado', 'i.fecha_inicio', 'i.fecha_entrega']);
+            ->get(['i.id', 'i.alumno_id', 'a.nombre', 'i.numero_intento', 'i.estado', 'i.fecha_inicio', 'i.fecha_entrega', 'c.motivo as motivo_cierre']);
 
         return response()->json(['data' => $rows]);
     }
@@ -36,11 +39,11 @@ class TeacherResultsController extends Controller
             return response()->json(['message' => 'Intento no disponible.'], 404);
         }
         $rows = DB::table('respuesta_alumno as r')->join('examen_pregunta as ep', 'ep.id', '=', 'r.examen_pregunta_id')
-            ->join('pregunta as p', 'p.id', '=', 'ep.pregunta_id')->where('r.intento_id', $attemptId)
+            ->join('pregunta as p', 'p.id', '=', 'ep.pregunta_id')->leftJoin('trabajo_calificacion as t', 't.respuesta_id', '=', 'r.id')->where('r.intento_id', $attemptId)
             ->selectRaw('md5(jsonb_build_array(p.tipo,p.enunciado,ep.respuesta_modelo_snapshot,r.respuesta_texto)::text) AS huella_actual')
             ->orderBy('ep.id')->addSelect(['r.id', 'r.examen_pregunta_id', 'p.tipo', 'p.enunciado',
                 'r.respuesta_texto', 'r.calificacion_final', 'r.revisada_manual', 'ep.ponderacion',
-                'ep.respuesta_modelo_snapshot', 'r.puntaje_ia', 'r.retroalimentacion_ia', 'r.tokens_consumidos'])->get();
+                'ep.respuesta_modelo_snapshot', 't.estado as estado_ia', 'r.puntaje_ia', 'r.retroalimentacion_ia', 'r.tokens_consumidos'])->get();
         foreach ($rows as $row) {
             $row->retroalimentacion_ia = is_string($row->retroalimentacion_ia) ? json_decode($row->retroalimentacion_ia, true) : null;
             if (($row->retroalimentacion_ia['huella_contenido'] ?? null) !== $row->huella_actual) {
@@ -96,7 +99,11 @@ class TeacherResultsController extends Controller
             return response()->json(['message' => 'Intento no disponible.'], 404);
         }
         $rows = DB::table('incidencia_proctoring')->where('intento_id', $attemptId)
-            ->orderBy('id')->get(['id', 'tipo_alerta', 'nivel_severidad', 'evidencia_url', 'fecha_hora']);
+            ->orderBy('id')->get(['id', 'tipo_alerta', 'nivel_severidad', 'evidencia_url', 'fecha_hora', 'evidencia_detalle'])->map(function ($row) {
+                $row->evidencia_detalle = json_decode($row->evidencia_detalle, true);
+
+                return $row;
+            });
 
         return response()->json(['data' => $rows]);
     }
@@ -110,28 +117,38 @@ class TeacherResultsController extends Controller
         $totalQuestions = DB::table('examen_pregunta as ep')->join('apartado as a', 'a.id', '=', 'ep.apartado_id')
             ->where('a.examen_id', $examId)->count();
         $attempts = DB::table('intento_examen as i')->join('alumno as a', 'a.id', '=', 'i.alumno_id')
-            ->where('i.examen_id', $examId)->orderBy('i.id')->get(['i.id', 'i.alumno_id', 'a.nombre', 'i.estado']);
+            ->where('i.examen_id', $examId)->orderBy('i.id')->get(['i.id', 'i.alumno_id', 'a.nombre', 'i.estado', 'i.fecha_entrega']);
+        $scores = DB::table('respuesta_alumno as r')->join('examen_pregunta as ep', 'ep.id', '=', 'r.examen_pregunta_id')
+            ->join('apartado as a', 'a.id', '=', 'ep.apartado_id')->join('intento_examen as i', 'i.id', '=', 'r.intento_id')
+            ->where('i.examen_id', $examId)->where('a.examen_id', $examId)->groupBy('r.intento_id')
+            ->selectRaw('r.intento_id, count(*) AS respondidas, count(r.calificacion_final) AS calificadas, coalesce(sum(r.calificacion_final * ep.ponderacion / 100),0) AS ponderada')
+            ->get()->keyBy('intento_id');
         $results = [];
         foreach ($attempts as $attempt) {
-            $answers = DB::table('respuesta_alumno as r')->join('examen_pregunta as ep', 'ep.id', '=', 'r.examen_pregunta_id')
-                ->where('r.intento_id', $attempt->id)->get(['r.calificacion_final', 'ep.ponderacion']);
-            $graded = 0;
-            $weighted = 0.0;
-            foreach ($answers as $answer) {
-                if ($answer->calificacion_final !== null) {
-                    $graded++;
-                    $weighted += ((float) $answer->calificacion_final * (float) $answer->ponderacion) / 100;
-                }
-            }
-            $ready = $attempt->estado === 'finalizado' && $graded === $totalQuestions && $totalQuestions > 0;
+            $score = $scores->get($attempt->id);
+            $answered = (int) ($score->respondidas ?? 0);
+            $graded = (int) ($score->calificadas ?? 0);
+            // Las preguntas sin respuesta cuentan cero; solo las respuestas pendientes requieren revisión.
+            $ready = $attempt->estado === 'finalizado' && $graded === $answered && $totalQuestions > 0;
             $results[] = ['intento_id' => $attempt->id, 'alumno_id' => $attempt->alumno_id,
-                'nombre' => $attempt->nombre, 'estado' => $attempt->estado,
-                'calificadas' => $graded, 'total_preguntas' => $totalQuestions,
-                // No publicar notas parciales como definitivas.
-                'calificacion' => $ready ? round($weighted * ($exam->escala === '0-10' ? .1 : 1), 2) : null,
+                'nombre' => $attempt->nombre, 'estado' => $attempt->estado, 'fecha_entrega' => $attempt->fecha_entrega,
+                'calificadas' => $graded + ($attempt->estado === 'finalizado' ? $totalQuestions - $answered : 0), 'total_preguntas' => $totalQuestions,
+                'calificacion' => $ready ? round((float) ($score->ponderada ?? 0) * ($exam->escala === '0-10' ? .1 : 1), 2) : null,
                 'escala' => $exam->escala, 'completo' => $ready];
         }
 
         return response()->json(['data' => ['examen' => $exam, 'resultados' => $results]]);
+    }
+
+    public function export(Request $request, int $examId, string $format, ExportacionResultadosService $exporter): Response
+    {
+        abort_unless(in_array($format, ['xlsx', 'pdf'], true), 404);
+        $response = $this->results($request, $examId);
+        if ($response->getStatusCode() !== 200) {
+            return $response;
+        }
+        $data = $response->getData(true)['data'];
+
+        return $exporter->download($data['examen'], $data['resultados'], $format);
     }
 }

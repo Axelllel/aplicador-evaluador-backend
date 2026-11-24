@@ -1,3 +1,11 @@
+{{--
+    Archivo: result-card.blade.php
+    Módulo: resources/views/student
+    Descripción: Vista del módulo student de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
+--}}
 <a class="sh-exam-card sh-done" href="{{ route('student.grades', ['intento' => $result['intento_id'], 'grupo' => $groupFilter ?? null, 'estado' => $statusFilter ?? null]) }}">
     <div class="sh-exam-top">
         <span class="sh-subject-icon"><x-icon name="document-text" /></span>

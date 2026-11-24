@@ -31,7 +31,7 @@ class StudentJoinController extends Controller
         if ($esReingreso) {
             try {
                 $registro = DB::selectOne(
-                    'SELECT alumno_id, grupo_id, materia, nombre FROM public.fn_ingresar_alumno_con_pin(CAST(? AS text), CAST(? AS text))',
+                    'SELECT alumno_id, grupo_id, materia, nombre, credencial_version FROM public.fn_ingresar_alumno_sesion_pin(CAST(? AS text), CAST(? AS text))',
                     [$folio, $credenciales->hashCodigo($codigoIngresado)]
                 );
             } catch (QueryException $e) {
@@ -46,6 +46,7 @@ class StudentJoinController extends Controller
                     'nombre' => $registro->nombre,
                     'estado' => 'inscrito',
                     'modo' => 'reingreso',
+                    'credencial_version' => (int) $registro->credencial_version,
                 ],
                 'message' => 'Ingresaste con el mismo perfil de alumno.',
             ], 200);
@@ -66,11 +67,12 @@ class StudentJoinController extends Controller
                 if (($e->errorInfo[0] ?? null) === '23505' && $intento < 4) {
                     continue;
                 }
+
                 return $this->errorDeInscripcion($e);
             }
         }
 
-        if (!isset($registro)) {
+        if (! isset($registro)) {
             return response()->json(['message' => 'No se pudo generar un código de acceso. Inténtalo nuevamente.'], 503);
         }
 
@@ -82,6 +84,7 @@ class StudentJoinController extends Controller
                 'nombre' => $registro->nombre,
                 'estado' => 'inscrito',
                 'modo' => 'nuevo',
+                'credencial_version' => 1,
                 // Nunca se persiste ni se vuelve a consultar el texto del PIN.
                 'codigo_acceso' => $codigo,
             ],
@@ -102,6 +105,7 @@ class StudentJoinController extends Controller
 
         if ($status === 500) {
             Log::error('Error al ingresar alumno con PIN', ['sqlstate' => $sqlstate]);
+
             return response()->json(['message' => 'No se pudo completar el ingreso. Inténtalo más tarde.'], 500);
         }
 

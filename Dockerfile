@@ -32,5 +32,6 @@ RUN sed -ri 's#DocumentRoot /var/www/html#DocumentRoot /var/www/html/public#' \
 # Sesiones del panel docente: evitar almacenar tokens Supabase en cookies grandes.
 # Almacenamiento temporal local del contenedor para pruebas en staging.
 ENV SESSION_DRIVER=file
+ENV CACHE_STORE=file
 EXPOSE 10000
-CMD ["apache2-foreground"]
+CMD ["bash", "scripts/start-container.sh"]

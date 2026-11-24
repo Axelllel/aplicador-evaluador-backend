@@ -1,3 +1,11 @@
+{{--
+    Archivo: ia.blade.php
+    Módulo: resources/views/preguntas
+    Descripción: Vista del módulo preguntas de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
+--}}
 @php
     $erroresIa = $errors->getBag('ia');
     $entradaIa = old('operacion_id') !== null;

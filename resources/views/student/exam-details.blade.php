@@ -1,3 +1,11 @@
+{{--
+    Archivo: exam-details.blade.php
+    Módulo: resources/views/student
+    Descripción: Vista del módulo student de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
+--}}
 <dialog class="sh-dialog ei-dialog" id="bbb-exam-details" aria-labelledby="bbb-exam-details-title">
     <form method="dialog">
         <button class="sh-icon-button sh-dialog-close" type="submit" aria-label="Cerrar detalles"><x-icon name="x-mark" /></button>

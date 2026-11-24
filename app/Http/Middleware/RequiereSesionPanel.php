@@ -25,9 +25,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class RequiereSesionPanel
 {
-    public function __construct(private readonly SesionPanelService $sesion)
-    {
-    }
+    public function __construct(private readonly SesionPanelService $sesion) {}
 
     /**
      * Deja pasar solo si hay un token vigente; si había uno vencido avisa en el inicio de sesión.
@@ -41,6 +39,10 @@ class RequiereSesionPanel
             $redireccion = redirect()->guest(route('login'));
 
             return $habiaSesion ? $redireccion->with('aviso', __('sesion.vencida')) : $redireccion;
+        }
+
+        if (session(SesionPanelService::CLAVE.'.mfa_pendiente') && ! $solicitud->routeIs('panel.mfa*', 'logout')) {
+            return redirect()->route('panel.mfa');
         }
 
         $respuesta = $siguiente($solicitud);

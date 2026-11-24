@@ -1,3 +1,11 @@
+{{--
+    Archivo: grades.blade.php
+    Módulo: resources/views/student
+    Descripción: Vista del módulo student de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
+--}}
 @extends('student.layout')
 @section('title', 'Calificaciones')
 @section('screen', 'grades')

@@ -1,3 +1,11 @@
+{{--
+    Archivo: exam.blade.php
+    Módulo: resources/views/student
+    Descripción: Vista del módulo student de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
+--}}
 @extends('student.layout')
 @section('title', 'Resolver examen')
 @section('screen', 'exam')
@@ -18,8 +26,9 @@
         <div class="es-header-right">
             <div class="es-timer">
                 <span aria-hidden="true">◷</span>
-                <div><span>TIEMPO ESTIMADO RESTANTE</span><strong id="bbb-time">—</strong></div>
+                <div><span>TIEMPO RESTANTE</span><strong id="bbb-time">—</strong></div>
             </div>
+            <button class="sh-icon-button" id="bbb-fullscreen" type="button" aria-label="Pantalla completa" title="Pantalla completa">⛶</button>
             <button class="sh-icon-button" type="button" data-theme-toggle aria-label="Cambiar tema">☾</button>
         </div>
     </header>
@@ -34,6 +43,12 @@
             <div class="es-progress-foot"><span id="bbb-save-state" role="status">Cargando preguntas…</span><strong id="bbb-percent">0% completado</strong></div>
         </section>
 
+        <p class="es-question-hint">Los cambios de pestaña y las salidas de pantalla completa se registran durante el examen.</p>
+        <section aria-label="Supervisión de cámara" class="tp-card">
+            <p>La cámara se analiza en este dispositivo. Solo se registran incidencias; no se envían fotografías ni audio.</p>
+            <button id="bbb-camera" type="button" class="er-secondary">Activar cámara</button>
+            <p id="bbb-proctoring-status" role="status">La cámara requiere tu permiso. Las incidencias se revisan por el docente.</p>
+        </section>
         <nav class="es-question-nav" id="bbb-q-nav" aria-label="Navegación de preguntas"></nav>
         <div class="es-nav-legend">
             <span><i class="es-legend-current"></i> Actual</span><span><i class="es-legend-answered"></i> Respondida</span><span><i></i> Pendiente</span>
@@ -48,7 +63,8 @@
                 <span class="es-question-label" id="bbb-q-label"></span>
                 <h2 id="bbb-question-heading" tabindex="-1">Cargando…</h2>
                 <p class="es-question-hint" id="bbb-q-hint"></p>
-                <div id="bbb-q-input"></div>
+                <p id="bbb-question-time" role="timer"></p>
+<div id="bbb-q-input"></div>
             </div>
         </section>
 

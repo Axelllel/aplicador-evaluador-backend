@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Web;
 
+use App\Exceptions\SesionVencidaException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\IniciarSesionRequest;
 use App\Services\PanelApiService;
@@ -31,8 +32,7 @@ class SesionController extends Controller
     public function __construct(
         private readonly PanelApiService $api,
         private readonly SesionPanelService $sesion,
-    ) {
-    }
+    ) {}
 
     /**
      * Muestra el formulario de inicio de sesión; si ya hay sesión vigente va directo al panel.
@@ -56,7 +56,9 @@ class SesionController extends Controller
         if ($respuesta->exitosa()) {
             $this->sesion->iniciar($solicitud, $respuesta->cuerpo);
 
-            return redirect()->intended(route('panel.inicio'));
+            return ($respuesta->cuerpo['mfa_required'] ?? false)
+                ? redirect()->route('panel.mfa')
+                : redirect()->intended(route('panel.inicio'));
         }
 
         $vuelta = redirect()->route('login')->onlyInput('email');
@@ -75,6 +77,11 @@ class SesionController extends Controller
      */
     public function destroy(Request $solicitud): RedirectResponse
     {
+        try {
+            $this->api->post('/auth/logout');
+        } catch (SesionVencidaException) {
+            // La sesión remota ya expiró; siempre se elimina la sesión local.
+        }
         $this->sesion->cerrar($solicitud);
 
         return redirect()

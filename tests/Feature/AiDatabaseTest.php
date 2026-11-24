@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Archivo: AiDatabaseTest.php
+ * Módulo: tests/Feature
+ * Descripción: Gestiona y verifica el módulo AiDatabaseTest.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
+ */
+
 declare(strict_types=1);
 
 namespace Tests\Feature;
@@ -43,7 +52,7 @@ class AiDatabaseTest extends TestCase
             $this->admin->exec(str_replace('CREATE EXTENSION IF NOT EXISTS pgcrypto;', '', file_get_contents(base_path('supabase/migrations/20261025191750_estructura_base_datos.sql'))));
             foreach (['20261025194447_seguridad_roles.sql', '20261026213000_restringir_acceso_directo.sql',
                 '20261026214000_rls_docente_grupo_pregunta.sql', '20261026214500_rls_fase2_tablas_restantes.sql',
-                '20261030010000_flujo_examen_evaluacion.sql', '20261120130000_asistencia_ia_groq.sql'] as $file) {
+                '20261030010000_flujo_examen_evaluacion.sql', '20261120130000_asistencia_ia_groq.sql', '20261123010000_control_tiempo_intentos.sql', '20261123030000_calificacion_en_segundo_plano.sql', '20261123050000_revocacion_sesiones_docente.sql'] as $file) {
                 $sql = file_get_contents(base_path('supabase/migrations/'.$file));
                 if ($file === '20261025194447_seguridad_roles.sql' && $this->admin->query("SELECT 1 FROM pg_roles WHERE rolname='laravel_app'")->fetchColumn()) {
                     $sql = str_replace('CREATE ROLE laravel_app', 'ALTER ROLE laravel_app', $sql);

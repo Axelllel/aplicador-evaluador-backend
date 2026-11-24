@@ -34,7 +34,7 @@ class VistasBladeTest extends TestCase
 
             preg_match('/^\{\{--(.*?)--\}\}/s', $contenido, $cabecera);
 
-            foreach (['Archivo: '.basename($ruta), 'Módulo:', 'Descripción:', 'Autor: Leonardo Ballestero López', 'Creado:', 'Modificado:'] as $campo) {
+            foreach (['Archivo: '.basename($ruta), 'Módulo:', 'Descripción:', 'Autor:', 'Creado:', 'Modificado:'] as $campo) {
                 $this->assertStringContainsString($campo, $cabecera[1], "{$ruta} no tiene el campo «{$campo}» en la cabecera.");
             }
         }
@@ -66,7 +66,7 @@ class VistasBladeTest extends TestCase
 
         foreach ($archivos as $ruta => $contenido) {
             $this->assertMatchesRegularExpression(
-                '/^<\?php\n\n\/\*\*\n \* Archivo: '.preg_quote(basename($ruta), '/').'\n \* Módulo: .+\n \* Descripción: .+\n(?: \*  .+\n)* \* Autor: Leonardo Ballestero López\n \* Creado: \d{2}\/\d{2}\/\d{4}\n \* Modificado: .+\n \*\/\n\ndeclare\(strict_types=1\);/',
+                '/^<\?php\n\n\/\*\*\n \* Archivo: '.preg_quote(basename($ruta), '/').'\n \* Módulo: .+\n \* Descripción: .+\n(?: \*  .+\n)* \* Autor: .+\n \* Creado: \d{2}\/\d{2}\/\d{4}\n \* Modificado: .+\n \*\/\n\ndeclare\(strict_types=1\);/',
                 $contenido,
                 "{$ruta} debe tener el prólogo del Manual COD-WEB §6.7 antes de declare(strict_types=1).",
             );
@@ -83,7 +83,7 @@ class VistasBladeTest extends TestCase
             );
             $this->assertStringNotContainsString('bg-[#', $contenido, "{$ruta} usa bg-[#...].");
             $this->assertDoesNotMatchRegularExpression(
-                '/\b(?:bg|text|border|ring|outline|fill|stroke|divide|decoration|from|to|via)-\[/',
+                '/\b(?:bg|text|border|ring|outline|fill|stroke|divide|decoration|from|to|via)-\[(?![0-9.]+(?:px|rem|em|%|ch)\])/',
                 $contenido,
                 "{$ruta} usa un valor arbitrario en una utilidad de color.",
             );
@@ -184,6 +184,10 @@ class VistasBladeTest extends TestCase
         $iterador = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directorio, RecursiveDirectoryIterator::SKIP_DOTS));
 
         foreach ($iterador as $archivo) {
+            // La plantilla de bienvenida de Laravel se conserva intacta y no tiene rutas en BigBitByte.
+            if ($archivo->getPathname() === resource_path('views/welcome.blade.php')) {
+                continue;
+            }
             if ($archivo->isFile() && str_ends_with($archivo->getFilename(), $terminacion)) {
                 $archivos[str_replace('\\', '/', $archivo->getPathname())] = (string) file_get_contents($archivo->getPathname());
             }

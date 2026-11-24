@@ -1,3 +1,11 @@
+{{--
+    Archivo: student-account.blade.php
+    Módulo: resources/views/components
+    Descripción: Vista del módulo components de BigBitByte.
+    Autor: Axel Rebollo Zeferino
+    Creado: 22/11/2026
+    Modificado: 22/11/2026 · Equipo BigBitByte · Integración y revisión
+--}}
 @props(['nombre'])
 
 <details class="sh-account">

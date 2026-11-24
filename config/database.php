@@ -31,6 +31,8 @@ return [
     */
 
     'connections' => [
+        'backup' => ['driver' => 'pgsql', 'url' => env('BACKUP_DATABASE_URL'), 'charset' => 'utf8', 'sslmode' => env('BACKUP_SSLMODE', 'require')],
+        'backup_restore' => ['driver' => 'pgsql', 'url' => env('BACKUP_RESTORE_DATABASE_URL'), 'charset' => 'utf8', 'sslmode' => env('BACKUP_SSLMODE', 'require')],
 
         'sqlite' => [
             'driver' => 'sqlite',

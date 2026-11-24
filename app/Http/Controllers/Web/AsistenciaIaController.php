@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Archivo: AsistenciaIaController.php
+ * Módulo: app/Http/Controllers/Web
+ * Descripción: Gestiona y verifica el módulo AsistenciaIaController.
+ * Autor: Axel Rebollo Zeferino
+ * Creado: 22/11/2026
+ * Modificado: 22/11/2026 · Equipo BigBitByte · Integración de requisitos pendientes
+ */
+
 declare(strict_types=1);
 
 namespace App\Http\Controllers\Web;

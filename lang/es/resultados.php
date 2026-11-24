@@ -13,6 +13,8 @@
 declare(strict_types=1);
 
 return [
+    'exportar_excel' => 'Descargar Excel',
+    'exportar_pdf' => 'Descargar PDF',
     'titulo' => 'Resultados',
     'descripcion' => 'Revisa los intentos de tus alumnos y califica sus respuestas.',
     'opcion_examen' => ':examen · :grupo',
@@ -120,6 +122,10 @@ return [
             'salida_pantalla' => 'Salida de pantalla',
             'conexion' => 'Problema de conexión',
             'otro' => 'Otra incidencia',
+            'rostro_no_detectado' => 'Rostro no detectado',
+            'multiples_rostros' => 'Varios rostros detectados',
+            'camara_desactivada' => 'Cámara desactivada',
+            'movimiento' => 'Movimiento detectado',
         ],
         'severidades' => [
             'baja' => 'Baja',

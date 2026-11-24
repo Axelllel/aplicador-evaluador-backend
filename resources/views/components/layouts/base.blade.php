@@ -15,6 +15,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $titulo }} · {{ __('panel.nombre_sistema') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite('resources/css/ui-standards.css')
 </head>
 <body data-submit-message="{{ __('mensajes.guardando') }}" class="min-h-screen bg-white font-sans text-base leading-normal text-primario">
     {{ $slot }}

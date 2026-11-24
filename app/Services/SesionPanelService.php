@@ -48,11 +48,13 @@ class SesionPanelService
         return [
             'access_token' => Crypt::encryptString((string) ($respuestaDeLogin['access_token'] ?? '')),
             'refresh_token' => Crypt::encryptString((string) ($respuestaDeLogin['refresh_token'] ?? '')),
+            'mfa_pendiente' => (bool) ($respuestaDeLogin['mfa_required'] ?? false),
             'expira_en' => $ahora + $duracion - self::MARGEN_EN_SEGUNDOS,
             'docente' => [
                 'id' => (string) ($docente['id'] ?? ''),
                 'nombre' => (string) ($docente['nombre'] ?? ''),
                 'correo' => (string) ($docente['correo'] ?? ''),
+                'rol' => ($docente['rol'] ?? '') === 'super_admin' ? 'super_admin' : 'docente',
             ],
         ];
     }
@@ -125,6 +127,7 @@ class SesionPanelService
             'id' => (string) ($datos['docente']['id'] ?? ''),
             'nombre' => (string) ($datos['docente']['nombre'] ?? ''),
             'correo' => (string) ($datos['docente']['correo'] ?? ''),
+            'rol' => ($datos['docente']['rol'] ?? '') === 'super_admin' ? 'super_admin' : 'docente',
         ];
     }
 
