@@ -85,6 +85,7 @@ return [
         'relacion_correcta' => 'Relación correcta',
         'formato_historico' => 'Esta respuesta usa un formato anterior que requiere revisión manual.',
         'ver_original' => 'Ver respuesta original',
+        'referencia_manual' => 'Referencia histórica: revisar manualmente',
         'respuestas' => 'Respuestas del alumno',
         'sin_respuestas' => 'El alumno no registró respuestas en este intento.',
         'pregunta' => 'Pregunta :numero',

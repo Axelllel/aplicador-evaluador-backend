@@ -120,13 +120,16 @@
                         <table class="w-full text-left text-sm" aria-label="{{ __('resultados.intento.revision_columnas') }}">
                             <thead><tr class="border-b border-borde"><th scope="col" class="p-3">{{ __('resultados.intento.elemento') }}</th><th scope="col" class="p-3">{{ __('resultados.intento.respuesta_alumno') }}</th><th scope="col" class="p-3">{{ __('resultados.intento.relacion_correcta') }}</th></tr></thead>
                             <tbody>@foreach ($respuesta['columnas']['filas'] as $par)
-                                <tr class="border-b border-borde last:border-0"><th scope="row" class="p-3 font-semibold">{{ $par['izquierda'] }}</th><td class="p-3">{{ $par['respuesta'] ?? __('resultados.intento.sin_respuesta') }}</td><td class="p-3">{{ $par['modelo'] }}</td></tr>
+                                <tr class="border-b border-borde last:border-0"><th scope="row" class="p-3 font-semibold">{{ $par['izquierda'] }}</th><td class="p-3">{{ $par['respuesta'] ?? __('resultados.intento.sin_respuesta') }}</td><td class="p-3">{{ $par['modelo'] ?? __('resultados.intento.referencia_manual') }}</td></tr>
                             @endforeach</tbody>
                         </table>
                     </div>
                     @if (! $respuesta['columnas']['formato_reconocido'])
                         <p class="text-sm text-texto-suave">{{ __('resultados.intento.formato_historico') }}</p>
                         <details><summary>{{ __('resultados.intento.ver_original') }}</summary><p class="whitespace-pre-wrap break-all">{{ $respuesta['respuesta'] }}</p></details>
+                    @endif
+                    @if (! $respuesta['columnas']['referencia_reconocida'])
+                        <details><summary>{{ __('resultados.intento.respuesta_modelo') }}</summary><p class="whitespace-pre-wrap break-all">{{ $respuesta['modelo'] ?? __('resultados.intento.referencia_manual') }}</p></details>
                     @endif
                 @else
                 <div class="space-y-1">

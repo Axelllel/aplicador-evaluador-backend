@@ -44,6 +44,9 @@ class RelacionColumnasServiceTest extends TestCase
     {
         $this->assertNull((new RelacionColumnasService)->revision('[]', null, []));
         $pairs = [['izquierda' => 'Uno', 'derecha' => 'A'], ['izquierda' => 'Dos', 'derecha' => 'B']];
-        $this->assertNull((new RelacionColumnasService)->revision('[]', "Uno = A\nUno = B", $pairs));
+        $review = (new RelacionColumnasService)->revision('["A","B"]', "Uno = A\nUno = B", $pairs);
+        $this->assertFalse($review['referencia_reconocida']);
+        $this->assertSame('A', $review['filas'][0]['respuesta']);
+        $this->assertNull($review['filas'][0]['modelo']);
     }
 }
