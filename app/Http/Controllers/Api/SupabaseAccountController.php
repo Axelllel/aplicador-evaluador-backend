@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\ReglasRegistro;
 use App\Services\DatabaseUserContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,11 +18,11 @@ class SupabaseAccountController extends Controller
     public function register(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'nombre' => ['required', 'string', 'min:2', 'max:150'],
+            'nombre' => ReglasRegistro::nombre(),
             'email' => ['required', 'email', 'max:150'],
             'password' => ['required', 'string', 'min:10', 'max:200'],
-            'telefono' => ['nullable', 'string', 'max:20'],
-        ]);
+            'telefono' => ReglasRegistro::telefono(),
+        ], ReglasRegistro::mensajes());
         $url = config('services.supabase.url');
         $key = config('services.supabase.key');
         if (! $url || ! $key) {

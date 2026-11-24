@@ -25,8 +25,14 @@ return [
     ],
 
     'ayudas' => [
+        'nombre' => 'Solo letras y espacios.',
         'password' => 'Usa 10 caracteres o más.',
-        'telefono' => 'Opcional.',
+        'telefono' => 'Opcional. Solo números (10 a 15 dígitos).',
+    ],
+
+    'validacion' => [
+        'nombre' => 'El nombre solo puede llevar letras y espacios.',
+        'telefono' => 'El teléfono debe tener solo números, entre 10 y 15 dígitos.',
     ],
 
     'ya_tengo_cuenta' => '¿Ya tienes una cuenta?',

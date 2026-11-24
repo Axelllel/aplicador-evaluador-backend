@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Support\ReglasRegistro;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -38,11 +39,21 @@ class RegistroRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre' => ['required', 'string', 'min:2', 'max:150'],
+            'nombre' => ReglasRegistro::nombre(),
             'email' => ['required', 'email', 'max:150'],
             'password' => ['required', 'string', 'min:10', 'max:200'],
-            'telefono' => ['nullable', 'string', 'max:20'],
+            'telefono' => ReglasRegistro::telefono(),
         ];
+    }
+
+    /**
+     * Mensajes propios del nombre y del teléfono.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return ReglasRegistro::mensajes();
     }
 
     /**

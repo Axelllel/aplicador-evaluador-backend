@@ -18,6 +18,9 @@
             <x-campo-texto
                 nombre="nombre"
                 :etiqueta="__('registro.campos.nombre')"
+                :ayuda="__('registro.ayudas.nombre')"
+                maxlength="150"
+                pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+"
                 autocomplete="name"
                 autofocus
             />
@@ -42,6 +45,9 @@
                 tipo="tel"
                 :etiqueta="__('registro.campos.telefono')"
                 :ayuda="__('registro.ayudas.telefono')"
+                inputmode="numeric"
+                maxlength="15"
+                pattern="[0-9]{10,15}"
                 autocomplete="tel"
             />
 
