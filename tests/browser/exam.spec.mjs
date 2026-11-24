@@ -158,7 +158,7 @@ test('la revisión se guarda junta y el motivo solo se pide al corregir una nota
   expect(data.get('respuestas[201][calificacion]')).toBe(sent===1?'50':'60');
   expect(data.get('respuestas[202][calificacion]')).toBe('85');
   if(sent===2)expect(data.get('respuestas[201][motivo]')).toBe('Corrección del desarrollo');
-  await route.fulfill({contentType:'text/html',body:'<h1>Revisión guardada</h1>'});
+  await route.fulfill({contentType:'text/html; charset=utf-8',body:'<h1>Revisión guardada</h1>'});
  });
  await page.getByRole('button',{name:'Guardar toda la revisión',exact:true}).first().click();
  await expect(page.getByRole('heading',{name:'Revisión guardada'})).toBeVisible();
