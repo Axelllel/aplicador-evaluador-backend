@@ -8,6 +8,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -19,6 +20,17 @@ class TeacherQuestionController extends Controller
 {
     private const TIPOS = ['opcion_multiple', 'relacion_columnas', 'abierta', 'programacion'];
 
+    private static ?bool $tieneLenguaje = null;
+
+    /**
+     * La columna pregunta.lenguaje la crea la migración 20261124120000. Si el código se despliega antes de aplicarla,
+     * el banco sigue funcionando sin lenguaje en lugar de fallar por completo.
+     */
+    private function tieneLenguaje(): bool
+    {
+        return self::$tieneLenguaje ??= Schema::hasColumn('pregunta', 'lenguaje');
+    }
+
     public function index(Request $request): JsonResponse
     {
         $datos = $request->validate([
@@ -28,7 +40,7 @@ class TeacherQuestionController extends Controller
 
         $consulta = DB::table('pregunta')
             ->where('docente_id', $docenteId)
-            ->select(['id', 'tipo', 'enunciado', 'respuesta_modelo', 'opciones', 'lenguaje'])
+            ->select(array_merge(['id', 'tipo', 'enunciado', 'respuesta_modelo', 'opciones'], $this->tieneLenguaje() ? ['lenguaje'] : []))
             // Una pregunta asignada a un examen ya no se puede modificar ni eliminar.
             ->selectRaw('EXISTS (SELECT 1 FROM examen_pregunta ep WHERE ep.pregunta_id = pregunta.id) AS en_uso');
 
@@ -269,15 +281,16 @@ class TeacherQuestionController extends Controller
      */
     private function fila(array $datos): array
     {
-        return [
+        $fila = [
             'tipo' => $datos['tipo'],
             'enunciado' => $datos['enunciado'],
             'respuesta_modelo' => $datos['respuesta_modelo'] ?? null,
             'opciones' => isset($datos['opciones'])
                 ? json_encode($datos['opciones'], JSON_THROW_ON_ERROR)
                 : null,
-            'lenguaje' => $datos['lenguaje'] ?? null,
         ];
+
+        return $this->tieneLenguaje() ? $fila + ['lenguaje' => $datos['lenguaje'] ?? null] : $fila;
     }
 
     /**
