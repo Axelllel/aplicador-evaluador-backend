@@ -22,7 +22,7 @@
         <div class="welcome-icon" aria-hidden="true"><x-icon name="user-circle" /></div><div class="heading-block"><h1 id="recovery-title">{{ $titulo }}</h1><p>{{ $ayuda }}</p></div>
         @if(session('error'))<p class="entry-message recovery-message" role="alert">{{ session('error') }}</p>@endif
         <p class="entry-message recovery-message" data-recovery-error role="alert" hidden>{{ __('recuperacion.enlace_invalido') }}</p>
-        @isset($pista)<div class="group-info"><div><span class="group-kicker">{{ __('recuperacion.pista') }}</span><strong>{{ $pista }}</strong></div></div>@endisset
+        @isset($pista)<div class="group-info"><div><span class="group-kicker">{{ __('recuperacion.'.($modo === 'confirmar' ? 'pista' : 'cuenta')) }}</span><strong>{{ $pista }}</strong></div></div>@endisset
         @if($modo === 'correo' || $modo === 'confirmar')
             <form method="POST" action="{{ $modo === 'correo' ? route('password.prepare') : route('password.email') }}" data-submit-message="{{ __('mensajes.guardando') }}">
                 @csrf
