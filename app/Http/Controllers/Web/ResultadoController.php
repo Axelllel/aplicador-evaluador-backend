@@ -120,7 +120,7 @@ class ResultadoController extends Controller
         $datos = $solicitud->validated();
         $motivo = trim((string) ($datos['motivo'] ?? ''));
 
-        if ($actual['calificacion_final'] !== null && $motivo === '') {
+        if (($actual['revisada_manual'] ?? false) && $actual['calificacion_final'] !== null && (float) $actual['calificacion_final'] !== (float) $datos['calificacion'] && $motivo === '') {
             throw ValidationException::withMessages(['motivo' => __('resultados.errores.motivo_obligatorio')])
                 ->errorBag(CalificarRespuestaRequest::PREFIJO_DE_BOLSA.$respuesta);
         }
@@ -134,6 +134,36 @@ class ResultadoController extends Controller
             null,
             __('mensajes.error.calificacion_no_guardada'),
         );
+    }
+
+    public function guardarRevision(Request $solicitud, int $examen, int $intento): RedirectResponse
+    {
+        $detalle = $this->resultados->intento($examen, $intento);
+        abort_if($detalle === null, 404);
+        abort_unless($detalle['puede_calificar'], 422);
+        $datos = $solicitud->validate([
+            'respuestas' => ['required', 'array', 'min:1', 'max:200'],
+            'respuestas.*.calificacion' => ['nullable', 'numeric', 'between:0,100', 'decimal:0,2'],
+            'respuestas.*.motivo' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $actuales = $detalle['respuestas']->keyBy('id');
+        $notas = [];
+        foreach ($datos['respuestas'] as $id => $nota) {
+            abort_unless(ctype_digit((string) $id) && $actuales->has((int) $id), 404);
+            if (($nota['calificacion'] ?? null) === null) {
+                continue;
+            }
+            $notas[] = ['id' => (int) $id] + $nota;
+        }
+        $destino = redirect()->route('panel.resultados.intento', ['examen' => $examen, 'intento' => $intento]);
+        if ($notas === []) {
+            return $destino->with('info', __('resultados.revision.sin_cambios'));
+        }
+        $respuesta = $this->api->patch('/teacher/attempts/'.$intento.'/grades', ['respuestas' => $notas]);
+
+        return $this->redirigirSegunRespuesta($respuesta, $destino,
+            (int) $respuesta->dato('actualizadas', 0) > 0 ? __('resultados.revision.guardada') : __('resultados.revision.sin_cambios'),
+            null, __('mensajes.error.calificacion_no_guardada'));
     }
 
     /**

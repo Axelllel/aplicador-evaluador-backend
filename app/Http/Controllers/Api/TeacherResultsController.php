@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\ExportacionResultadosService;
+use App\Services\RevisionCalificacionesService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -88,18 +89,36 @@ class TeacherResultsController extends Controller
             ->first(['i.id', 'i.examen_id', 'i.alumno_id', 'i.estado', 'e.escala']);
     }
 
-    public function grade(Request $request, int $answerId): JsonResponse
+    public function grade(Request $request, int $answerId, RevisionCalificacionesService $revision): JsonResponse
     {
-        $data = $request->validate(['calificacion' => ['required', 'numeric', 'between:0,100'],
+        $data = $request->validate(['calificacion' => ['required', 'numeric', 'between:0,100', 'decimal:0,2'],
             'motivo' => ['nullable', 'string', 'max:2000']]);
+        $answer = DB::table('respuesta_alumno')->where('id', $answerId)->first(['intento_id']);
+        abort_if($answer === null, 404);
         try {
-            DB::selectOne('SELECT public.fn_calificar_respuesta(CAST(? AS bigint),CAST(? AS numeric),CAST(? AS text)) AS id',
-                [$answerId, $data['calificacion'], $data['motivo'] ?? null]);
+            $count = $revision->guardar($request->user()->getAuthIdentifier(), (int) $answer->intento_id, [['id' => $answerId] + $data]);
         } catch (QueryException $e) {
             return response()->json(['message' => 'Respuesta no disponible o correccion invalida.'], 422);
         }
 
-        return response()->json(['data' => ['respuesta_id' => $answerId, 'calificacion' => $data['calificacion']]]);
+        return response()->json(['data' => ['respuesta_id' => $answerId, 'calificacion' => $data['calificacion'], 'actualizadas' => $count]]);
+    }
+
+    public function gradeBatch(Request $request, int $attemptId, RevisionCalificacionesService $revision): JsonResponse
+    {
+        $data = $request->validate([
+            'respuestas' => ['required', 'array', 'min:1', 'max:200'],
+            'respuestas.*.id' => ['required', 'integer', 'min:1', 'distinct'],
+            'respuestas.*.calificacion' => ['required', 'numeric', 'between:0,100', 'decimal:0,2'],
+            'respuestas.*.motivo' => ['nullable', 'string', 'max:2000'],
+        ]);
+        try {
+            $count = $revision->guardar($request->user()->getAuthIdentifier(), $attemptId, $data['respuestas']);
+        } catch (QueryException $e) {
+            return response()->json(['message' => 'No se guardó la revisión. Inténtalo nuevamente.'], 422);
+        }
+
+        return response()->json(['data' => ['actualizadas' => $count]]);
     }
 
     public function autoGrade(Request $request, int $attemptId): JsonResponse

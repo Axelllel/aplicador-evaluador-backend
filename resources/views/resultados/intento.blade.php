@@ -94,6 +94,14 @@
         </x-tarjeta>
     </section>
 
+    @if ($detalle['puede_calificar'] && $detalle['respuestas']->isNotEmpty())
+        <form id="revision-completa" method="POST" action="{{ route('panel.resultados.guardar-revision', ['examen' => $examenId, 'intento' => $intentoId]) }}" class="tp-review-toolbar" data-review-batch hidden>
+            @csrf @method('PATCH')
+            <div><h2>{{ __('resultados.revision.titulo') }}</h2><p>{{ __('resultados.revision.ayuda') }}</p><p data-review-message role="alert" hidden></p></div>
+            <x-boton type="submit" accion="guardar">{{ __('resultados.revision.guardar') }}</x-boton>
+        </form>
+    @endif
+
     <section aria-labelledby="titulo-respuestas" class="space-y-4">
         <h2 id="titulo-respuestas" class="text-xl font-semibold text-primario">{{ __('resultados.intento.respuestas') }}</h2>
 
@@ -103,6 +111,9 @@
                 $conError = $errors->hasBag($bolsa);
                 $erroresDeLaRespuesta = $errors->getBag($bolsa);
                 $yaCalificada = $respuesta['calificacion'] !== null;
+                $revisadaManual = $respuesta['origen'] === 'manual';
+                $errorNotaConjunta = $errors->first('respuestas.'.$respuesta['id'].'.calificacion');
+                $errorMotivoConjunto = $errors->first('respuestas.'.$respuesta['id'].'.motivo');
             @endphp
             <x-tarjeta id="respuesta-{{ $respuesta['id'] }}" class="space-y-4">
                 <div class="flex flex-wrap items-center justify-between gap-2">
@@ -190,6 +201,9 @@
                         action="{{ route('panel.resultados.calificar', ['examen' => $examenId, 'intento' => $intentoId, 'respuesta' => $respuesta['id']]) }}"
                         novalidate
                         class="max-w-xl space-y-4 border-t border-borde pt-4"
+                        data-review-answer="{{ $respuesta['id'] }}"
+                        data-review-manual="{{ $revisadaManual ? '1' : '0' }}"
+                        data-review-original="{{ $respuesta['calificacion_texto'] ?? '' }}"
                     >
                         @csrf
                         @method('PATCH')
@@ -200,27 +214,31 @@
                             id="calificacion-{{ $respuesta['id'] }}"
                             :etiqueta="__('resultados.intento.form.calificacion')"
                             :ayuda="__('resultados.intento.form.calificacion_ayuda')"
-                            :error="$erroresDeLaRespuesta->first('calificacion')"
-                            :valor="$conError ? (string) old('calificacion', '') : (string) ($respuesta['calificacion_texto'] ?? $respuesta['ia']['puntaje'] ?? '')"
+                            :error="$errorNotaConjunta ?: $erroresDeLaRespuesta->first('calificacion')"
+                            :valor="$conError ? (string) old('calificacion', '') : (string) old('respuestas.'.$respuesta['id'].'.calificacion', $respuesta['calificacion_texto'] ?? $respuesta['ia']['puntaje'] ?? '')"
                             min="0"
                             max="100"
                             step="0.01"
                             inputmode="decimal"
                         />
 
-                        <x-campo-area
-                            nombre="motivo"
-                            id="motivo-{{ $respuesta['id'] }}"
-                            :etiqueta="$yaCalificada ? __('resultados.intento.form.motivo_obligatorio') : __('resultados.intento.form.motivo')"
-                            :ayuda="$yaCalificada ? __('resultados.intento.form.motivo_ayuda_cambio') : __('resultados.intento.form.motivo_ayuda_nueva')"
-                            :error="$erroresDeLaRespuesta->first('motivo')"
-                            :valor="$conError ? (string) old('motivo', '') : (isset($respuesta['ia']) && ! $yaCalificada ? __('ia.motivo', ['explicacion' => \Illuminate\Support\Str::limit($respuesta['ia']['justificacion'] ?? '', 1700)]) : '')"
-                            :filas="2"
-                            maxlength="2000"
-                        />
+                        @if ($revisadaManual)
+                        <div data-review-reason>
+                            <x-campo-area
+                                nombre="motivo"
+                                id="motivo-{{ $respuesta['id'] }}"
+                                :etiqueta="__('resultados.intento.form.motivo_obligatorio')"
+                                :ayuda="__('resultados.intento.form.motivo_ayuda_cambio')"
+                                :error="$errorMotivoConjunto ?: $erroresDeLaRespuesta->first('motivo')"
+                                :valor="$conError ? (string) old('motivo', '') : (string) old('respuestas.'.$respuesta['id'].'.motivo', '')"
+                                :filas="2"
+                                maxlength="2000"
+                            />
+                        </div>
+                        @endif
 
                         <div class="flex justify-end">
-                            <x-boton type="submit" accion="guardar" ancho="movil" aria-label="{{ __('resultados.intento.form.guardar_pregunta', ['numero' => $respuesta['numero']]) }}" />
+                            <x-boton type="submit" variante="secundario" icono="check-circle" ancho="movil" aria-label="{{ __('resultados.intento.form.guardar_pregunta', ['numero' => $respuesta['numero']]) }}">{{ __('resultados.revision.guardar_una') }}</x-boton>
                         </div>
                     </form>
                 @endif
@@ -231,6 +249,10 @@
             </x-tarjeta>
         @endforelse
     </section>
+
+    @if ($detalle['puede_calificar'] && $detalle['respuestas']->isNotEmpty())
+        <div class="tp-review-footer" data-review-batch-footer hidden><x-boton type="submit" form="revision-completa" accion="guardar">{{ __('resultados.revision.guardar') }}</x-boton></div>
+    @endif
 
     <section aria-labelledby="titulo-incidencias" class="space-y-4">
         <h2 id="titulo-incidencias" class="text-xl font-semibold text-primario">{{ __('resultados.incidencias.encabezado') }}</h2>

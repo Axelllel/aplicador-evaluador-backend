@@ -529,3 +529,10 @@
 .tp-ai-proposal h4 {font-family:'Manrope',sans-serif;font-size:20px;font-weight:700;}
 .tp-ai-caption {font-size:13px;line-height:1.7;color:var(--tp-text);overflow-wrap:anywhere;}
 @media(width < 48rem) {.tp-ai-settings {grid-template-columns:minmax(0,1fr);gap:16px;}}
+
+/* Revisión docente conjunta con la paleta vigente. */
+.tp-review-toolbar {display:flex;align-items:center;justify-content:space-between;gap:1.25rem;padding:1.5rem;border:1px solid var(--tp-border);border-radius:.75rem;background:var(--tp-card);}
+.tp-review-toolbar p {color:var(--tp-muted);max-width:65ch;margin-top:.375rem;}
+.tp-review-toolbar [role=alert] {color:var(--color-error);}
+.tp-review-footer {display:flex;justify-content:flex-end;padding-block:1rem;}
+@media(max-width:720px) {.tp-review-toolbar {flex-direction:column;align-items:stretch;}.tp-review-toolbar button,.tp-review-footer button {width:100%;}}

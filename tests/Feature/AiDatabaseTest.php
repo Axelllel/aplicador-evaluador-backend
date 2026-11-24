@@ -274,6 +274,58 @@ INSERT INTO public.respuesta_alumno(id,intento_id,examen_pregunta_id,respuesta_t
         $this->assertGroqCalls(0);
     }
 
+    public function test_primera_revision_de_nota_automatica_no_pide_motivo_y_una_correccion_posterior_si(): void
+    {
+        $this->admin->exec('UPDATE public.respuesta_alumno SET calificacion_final=80,revisada_manual=false WHERE id=1');
+        $this->patchJson('/api/v1/teacher/answers/1/grade', ['calificacion' => 90])->assertOk();
+        $this->assertSame('Primera revisión docente.', $this->admin->query('SELECT motivo FROM public.historial_calificacion')->fetchColumn());
+        $this->patchJson('/api/v1/teacher/answers/1/grade', ['calificacion' => 90])->assertOk()->assertJsonPath('data.actualizadas', 0);
+        $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.historial_calificacion')->fetchColumn());
+        $this->patchJson('/api/v1/teacher/answers/1/grade', ['calificacion' => 70])->assertUnprocessable()->assertJsonValidationErrors('respuestas.1.motivo');
+        $this->patchJson('/api/v1/teacher/answers/1/grade', ['calificacion' => 70, 'motivo' => 'Corrección tras revisar el desarrollo'])->assertOk();
+        $this->assertEquals(70, $this->admin->query('SELECT calificacion_final FROM public.respuesta_alumno WHERE id=1')->fetchColumn());
+    }
+
+    private function segundaRespuestaParaRevision(): void
+    {
+        $this->admin->exec("INSERT INTO public.pregunta(id,docente_id,tipo,enunciado,respuesta_modelo) VALUES(2,'".self::TEACHER."','abierta','Otra pregunta','Referencia');
+INSERT INTO public.examen_pregunta(id,apartado_id,pregunta_id,tiempo_segundos,ponderacion,respuesta_modelo_snapshot) VALUES(2,1,2,60,50,'Referencia');
+INSERT INTO public.respuesta_alumno(id,intento_id,examen_pregunta_id,respuesta_texto,calificacion_final,revisada_manual) VALUES(2,1,2,'Respuesta',50,true);");
+    }
+
+    public function test_guardado_conjunto_es_atomico_y_no_duplica_revisiones_sin_cambios(): void
+    {
+        $this->segundaRespuestaParaRevision();
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [
+            ['id' => 1, 'calificacion' => 85], ['id' => 2, 'calificacion' => 60],
+        ]])->assertUnprocessable()->assertJsonValidationErrors('respuestas.2.motivo');
+        $this->assertNull($this->admin->query('SELECT calificacion_final FROM public.respuesta_alumno WHERE id=1')->fetchColumn());
+        $this->assertSame(0, (int) $this->admin->query('SELECT count(*) FROM public.historial_calificacion')->fetchColumn());
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [
+            ['id' => 1, 'calificacion' => 85], ['id' => 2, 'calificacion' => 50],
+        ]])->assertOk()->assertJsonPath('data.actualizadas', 1);
+        $this->assertEquals(85, $this->admin->query('SELECT calificacion_final FROM public.respuesta_alumno WHERE id=1')->fetchColumn());
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [
+            ['id' => 1, 'calificacion' => 85], ['id' => 2, 'calificacion' => 50],
+        ]])->assertOk()->assertJsonPath('data.actualizadas', 0);
+        $this->assertSame(1, (int) $this->admin->query('SELECT count(*) FROM public.historial_calificacion')->fetchColumn());
+    }
+
+    public function test_guardado_conjunto_rechaza_respuestas_ajenas_duplicadas_y_notas_invalidas(): void
+    {
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [
+            ['id' => 1, 'calificacion' => 85], ['id' => 999, 'calificacion' => 50],
+        ]])->assertNotFound();
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [
+            ['id' => 1, 'calificacion' => 85], ['id' => 1, 'calificacion' => 50],
+        ]])->assertUnprocessable();
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [['id' => 1, 'calificacion' => 101]]])->assertUnprocessable();
+        $this->provider(self::OTHER);
+        $this->patchJson('/api/v1/teacher/attempts/1/grades', ['respuestas' => [['id' => 1, 'calificacion' => 85]]])->assertNotFound();
+        $this->assertNull($this->admin->query('SELECT calificacion_final FROM public.respuesta_alumno WHERE id=1')->fetchColumn());
+        $this->assertSame(0, (int) $this->admin->query('SELECT count(*) FROM public.historial_calificacion')->fetchColumn());
+    }
+
     private function provider(string $teacher = self::TEACHER, ?array $output = null, ?callable $during = null): void
     {
         Http::swap(new Factory);

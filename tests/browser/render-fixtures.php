@@ -85,3 +85,12 @@ file_put_contents('public/qa-admin-payments.html', view('admin.pagos', [
     'resumen' => $adminView->resumen(collect(), $adminPayments), 'filtros' => [],
     'pagos' => app(PaginadorPanel::class)->paginar($adminPayments, 1),
 ])->render());
+
+$manualReview = $reviewAnswers->map(fn (array $row): array => $row['id'] === 201 ? array_replace($row, ['revisada_manual' => true]) : $row);
+$detail = app(ResultadosPanelService::class)->detalle(['escala' => '0-10'], [
+    'nombre' => 'Alumno de prueba', 'estado' => 'finalizado', 'completo' => false, 'calificacion' => null, 'calificadas' => 1, 'total_preguntas' => 2,
+], [], $manualReview) + ['examen' => 'Conceptos básicos'];
+file_put_contents('public/qa-review-manual.html', view('resultados.intento', [
+    'detalle' => $detail, 'examenId' => 1, 'intentoId' => 1,
+    'incidencias' => app(PaginadorPanel::class)->paginar(collect(), 1),
+])->render());

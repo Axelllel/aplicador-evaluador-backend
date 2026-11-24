@@ -105,6 +105,8 @@ Route::middleware('panel.sesion')->group(function (): void {
         ->whereNumber(['examen', 'intento'])->name('panel.resultados.autocalificar');
     Route::post('/resultados/{examen}/intentos/{intento}/evaluar', [ResultadoController::class, 'evaluar'])
         ->whereNumber(['examen', 'intento'])->name('panel.resultados.evaluar');
+    Route::patch('/resultados/{examen}/intentos/{intento}/revision', [ResultadoController::class, 'guardarRevision'])
+        ->whereNumber(['examen', 'intento'])->name('panel.resultados.guardar-revision');
     Route::patch('/resultados/{examen}/intentos/{intento}/respuestas/{respuesta}', [ResultadoController::class, 'calificar'])
         ->whereNumber(['examen', 'intento', 'respuesta'])->name('panel.resultados.calificar');
 
