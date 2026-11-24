@@ -68,7 +68,7 @@ class AccesosSeparadosTest extends TestCase
     {
         $this->conSesionDelPanel('Docente existente');
         $this->api->responder('POST', '/auth/login', $this->loginData())->responder('GET', '/admin/teachers', ['data' => []]);
-        $this->post('/administracion/ingreso', $this->credentials())->assertRedirect(route('panel.docentes'))
+        $this->post('/administracion/ingreso', $this->credentials())->assertRedirect(route('admin.dashboard'))
             ->assertSessionHas(SesionPanelService::CLAVE_ADMIN.'.docente.rol', 'super_admin')
             ->assertSessionHas(SesionPanelService::CLAVE.'.docente.nombre', 'Docente existente');
         $this->get('/administracion/docentes')->assertOk()->assertSee('Administración del sistema')
@@ -81,6 +81,8 @@ class AccesosSeparadosTest extends TestCase
     {
         $this->conSesionDelPanel();
         $this->get('/administracion/docentes')->assertRedirect(route('admin.login'));
+        $this->get('/administracion')->assertRedirect(route('admin.login'));
+        $this->assertCount(0, $this->api->llamadasA('GET', '/admin/payments'));
         $this->get('/administracion/ingreso')->assertOk()->assertSee('Administración del sistema');
         $this->assertCount(0, $this->api->llamadasA('GET', '/admin/teachers'));
     }
@@ -113,7 +115,7 @@ class AccesosSeparadosTest extends TestCase
         $this->api->responder('POST', '/auth/logout', ['data' => ['token_revocado' => true]]);
         $this->post('/logout')->assertRedirect(route('login'))->assertSessionMissing(SesionPanelService::CLAVE)
             ->assertSessionHas(SesionPanelService::CLAVE_ADMIN.'.docente.rol', 'super_admin');
-        $this->get('/administracion/ingreso')->assertRedirect(route('panel.docentes'));
+        $this->get('/administracion/ingreso')->assertRedirect(route('admin.dashboard'));
         $this->get('/login')->assertOk()->assertSee('Inicia sesión en tu espacio docente');
     }
 
@@ -136,7 +138,7 @@ class AccesosSeparadosTest extends TestCase
         $this->withSession([SesionPanelService::CLAVE_ADMIN => $data, 'admin_mfa_challenge' => ['factor' => $factor, 'id' => 'challenge'], 'mfa_challenge' => ['factor' => 'teacher-factor', 'id' => 'teacher-challenge']]);
         $this->api->responder('POST', '/auth/mfa/'.$factor.'/verify', ['data' => ['access_token' => 'admin-aal2', 'expires_in' => 3600]]);
         $this->post('/administracion/seguridad/doble-factor/verificar', ['codigo' => '123456'])
-            ->assertRedirect(route('panel.docentes'))->assertSessionMissing('admin_mfa_challenge')
+            ->assertRedirect(route('admin.dashboard'))->assertSessionMissing('admin_mfa_challenge')
             ->assertSessionHas('mfa_challenge.id', 'teacher-challenge')
             ->assertSessionHas(SesionPanelService::CLAVE_ADMIN.'.mfa_pendiente', false);
     }

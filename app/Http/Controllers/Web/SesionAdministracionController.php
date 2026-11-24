@@ -29,7 +29,7 @@ class SesionAdministracionController extends Controller
     public function create(): Response|RedirectResponse
     {
         if ($this->sesion->activa() && ($this->sesion->docente()['rol'] ?? '') === 'super_admin') {
-            return redirect()->route('panel.docentes');
+            return redirect()->route('admin.dashboard');
         }
 
         return response()->view('auth.admin-login')->header('Cache-Control', 'no-store, private')->header('X-Robots-Tag', 'noindex, nofollow');
@@ -41,7 +41,7 @@ class SesionAdministracionController extends Controller
         if ($response->exitosa() && ($response->cuerpo['docente']['rol'] ?? '') === 'super_admin') {
             $this->sesion->iniciar($request, $response->cuerpo);
 
-            return redirect()->route(($response->cuerpo['mfa_required'] ?? false) ? 'admin.mfa' : 'panel.docentes');
+            return redirect()->route(($response->cuerpo['mfa_required'] ?? false) ? 'admin.mfa' : 'admin.dashboard');
         }
         $redirect = redirect()->route('admin.login')->onlyInput('email');
         if ($response->esDemasiadasPeticiones()) {
