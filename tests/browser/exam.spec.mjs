@@ -66,6 +66,9 @@ test('pago simulado sin tarjeta obligatoria y con código de cuatro dígitos',as
  }
  await page.getByLabel('Nombre del titular').fill('Docente de prueba');
  await page.getByLabel('Correo de facturación').fill('prueba@example.test');
+ await page.getByLabel('Número de tarjeta',{exact:true}).fill('4111111111111111');
+ await page.getByLabel('Código de seguridad (CVV/CID)',{exact:true}).fill('9876');
+ expect(await page.getByLabel('Código de seguridad (CVV/CID)',{exact:true}).evaluate(input=>input.checkValidity())).toBe(false);
  await page.getByLabel('Número de tarjeta',{exact:true}).fill('378282246310005');
  await page.getByLabel('Vencimiento (MM/AA)',{exact:true}).fill('12/39');
  await page.getByLabel('Código de seguridad (CVV/CID)',{exact:true}).fill('9876');
