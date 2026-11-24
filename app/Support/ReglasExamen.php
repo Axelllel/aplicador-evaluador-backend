@@ -29,6 +29,9 @@ final class ReglasExamen
     /** Minutos de tolerancia para una apertura «ahora» (el docente tarda en enviar el formulario). */
     public const TOLERANCIA_MINUTOS = 5;
 
+    /** Longitud máxima del nombre de un examen, en caracteres. */
+    public const LONGITUD_MAXIMA_NOMBRE = 30;
+
     /** Duración máxima de la ventana de aplicación, en días. */
     public const DURACION_MAXIMA_DIAS = 30;
 
@@ -47,7 +50,7 @@ final class ReglasExamen
      */
     public static function nombre(): array
     {
-        return ['required', 'string', 'min:2', 'max:150', 'regex:/^(?=.*[\p{L}\p{N}])[^\p{Cc}\p{Cf}]+$/u'];
+        return ['required', 'string', 'min:2', 'max:'.self::LONGITUD_MAXIMA_NOMBRE, 'regex:/^(?=.*[\p{L}\p{N}])[^\p{Cc}\p{Cf}]+$/u'];
     }
 
     /**

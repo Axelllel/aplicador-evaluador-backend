@@ -61,7 +61,8 @@
                     <x-campo-texto
                         nombre="nombre"
                         :etiqueta="__('examenes.nuevo.nombre')"
-                        maxlength="150"
+                        maxlength="30"
+                        :ayuda="__('examenes.nuevo.ayuda_nombre')"
                     />
 
                     </div>

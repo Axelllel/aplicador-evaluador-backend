@@ -109,6 +109,12 @@ class ExamenFechasTest extends TestCase
         ];
     }
 
+    public function test_el_nombre_no_puede_superar_treinta_caracteres(): void
+    {
+        $this->post('/examenes', $this->datos(['nombre' => str_repeat('a', 31)]))->assertSessionHasErrors('nombre');
+        $this->post('/examenes', $this->datos(['nombre' => str_repeat('a', 30)]))->assertSessionHasNoErrors();
+    }
+
     public function test_el_error_regresa_al_formulario_y_no_al_inicio(): void
     {
         $respuesta = $this->from('/examenes')->post('/examenes', $this->datos(['fecha_apertura' => '1900-01-01T08:00']));

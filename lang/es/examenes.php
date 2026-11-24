@@ -30,6 +30,7 @@ return [
         'plataforma' => 'Plataforma permitida',
         'resultado_visible' => 'Resultado visible para el alumno',
         'ayuda_fechas' => 'El examen solo estará disponible entre la apertura y el cierre. Hora de la Ciudad de México; la apertura no puede estar en el pasado y la ventana dura 30 días como máximo.',
+        'ayuda_nombre' => 'Máximo 30 caracteres.',
         'creando' => 'Creando examen…',
     ],
 
