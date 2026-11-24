@@ -62,6 +62,9 @@ Route::middleware(VerifySupabaseToken::class)->group(function () {
     Route::patch('/v1/admin/payments/{payment}', [AdminController::class, 'paymentStatus'])->whereNumber('payment');
     Route::get('/v1/teacher/groups', [TeacherGroupController::class, 'index']);
     Route::post('/v1/teacher/groups', [TeacherGroupController::class, 'store']);
+    Route::get('/v1/teacher/groups/{grupoId}/deletion-preview', [TeacherGroupController::class, 'deletionPreview'])->whereNumber('grupoId');
+    Route::delete('/v1/teacher/groups/{grupoId}', [TeacherGroupController::class, 'destroy'])->whereNumber('grupoId');
+    Route::delete('/v1/teacher/groups/{grupoId}/students/{alumnoId}', [TeacherStudentController::class, 'destroy'])->whereNumber(['grupoId', 'alumnoId']);
     Route::get('/v1/teacher/exams', [TeacherExamController::class, 'index']);
     Route::post('/v1/teacher/exams', [TeacherExamController::class, 'store']);
     Route::delete('/v1/teacher/exams/{examenId}', [TeacherExamController::class, 'destroy'])->whereNumber('examenId');

@@ -116,3 +116,33 @@ test('la evaluación pendiente se actualiza sin borrar una revisión en edición
  await page.clock.fastForward(21000);
  expect(navigations).toBe(0);
 });
+
+test('eliminar grupos y alumnos requiere una confirmación escrita y muestra el alcance',async({page},testInfo)=>{
+ for(const fixture of ['group','student']){
+  await page.goto(`/qa-delete-${fixture}.html`);
+  await expect(page.getByText('Esta acción no se puede deshacer.',{exact:false})).toBeVisible();
+  for(const width of [1366,375]){
+   await page.setViewportSize({width,height:900});
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
+   await page.screenshot({path:testInfo.outputPath(`eliminar-${fixture}-${width}.png`),fullPage:true});
+  }
+ }
+ await page.goto('/qa-delete-group.html');
+ let submitted=0;
+ await page.route('**/grupos/1',async route=>{
+  submitted++;
+  const data=new URLSearchParams(route.request().postData());
+  expect(data.get('_method')).toBe('DELETE');expect(data.get('confirmacion')).toBe('ELIMINAR');
+  await route.fulfill({contentType:'text/html',body:'<h1>Grupo eliminado</h1>'});
+ });
+ const submit=page.getByRole('button',{name:'Eliminar grupo definitivamente',exact:true});
+ await submit.click();
+ expect(submitted).toBe(0);
+ await page.getByLabel('Escribe ELIMINAR para confirmar',{exact:true}).fill('no');
+ await submit.click();
+ expect(submitted).toBe(0);
+ await page.getByLabel('Escribe ELIMINAR para confirmar',{exact:true}).fill('ELIMINAR');
+ await submit.click();
+ await expect(page.getByRole('heading',{name:'Grupo eliminado',exact:true})).toBeVisible();
+ expect(submitted).toBe(1);
+});

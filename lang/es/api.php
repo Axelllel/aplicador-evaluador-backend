@@ -15,6 +15,8 @@ declare(strict_types=1);
 return [
     // La clave es el texto exacto que responde la API; solo se muestran los que aparecen aquí.
     'mensajes' => [
+        'Hay un examen en curso. Espera a que termine antes de retirar al alumno o al grupo.' => 'Hay un examen en curso. Podrás eliminar cuando los intentos hayan terminado.',
+        'Grupo o alumno no disponible.' => 'El grupo o el alumno ya no está disponible.',
         'Grupo no disponible.' => 'El grupo elegido no está disponible. Elige otro grupo.',
         'Examen no disponible.' => 'No encontramos ese examen.',
         'Apartado no disponible.' => 'No encontramos ese apartado.',

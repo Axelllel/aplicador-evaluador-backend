@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ConfirmarRetiroRequest;
+use App\Services\GestionGruposService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -12,6 +14,11 @@ use Illuminate\Support\Str;
 /** El docente autoriza explicitamente a un alumno para UN examen. */
 class TeacherStudentController extends Controller
 {
+    public function destroy(ConfirmarRetiroRequest $request, int $grupoId, int $alumnoId, GestionGruposService $gestion): JsonResponse
+    {
+        return response()->json(['data' => $gestion->retirarAlumno($grupoId, $alumnoId)]);
+    }
+
     public function index(Request $request, int $grupoId): JsonResponse
     {
         $esGrupoPropio = DB::table('grupo')
@@ -29,6 +36,7 @@ class TeacherStudentController extends Controller
             ->groupBy('i.alumno_id')
             ->select('i.alumno_id')
             ->selectRaw('count(*) as total');
+        $intentos->selectRaw("count(*) FILTER (WHERE i.estado='en_progreso') as en_curso");
 
         $alumnos = DB::table('alumno_grupo as ag')
             ->join('alumno as a', 'a.id', '=', 'ag.alumno_id')
@@ -38,6 +46,7 @@ class TeacherStudentController extends Controller
             ->orderBy('a.id')
             ->select('a.id', 'a.nombre', 'ag.fecha_union')
             ->selectRaw('coalesce(intentos.total, 0) as intentos_en_grupo')
+            ->selectRaw('coalesce(intentos.en_curso, 0) as intentos_en_curso')
             ->get();
 
         return response()->json(['data' => $alumnos]);

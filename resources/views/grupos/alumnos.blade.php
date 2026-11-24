@@ -28,6 +28,7 @@
                             <th class="px-3 py-3 font-semibold">Alumno</th>
                             <th class="px-3 py-3 font-semibold">Registro</th>
                             <th class="px-3 py-3 font-semibold">Intentos registrados</th>
+                            <th class="px-3 py-3 font-semibold">{{ __('grupos.eliminacion.acciones') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-linea">
@@ -39,6 +40,7 @@
                                 </td>
                                 <td class="px-3 py-4 text-secundario">{{ \Illuminate\Support\Carbon::parse($alumno['fecha_union'])->format('d/m/Y') }}</td>
                                 <td class="px-3 py-4 text-secundario">{{ $alumno['intentos_en_grupo'] }}</td>
+                                <td class="px-3 py-4"><x-boton variante="peligro" icono="trash" :href="route('panel.grupos.alumnos.confirmar-eliminacion', ['grupo' => $grupo['id'], 'alumno' => $alumno['id']])" aria-label="{{ __('grupos.eliminacion.eliminar_nombre', ['nombre' => $alumno['nombre']]) }}">{{ __('grupos.eliminacion.eliminar_alumno') }}</x-boton></td>
                             </tr>
                         @endforeach
                     </tbody>

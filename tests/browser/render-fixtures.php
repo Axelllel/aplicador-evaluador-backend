@@ -49,3 +49,10 @@ file_put_contents('public/qa-pending.html', view('resultados.intento', [
     'detalle' => $detail, 'examenId' => 1, 'intentoId' => 1,
     'incidencias' => app(PaginadorPanel::class)->paginar(collect(), 1),
 ])->render());
+
+$groupDeletion = ['id' => 1, 'materia' => 'Historia', 'folio_codigo' => 'FOLIO123', 'activo' => true,
+    'alumnos' => 3, 'examenes' => 2, 'intentos' => 4, 'evaluaciones' => 1, 'intentos_en_curso' => 0];
+file_put_contents('public/qa-delete-group.html', view('grupos.eliminar', ['grupo' => $groupDeletion])->render());
+file_put_contents('public/qa-delete-student.html', view('grupos.eliminar-alumno', [
+    'grupo' => $groupDeletion, 'alumno' => ['id' => 14, 'nombre' => 'Alumno de prueba', 'intentos_en_grupo' => 2, 'intentos_en_curso' => 0],
+])->render());
