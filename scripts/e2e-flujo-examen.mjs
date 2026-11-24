@@ -28,6 +28,19 @@ if (!token) { console.log('Sin token; se detiene.'); process.exit(1); }
 [r, j] = await api('GET', '/teacher/groups'); paso('docente: grupos', r, j);
 const grupoId = (j?.data ?? j)[0]?.id;
 
+// Banco de preguntas: duplicados, lenguaje, edición y eliminación (usa un enunciado único por corrida).
+const sello = Date.now().toString(36);
+const pregunta = { tipo: 'programacion', enunciado: 'E2E suma ' + sello, respuesta_modelo: 'a+b', lenguaje: 'Python' };
+let preguntaId;
+[r, j] = await api('POST', '/teacher/questions', pregunta); paso('banco: crear programacion con lenguaje', r, j); preguntaId = j?.data?.id;
+console.log((j?.data?.lenguaje === 'Python' ? 'OK  ' : 'FALLO ') + 'banco: guarda el lenguaje'); if (j?.data?.lenguaje !== 'Python') process.exitCode = 1;
+[r, j] = await api('POST', '/teacher/questions', { ...pregunta, enunciado: '  E2E   SUMA ' + sello }); console.log((r.status === 422 ? 'OK  ' : 'FALLO ') + 'banco: rechaza enunciado repetido -> ' + r.status); if (r.status !== 422) process.exitCode = 1;
+[r, j] = await api('POST', '/teacher/questions', { tipo: 'opcion_multiple', enunciado: 'E2E opciones ' + sello, respuesta_modelo: 'Si', opciones: ['Si', 'si', 'No'] }); console.log((r.status === 422 ? 'OK  ' : 'FALLO ') + 'banco: rechaza opciones repetidas -> ' + r.status); if (r.status !== 422) process.exitCode = 1;
+[r, j] = await api('PUT', '/teacher/questions/' + preguntaId, { ...pregunta, lenguaje: 'SQL' }); paso('banco: editar pregunta libre', r, j, [200]);
+[r, j] = await api('GET', '/teacher/questions'); const editada = (j?.data ?? []).find((q) => q.id === preguntaId); console.log((editada?.lenguaje === 'SQL' && editada?.en_uso === false ? 'OK  ' : 'FALLO ') + 'banco: lista refleja el cambio y en_uso=false'); if (!(editada?.lenguaje === 'SQL' && editada?.en_uso === false)) process.exitCode = 1;
+[r, j] = await api('DELETE', '/teacher/questions/' + preguntaId); paso('banco: eliminar pregunta libre', r, j, [200]);
+[r, j] = await api('DELETE', '/teacher/questions/' + preguntaId); console.log((r.status === 404 ? 'OK  ' : 'FALLO ') + 'banco: eliminar otra vez -> ' + r.status); if (r.status !== 404) process.exitCode = 1;
+
 const ahora = Date.now();
 const iso = (ms) => new Date(ms).toISOString();
 [r, j] = await api('POST', '/teacher/exams', { grupo_id: grupoId, nombre: 'Prueba E2E ' + new Date().toISOString().slice(11, 19), fecha_apertura: iso(ahora - 60000), fecha_cierre: iso(ahora + 7200000), orden: 'fijo', escala: '0-10', plataforma_permitida: 'web', resultado_visible: 'final' });
@@ -50,6 +63,8 @@ for (const [tipo, preguntaId, pond] of [['opcion_multiple', 1, 50], ['abierta', 
   paso(`docente: asignar pregunta ${preguntaId}`, r, j);
 }
 [r, j] = await api('POST', `/teacher/exams/${examenId}/publish`); paso('docente: publicar', r, j);
+[r, j] = await api('PUT', '/teacher/questions/1', { tipo: 'opcion_multiple', enunciado: 'Capital de Francia?', respuesta_modelo: 'París', opciones: ['París', 'Londres', 'Roma'] }); console.log((r.status === 409 ? 'OK  ' : 'FALLO ') + 'banco: no edita una pregunta en uso -> ' + r.status); if (r.status !== 409) process.exitCode = 1;
+[r, j] = await api('DELETE', '/teacher/questions/1'); console.log((r.status === 409 ? 'OK  ' : 'FALLO ') + 'banco: no elimina una pregunta en uso -> ' + r.status); if (r.status !== 409) process.exitCode = 1;
 
 // ---- Portal del alumno (sesión con cookies) ----
 let cookies = {};

@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Support\ReglasPregunta;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -32,7 +33,7 @@ class PreguntaRequest extends FormRequest
 {
     public const TIPOS = ['opcion_multiple', 'relacion_columnas', 'abierta', 'programacion'];
 
-    private const MAXIMO_DE_OPCIONES = 10;
+    private const MAXIMO_DE_OPCIONES = ReglasPregunta::MAXIMO_DE_OPCIONES;
 
     /**
      * La sesión ya la exige el middleware panel.sesion.
@@ -61,7 +62,15 @@ class PreguntaRequest extends FormRequest
             'pares_lista' => [Rule::requiredIf($estructurado && $tipo === 'relacion_columnas'), 'nullable', 'array', 'list', 'min:2', 'max:10'],
             'pares_lista.*.izquierda' => ['required', 'string', 'max:2000'],
             'pares_lista.*.derecha' => ['required', 'string', 'max:2000'],
-            'enunciado' => ['required', 'string', 'min:3', 'max:10000'],
+            'enunciado' => ReglasPregunta::enunciado(),
+            'lenguaje' => [
+                Rule::requiredIf($tipo === 'programacion'),
+                'nullable', 'string', Rule::in([...ReglasPregunta::LENGUAJES, 'otro', 'libre']),
+            ],
+            'lenguaje_otro' => [
+                Rule::requiredIf($tipo === 'programacion' && $this->input('lenguaje') === 'otro'),
+                'nullable', 'string', 'max:40', 'regex:/^[\p{L}\p{N} .+#\-]+$/u',
+            ],
             'opciones' => [
                 Rule::requiredIf(! $estructurado && in_array($tipo, ['opcion_multiple', 'relacion_columnas'], true)),
                 'nullable', 'string', 'max:5000',
@@ -72,6 +81,33 @@ class PreguntaRequest extends FormRequest
                 Rule::requiredIf($tipo !== 'relacion_columnas' && ! ($estructurado && $tipo === 'opcion_multiple')),
                 'nullable', 'string', 'max:20000',
             ],
+        ];
+    }
+
+    /**
+     * Mensajes propios: nombran el campo en lenguaje del docente y no por su clave interna.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'opciones_lista.required' => __('preguntas.validacion.opciones_cantidad', ['maximo' => self::MAXIMO_DE_OPCIONES]),
+            'opciones_lista.min' => __('preguntas.validacion.opciones_cantidad', ['maximo' => self::MAXIMO_DE_OPCIONES]),
+            'opciones_lista.max' => __('preguntas.validacion.opciones_cantidad', ['maximo' => self::MAXIMO_DE_OPCIONES]),
+            'opciones_lista.*.required' => __('preguntas.validacion.opcion_vacia', ['posicion' => ':position']),
+            'opciones_lista.*.max' => __('preguntas.validacion.opcion_larga', ['posicion' => ':position']),
+            'pares_lista.required' => __('preguntas.validacion.pares_invalidos', ['maximo' => self::MAXIMO_DE_OPCIONES]),
+            'pares_lista.min' => __('preguntas.validacion.pares_invalidos', ['maximo' => self::MAXIMO_DE_OPCIONES]),
+            'pares_lista.max' => __('preguntas.validacion.pares_invalidos', ['maximo' => self::MAXIMO_DE_OPCIONES]),
+            'pares_lista.*.izquierda.required' => __('preguntas.validacion.concepto_vacio', ['posicion' => ':position']),
+            'pares_lista.*.derecha.required' => __('preguntas.validacion.pareja_vacia', ['posicion' => ':position']),
+            'correcta.required' => __('workspace.editor.correct_required'),
+            'enunciado.regex' => __('preguntas.validacion.enunciado_sin_contenido'),
+            'respuesta_modelo.required' => __('preguntas.validacion.respuesta_requerida'),
+            'lenguaje.required' => __('preguntas.validacion.lenguaje_requerido'),
+            'lenguaje_otro.required' => __('preguntas.validacion.lenguaje_otro_requerido'),
+            'lenguaje_otro.regex' => __('preguntas.validacion.lenguaje_otro_invalido'),
         ];
     }
 
@@ -92,7 +128,7 @@ class PreguntaRequest extends FormRequest
                 if (! array_key_exists((int) $this->input('correcta'), $opciones)) {
                     $validador->errors()->add('correcta', __('workspace.editor.correct_required'));
                 }
-                if (count(array_unique($opciones)) !== count($opciones)) {
+                if (ReglasPregunta::hayRepetidos($opciones)) {
                     $validador->errors()->add('opciones_lista', __('workspace.editor.duplicate'));
                 }
 
@@ -104,13 +140,21 @@ class PreguntaRequest extends FormRequest
 
                 if (count($opciones) < 2 || count($opciones) > self::MAXIMO_DE_OPCIONES) {
                     $validador->errors()->add('opciones', __('preguntas.validacion.opciones_cantidad', ['maximo' => self::MAXIMO_DE_OPCIONES]));
+                } elseif (ReglasPregunta::hayRepetidos($opciones)) {
+                    $validador->errors()->add('opciones', __('preguntas.validacion.opciones_repetidas'));
                 } elseif (! in_array(trim((string) $this->input('respuesta_modelo')), $opciones, true)) {
                     $validador->errors()->add('respuesta_modelo', __('preguntas.validacion.respuesta_en_opciones'));
                 }
             }
 
-            if ($tipo === 'relacion_columnas' && $this->paresDeColumnas() === null) {
-                $validador->errors()->add('opciones', __('preguntas.validacion.pares_invalidos', ['maximo' => self::MAXIMO_DE_OPCIONES]));
+            if ($tipo === 'relacion_columnas') {
+                $pares = $this->paresDeColumnas();
+
+                if ($pares === null) {
+                    $validador->errors()->add('opciones', __('preguntas.validacion.pares_invalidos', ['maximo' => self::MAXIMO_DE_OPCIONES]));
+                } elseif (ReglasPregunta::hayParesRepetidos($pares)) {
+                    $validador->errors()->add($this->boolean('editor_estructurado') ? 'pares_lista' : 'opciones', __('preguntas.validacion.pares_repetidos'));
+                }
             }
         });
     }
@@ -141,6 +185,13 @@ class PreguntaRequest extends FormRequest
                 : implode("\n", array_map(fn (array $par): string => $par['izquierda'].' = '.$par['derecha'], $pares));
         } else {
             $datos['respuesta_modelo'] = trim((string) $this->input('respuesta_modelo'));
+        }
+
+        if ($tipo === 'programacion') {
+            $datos['lenguaje'] = ReglasPregunta::lenguajeFinal(
+                (string) $this->input('lenguaje'),
+                (string) $this->input('lenguaje_otro'),
+            );
         }
 
         return $datos;

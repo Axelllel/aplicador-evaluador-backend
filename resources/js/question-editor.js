@@ -15,8 +15,9 @@ function initializeQuestionEditor(form) {
     let options = (Array.isArray(previous.opciones_lista) ? previous.opciones_lista :
         (legacyOptions.value || '').split(/\r?\n/).map(value => value.trim()).filter(Boolean)).map(createRow);
     if (options.length < 2) options = [createRow(), createRow(), createRow(), createRow()];
+    // Ninguna opción queda marcada como correcta por omisión: el docente debe elegirla.
     let correct = previous.correcta !== undefined && previous.correcta !== null && previous.correcta !== '' ? options[Number(previous.correcta)]?.id :
-        options.find(row => row.value === legacyReference.value.trim())?.id;
+        (legacyReference.value.trim() ? options.find(row => row.value === legacyReference.value.trim())?.id : undefined);
     let pairs = Array.isArray(previous.pares_lista) ? previous.pares_lista.map(row => ({ id: ++sequence, left: typeof row?.izquierda === 'string' ? row.izquierda : '', right: typeof row?.derecha === 'string' ? row.derecha : '' })) : [];
     if (!pairs.length && type.value === 'relacion_columnas') {
         pairs = legacyOptions.value.split(/\r?\n/).filter(Boolean).map(line => {
@@ -34,6 +35,10 @@ function initializeQuestionEditor(form) {
         return node;
     }
     function announce(message) { status.textContent = message; }
+    /** Texto sin distinguir mayúsculas ni espacios de más, para detectar repetidos. */
+    const normalize = value => value.trim().replace(/\s+/g, ' ').toLowerCase();
+    const hasRepeats = values => new Set(values.map(normalize)).size !== values.length;
+    const firstRepeat = values => { const seen = values.map(normalize); return seen.findIndex((value, index) => seen.indexOf(value) !== index); };
     function button(label, action, className = 'tp-editor-button') {
         const node = element('button', className, label);
         node.type = 'button';
@@ -100,7 +105,8 @@ function initializeQuestionEditor(form) {
                     Object.assign(radio, { type: 'radio', name: 'correcta', value: String(index), checked: row.id === correct, required: true });
                     radio.setAttribute('aria-label', `${text.correct}: ${text.option} ${index + 1}`);
                     radio.addEventListener('change', () => { correct = row.id; announce(''); });
-                    radioLabel.append(radio, element('span', '', text.correct));
+                    radioLabel.title = text.correct;
+                    radioLabel.append(radio, element('span', 'sr-only', text.correct));
                     wrapper.append(radioLabel, rowInput(`${text.option} ${String.fromCharCode(65 + index)}`, row.value, `opciones_lista[${index}]`, value => { row.value = value; }, `editor-option-${row.id}`).wrapper);
                 } else {
                     wrapper.append(rowInput(`${text.left} ${index + 1}`, row.left, `pares_lista[${index}][izquierda]`, value => { row.left = value; }, `editor-left-${row.id}`).wrapper,
@@ -128,7 +134,7 @@ function initializeQuestionEditor(form) {
                 announce(text.added);
             });
             add.disabled = rows.length >= 10;
-            fieldset.append(add);
+            fieldset.append(add, element('p', 'tp-editor-hint', multiple ? text.max_options : text.max_pairs));
         } else {
             const label = element('label', 'tp-detail-label', text.reference);
             label.htmlFor = 'editor-reference';
@@ -136,6 +142,15 @@ function initializeQuestionEditor(form) {
             Object.assign(area, { id: label.htmlFor, name: 'respuesta_modelo', rows: 6, value: reference, required: true, maxLength: 20000 });
             area.addEventListener('input', () => { reference = area.value; });
             list.append(label, area);
+            const referenceError = config.errors?.respuesta_modelo?.[0];
+            if (referenceError) {
+                const message = element('p', 'tp-field-error', referenceError);
+                message.id = 'editor-reference-error';
+                area.setAttribute('aria-invalid', 'true');
+                area.setAttribute('aria-describedby', message.id);
+                area.addEventListener('input', () => { message.remove(); area.removeAttribute('aria-invalid'); }, { once: true });
+                list.append(message);
+            }
         }
         controls.append(fieldset);
         preview();
@@ -147,17 +162,41 @@ function initializeQuestionEditor(form) {
     fallback.hidden = true;
     fallback.querySelectorAll('input,textarea,select').forEach(input => { input.disabled = true; });
     controls.hidden = false;
-    type.addEventListener('change', () => { render(); announce(''); });
+    const languageField = form.querySelector('[data-language-field]');
+    const languageSelect = form.elements.lenguaje;
+    const languageOther = form.querySelector('[data-language-other]');
+    const languageOtherInput = form.elements.lenguaje_otro;
+    /** El lenguaje solo se pide en preguntas de programación; «Otro» muestra un campo de texto. */
+    function syncLanguage() {
+        if (!languageField || !languageSelect) return;
+        const programming = type.value === 'programacion';
+        const other = programming && languageSelect.value === 'otro';
+        languageField.hidden = !programming;
+        languageSelect.disabled = !programming;
+        languageSelect.required = programming;
+        languageOther.hidden = !other;
+        languageOtherInput.disabled = !other;
+        languageOtherInput.required = other;
+    }
+    languageSelect?.addEventListener('change', () => { syncLanguage(); if (languageSelect.value === 'otro') languageOtherInput.focus(); });
+    type.addEventListener('change', () => { render(); syncLanguage(); announce(''); });
     prompt.addEventListener('input', preview);
     const submit = form.querySelector('[type=submit]');
     let saving = false;
     form.addEventListener('submit', event => {
         if (type.value === 'opcion_multiple') {
             const values = options.map(option => option.value.trim());
-            if (new Set(values).size !== values.length) {
+            if (hasRepeats(values)) {
                 event.preventDefault(); announce(text.duplicate);
-                const firstDuplicate = values.findIndex((value, index) => values.indexOf(value) !== index);
-                controls.querySelectorAll('input[type="text"]')[firstDuplicate]?.focus();
+                controls.querySelectorAll('input[type="text"]')[firstRepeat(values)]?.focus();
+                return;
+            }
+        }
+        if (type.value === 'relacion_columnas') {
+            const concepts = pairs.map(pair => pair.left);
+            if (hasRepeats(concepts)) {
+                event.preventDefault(); announce(text.pairs_duplicate);
+                controls.querySelectorAll('.tp-pair-row')[firstRepeat(concepts)]?.querySelector('input[type="text"]')?.focus();
                 return;
             }
         }
@@ -170,6 +209,7 @@ function initializeQuestionEditor(form) {
     });
     window.addEventListener('pageshow', () => { saving = false; submit.disabled = false; form.removeAttribute('aria-busy'); });
     render();
+    syncLanguage();
     form.querySelector('[data-error-summary]')?.focus();
 }
 

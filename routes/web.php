@@ -58,6 +58,12 @@ Route::middleware('panel.sesion')->group(function (): void {
     Route::post('/banco-de-preguntas/borrador-ia/{indice}', [AsistenciaIaController::class, 'useDraft'])->whereNumber('indice')->name('panel.ia.borrador');
     Route::post('/resultados/{examen}/intentos/{intento}/respuestas/{respuesta}/ia', [AsistenciaIaController::class, 'suggest'])->whereNumber(['examen', 'intento', 'respuesta'])->name('panel.ia.sugerir');
     Route::post('/banco-de-preguntas', [PreguntaController::class, 'store'])->name('panel.banco-de-preguntas.store');
+    Route::get('/banco-de-preguntas/{pregunta}/editar', [PreguntaController::class, 'editar'])
+        ->whereNumber('pregunta')->name('panel.banco-de-preguntas.editar');
+    Route::put('/banco-de-preguntas/{pregunta}', [PreguntaController::class, 'actualizar'])
+        ->whereNumber('pregunta')->name('panel.banco-de-preguntas.actualizar');
+    Route::delete('/banco-de-preguntas/{pregunta}', [PreguntaController::class, 'eliminar'])
+        ->whereNumber('pregunta')->name('panel.banco-de-preguntas.eliminar');
 
     Route::get('/examenes', [ExamenController::class, 'index'])->name('panel.examenes');
     Route::post('/examenes', [ExamenController::class, 'store'])->name('panel.examenes.store');

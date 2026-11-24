@@ -18,6 +18,7 @@ return [
         'Grupo no disponible.' => 'El grupo elegido no está disponible. Elige otro grupo.',
         'Examen no disponible.' => 'No encontramos ese examen.',
         'Apartado no disponible.' => 'No encontramos ese apartado.',
+        'Esta pregunta ya forma parte de un examen y no se puede modificar ni eliminar.' => 'Esta pregunta ya forma parte de un examen y no se puede modificar ni eliminar.',
         'Pregunta no disponible.' => 'No encontramos esa pregunta en tu banco.',
         'Pregunta no disponible en este examen.' => 'No encontramos esa pregunta en este examen.',
         'Se necesitan al menos dos opciones.' => 'Una pregunta de opción múltiple necesita al menos dos opciones.',

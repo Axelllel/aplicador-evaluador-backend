@@ -46,6 +46,8 @@ Route::middleware(VerifySupabaseToken::class)->group(function () {
     Route::delete('/v1/teacher/exams/{examenId}', [TeacherExamController::class, 'destroy'])->whereNumber('examenId');
     Route::get('/v1/teacher/questions', [TeacherQuestionController::class, 'index']);
     Route::post('/v1/teacher/questions', [TeacherQuestionController::class, 'store']);
+    Route::put('/v1/teacher/questions/{preguntaId}', [TeacherQuestionController::class, 'update'])->whereNumber('preguntaId');
+    Route::delete('/v1/teacher/questions/{preguntaId}', [TeacherQuestionController::class, 'destroy'])->whereNumber('preguntaId');
     Route::post('/v1/teacher/exams/{examenId}/publish', [TeacherExamPublishController::class, 'publish'])->whereNumber('examenId');
     Route::get('/v1/teacher/exams/{examenId}/sections', [TeacherExamSectionController::class, 'index'])->whereNumber('examenId');
     Route::post('/v1/teacher/exams/{examenId}/questions', [TeacherExamSectionController::class, 'attachQuestionAutomatically'])->whereNumber('examenId');

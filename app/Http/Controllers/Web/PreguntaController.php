@@ -21,6 +21,7 @@ use App\Services\ConsultasPanelService;
 use App\Services\PaginadorPanel;
 use App\Services\PanelApiService;
 use App\Services\SesionPanelService;
+use App\Support\ReglasPregunta;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -58,6 +59,7 @@ class PreguntaController extends Controller
             'preguntas' => $this->paginador->paginar($preguntas, $solicitud->integer('page', 1)),
             'tipoFiltrado' => $tipo,
             'busqueda' => $busqueda,
+            'valores' => $solicitud->session()->getOldInput(),
             'iaOperacion' => (string) Str::uuid(),
             'iaBorradores' => $this->borradoresIa($solicitud),
         ]);
@@ -87,5 +89,87 @@ class PreguntaController extends Controller
             'preguntas',
             __('mensajes.error.pregunta_no_guardada'),
         );
+    }
+
+    /**
+     * Muestra el formulario con los datos de una pregunta propia que todavía no está en ningún examen.
+     */
+    public function editar(Request $solicitud, int $pregunta): View|RedirectResponse
+    {
+        $fila = $this->consultas->preguntas()->firstWhere('id', $pregunta);
+
+        if ($fila === null) {
+            abort(404);
+        }
+
+        if (($fila['en_uso'] ?? false) === true) {
+            return redirect()->route('panel.banco-de-preguntas')->with('aviso', __('preguntas.validacion.en_uso'));
+        }
+
+        return view('preguntas.editar', [
+            'pregunta' => $fila,
+            // Tras un error de validación se conserva lo que el docente había escrito.
+            'valores' => $solicitud->session()->hasOldInput() ? $solicitud->session()->getOldInput() : $this->valoresParaEditar($fila),
+        ]);
+    }
+
+    /**
+     * Guarda los cambios de la pregunta.
+     */
+    public function actualizar(PreguntaRequest $solicitud, int $pregunta): RedirectResponse
+    {
+        $respuesta = $this->api->solicitar('PUT', '/teacher/questions/'.$pregunta, $solicitud->datosParaLaApi());
+
+        return $this->redirigirSegunRespuesta(
+            $respuesta,
+            redirect()->route('panel.banco-de-preguntas'),
+            __('mensajes.exito.pregunta_actualizada'),
+            'preguntas',
+            __('mensajes.error.pregunta_no_actualizada'),
+        );
+    }
+
+    /**
+     * Elimina la pregunta si no forma parte de ningún examen.
+     */
+    public function eliminar(int $pregunta): RedirectResponse
+    {
+        return $this->redirigirSegunRespuesta(
+            $this->api->solicitar('DELETE', '/teacher/questions/'.$pregunta),
+            redirect()->route('panel.banco-de-preguntas'),
+            __('mensajes.exito.pregunta_eliminada'),
+            null,
+            __('mensajes.error.pregunta_no_eliminada'),
+        );
+    }
+
+    /**
+     * Convierte una pregunta guardada en los valores del formulario del editor.
+     *
+     * @param  array<string, mixed>  $fila
+     * @return array<string, mixed>
+     */
+    private function valoresParaEditar(array $fila): array
+    {
+        $tipo = (string) $fila['tipo'];
+        $opciones = is_array($fila['opciones'] ?? null) ? $fila['opciones'] : [];
+        $valores = ['tipo' => $tipo, 'enunciado' => (string) $fila['enunciado'], 'respuesta_modelo' => (string) ($fila['respuesta_modelo'] ?? '')];
+
+        if ($tipo === 'opcion_multiple') {
+            $valores['opciones_lista'] = array_values(array_map('strval', $opciones));
+            $posicion = array_search($valores['respuesta_modelo'], $valores['opciones_lista'], true);
+            $valores['correcta'] = $posicion === false ? null : $posicion;
+        } elseif ($tipo === 'relacion_columnas') {
+            $valores['pares_lista'] = array_values(array_map(
+                fn (mixed $par): array => ['izquierda' => (string) ($par['izquierda'] ?? ''), 'derecha' => (string) ($par['derecha'] ?? '')],
+                $opciones,
+            ));
+        } elseif ($tipo === 'programacion') {
+            $lenguaje = ReglasPregunta::eleccionDesdeGuardado($fila['lenguaje'] ?? null);
+            $valores['lenguaje'] = $lenguaje['eleccion'];
+            $valores['lenguaje_otro'] = $lenguaje['otro'];
+        }
+
+        return $valores;
     }
 }
