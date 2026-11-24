@@ -20,6 +20,7 @@ use Illuminate\Auth\GenericUser;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Mockery;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\ConPanelFalso;
 use Tests\TestCase;
 
@@ -48,7 +49,7 @@ class PaymentSimulationTest extends TestCase
         $this->withSession(['_old_input' => ['numero_tarjeta' => '4242424242424242', 'cvv' => '123']])
             ->get('/suscripcion/planes/pago?grupos=3&alumnos=25&preguntas=150')
             ->assertOk()->assertSee('Activar plan')->assertDontSee('Simular y activar mi plan')->assertSee('Transferencia SPEI')
-            ->assertSee('$181.00')->assertDontSee('value="4242424242424242"', false)->assertDontSee('value="123"', false);
+            ->assertDontSee('4242 4242 4242 4242')->assertSee('No se realizará ningún cargo.')->assertSee('$181.00')->assertDontSee('value="4242424242424242"', false)->assertDontSee('value="123"', false);
     }
 
     public function test_api_requires_authentication(): void
@@ -60,7 +61,7 @@ class PaymentSimulationTest extends TestCase
     {
         $this->apiIdentity();
         $this->mock(SimulacionPagoService::class)->shouldNotReceive('confirmar');
-        $input = array_replace($this->card(), ['grupos' => 11, 'numero_tarjeta' => '4000000000000002', 'cvv' => '1', 'correo_facturacion' => 'bad']);
+        $input = array_replace($this->card(), ['grupos' => 11, 'numero_tarjeta' => '4111111111111112', 'cvv' => '1', 'correo_facturacion' => 'bad']);
         $this->postJson(self::API, $input)->assertUnprocessable()->assertJsonValidationErrors(['grupos', 'numero_tarjeta', 'cvv', 'correo_facturacion']);
         $this->postJson(self::API, array_replace($this->card(), ['vencimiento' => '01/20']))->assertUnprocessable()->assertJsonValidationErrors('vencimiento');
     }
@@ -155,6 +156,61 @@ class PaymentSimulationTest extends TestCase
         ]);
         $plan = (new PlanDocenteService)->planVigente($planes, $pagos);
         $this->assertSame(2, $plan['plan']['id']);
+    }
+
+    #[DataProvider('acceptedCards')]
+    public function test_simulation_accepts_different_card_formats_without_a_fixed_number(string $number, string $cvv): void
+    {
+        $this->apiIdentity();
+        $this->mock(SimulacionPagoService::class)->shouldReceive('confirmar')->once()
+            ->with(Mockery::on(fn (array $data): bool => $data['numero_tarjeta'] === str_replace([' ', '-'], '', $number)))
+            ->andReturn($this->receipt());
+        $this->postJson(self::API, array_replace($this->card(), ['numero_tarjeta' => $number, 'cvv' => $cvv]))
+            ->assertCreated()->assertJsonPath('data.simulado', true)->assertJsonMissingPath('data.cvv');
+    }
+
+    public static function acceptedCards(): array
+    {
+        return [
+            'visa 13' => ['4222222222222', '321'],
+            'visa 16 with separators' => ['4111-1111 1111-1111', '987'],
+            'mastercard' => ['2223003122003222', '456'],
+            'diners 14' => ['30569309025904', '654'],
+            'amex 15' => ['378282246310005', '9876'],
+            'visa 19' => ['4000000000000000006', '321'],
+        ];
+    }
+
+    #[DataProvider('rejectedCardFields')]
+    public function test_incorrect_card_fields_cannot_activate_a_plan(array $invalid, string $field): void
+    {
+        $this->apiIdentity();
+        $this->mock(SimulacionPagoService::class)->shouldNotReceive('confirmar');
+        $this->postJson(self::API, array_replace($this->card(), $invalid))->assertUnprocessable()->assertJsonValidationErrors($field);
+    }
+
+    public static function rejectedCardFields(): array
+    {
+        return [
+            'wrong checksum' => [['numero_tarjeta' => '4111111111111112'], 'numero_tarjeta'],
+            'all zero' => [['numero_tarjeta' => '0000000000000000'], 'numero_tarjeta'],
+            'repeated digits' => [['numero_tarjeta' => '8888888888888888'], 'numero_tarjeta'],
+            'too short' => [['numero_tarjeta' => '411111111111'], 'numero_tarjeta'],
+            'too long' => [['numero_tarjeta' => '41111111111111111111'], 'numero_tarjeta'],
+            'letters' => [['numero_tarjeta' => '411111111111111A'], 'numero_tarjeta'],
+            'amex requires four' => [['numero_tarjeta' => '378282246310005', 'cvv' => '123'], 'cvv'],
+            'other cards require three' => [['numero_tarjeta' => '4111111111111111', 'cvv' => '1234'], 'cvv'],
+            'cvv letters' => [['cvv' => '12A'], 'cvv'],
+            'invalid month' => [['vencimiento' => '13/39'], 'vencimiento'],
+        ];
+    }
+
+    public function test_card_is_valid_through_the_current_month_but_not_the_previous_one(): void
+    {
+        $this->apiIdentity();
+        $this->mock(SimulacionPagoService::class)->shouldReceive('confirmar')->once()->andReturn($this->receipt());
+        $this->postJson(self::API, array_replace($this->card(), ['vencimiento' => now()->format('m/y')]))->assertCreated();
+        $this->postJson(self::API, array_replace($this->card(), ['vencimiento' => now()->subMonthNoOverflow()->format('m/y')]))->assertUnprocessable()->assertJsonValidationErrors('vencimiento');
     }
 
     private function apiIdentity(): void
