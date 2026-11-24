@@ -1,5 +1,7 @@
 <?php
 
+use App\Services\PaginadorPanel;
+use App\Services\ResultadosPanelService;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -20,4 +22,30 @@ foreach (['student.exam' => 'qa-exam', 'auth.login' => 'qa-login', 'auth.perfile
 file_put_contents('public/qa-payment.html', view('suscripcion.pago', [
     'grupos' => 3, 'alumnos' => 25, 'preguntas' => 150, 'precioCentavos' => 18100,
     'operacionId' => '11111111-1111-4111-8111-111111111111', 'errors' => $errors,
+])->render());
+
+$reviewAnswers = collect([
+    ['id' => 201, 'tipo' => 'relacion_columnas', 'enunciado' => 'Relaciona los conceptos.', 'respuesta_texto' => '["Valor fijo","Valor fijo"]',
+        'respuesta_modelo_snapshot' => "Variable = Valor modificable\nConstante = Valor fijo", 'opciones' => [['izquierda' => 'Variable', 'derecha' => 'Valor modificable'], ['izquierda' => 'Constante', 'derecha' => 'Valor fijo']],
+        'calificacion_final' => 50, 'revisada_manual' => false, 'ponderacion' => 50],
+    ['id' => 202, 'tipo' => 'abierta', 'enunciado' => 'Define variable.', 'respuesta_texto' => 'Un valor que cambia.', 'respuesta_modelo_snapshot' => 'Un valor modificable.',
+        'calificacion_final' => null, 'revisada_manual' => false, 'ponderacion' => 50, 'puntaje_ia' => 85,
+        'retroalimentacion_ia' => ['proveedor' => 'groq', 'modelo' => 'modelo de prueba', 'justificacion' => 'Reconoce el concepto.', 'requiere_revision' => false, 'observaciones' => []]],
+]);
+$detail = app(ResultadosPanelService::class)->detalle(['escala' => '0-10'], [
+    'nombre' => 'Alumno de prueba', 'estado' => 'finalizado', 'completo' => false, 'calificacion' => null, 'calificadas' => 1, 'total_preguntas' => 2,
+], [], $reviewAnswers) + ['examen' => 'Conceptos básicos'];
+file_put_contents('public/qa-revision.html', view('resultados.intento', [
+    'detalle' => $detail, 'examenId' => 1, 'intentoId' => 1,
+    'incidencias' => app(PaginadorPanel::class)->paginar(collect(), 1),
+])->render());
+
+$pending = $reviewAnswers->map(fn (array $answer): array => $answer['id'] === 202
+    ? array_replace($answer, ['retroalimentacion_ia' => null, 'puntaje_ia' => null, 'estado_ia' => 'pendiente', 'estado_automatico' => 'pendiente']) : $answer);
+$detail = app(ResultadosPanelService::class)->detalle(['escala' => '0-10'], [
+    'nombre' => 'Alumno de prueba', 'estado' => 'finalizado', 'completo' => false, 'calificacion' => null, 'calificadas' => 1, 'total_preguntas' => 2,
+], [], $pending) + ['examen' => 'Conceptos básicos'];
+file_put_contents('public/qa-pending.html', view('resultados.intento', [
+    'detalle' => $detail, 'examenId' => 1, 'intentoId' => 1,
+    'incidencias' => app(PaginadorPanel::class)->paginar(collect(), 1),
 ])->render());

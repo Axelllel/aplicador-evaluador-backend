@@ -39,12 +39,16 @@ class TeacherResultsController extends Controller
             return response()->json(['message' => 'Intento no disponible.'], 404);
         }
         $rows = DB::table('respuesta_alumno as r')->join('examen_pregunta as ep', 'ep.id', '=', 'r.examen_pregunta_id')
-            ->join('pregunta as p', 'p.id', '=', 'ep.pregunta_id')->leftJoin('trabajo_calificacion as t', 't.respuesta_id', '=', 'r.id')->where('r.intento_id', $attemptId)
+            ->join('pregunta as p', 'p.id', '=', 'ep.pregunta_id')->leftJoin('trabajo_calificacion as t', 't.respuesta_id', '=', 'r.id')
+            ->leftJoin('trabajo_calificacion as objetiva', fn ($join) => $join->on('objetiva.intento_id', '=', 'r.intento_id')->where('objetiva.tipo', 'objetivas'))
+            ->where('r.intento_id', $attemptId)
+            ->selectRaw("CASE WHEN p.tipo IN ('opcion_multiple','relacion_columnas') THEN objetiva.estado ELSE t.estado END AS estado_automatico")
             ->selectRaw('md5(jsonb_build_array(p.tipo,p.enunciado,ep.respuesta_modelo_snapshot,r.respuesta_texto)::text) AS huella_actual')
             ->orderBy('ep.id')->addSelect(['r.id', 'r.examen_pregunta_id', 'p.tipo', 'p.enunciado',
                 'r.respuesta_texto', 'r.calificacion_final', 'r.revisada_manual', 'ep.ponderacion',
-                'ep.respuesta_modelo_snapshot', 't.estado as estado_ia', 'r.puntaje_ia', 'r.retroalimentacion_ia', 'r.tokens_consumidos'])->get();
+                'ep.respuesta_modelo_snapshot', 'p.opciones', 't.estado as estado_ia', 't.ultimo_error as error_ia', 'r.puntaje_ia', 'r.retroalimentacion_ia', 'r.tokens_consumidos'])->get();
         foreach ($rows as $row) {
+            $row->opciones = is_string($row->opciones) ? json_decode($row->opciones, true) : $row->opciones;
             $row->retroalimentacion_ia = is_string($row->retroalimentacion_ia) ? json_decode($row->retroalimentacion_ia, true) : null;
             if (($row->retroalimentacion_ia['huella_contenido'] ?? null) !== $row->huella_actual) {
                 $row->retroalimentacion_ia = null;
@@ -53,7 +57,27 @@ class TeacherResultsController extends Controller
             unset($row->huella_actual);
         }
 
+        $attempt->ia_automatica_disponible = (bool) config('ai.enabled') && (bool) config('ai.automatic_grading') && filled(config('ai.key'));
+
         return response()->json(['data' => ['intento' => $attempt, 'respuestas' => $rows]]);
+    }
+
+    public function prepareGrading(Request $request, int $attemptId): JsonResponse
+    {
+        $attempt = $this->ownAttempt($request, $attemptId);
+        if (! $attempt || $attempt->estado !== 'finalizado') {
+            return response()->json(['message' => 'Intento entregado no disponible.'], 404);
+        }
+        try {
+            $row = DB::selectOne('SELECT public.fn_preparar_calificacion_intento(?::bigint) AS tareas', [$attemptId]);
+        } catch (QueryException $exception) {
+            if (($exception->errorInfo[0] ?? '') === '42883') {
+                return response()->json(['message' => 'Falta aplicar la migración de calificación de relación de columnas.', 'code' => 'MIGRATION_REQUIRED'], 503);
+            }
+            throw $exception;
+        }
+
+        return response()->json(['data' => ['tareas_preparadas' => (int) $row->tareas]], 202);
     }
 
     private function ownAttempt(Request $request, int $attemptId): ?object

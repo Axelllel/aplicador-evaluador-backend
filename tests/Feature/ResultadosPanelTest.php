@@ -259,7 +259,7 @@ class ResultadosPanelTest extends TestCase
             ->assertSee('Calificación actual: 70 de 100')
             ->assertSee('Ponderación: 50 %')
             ->assertSee('Aporta 3.5 de 10 a la nota final')
-            ->assertSee('Autocalificar opción múltiple')
+            ->assertSee('Calificar preguntas objetivas')
             ->assertSee('Cambio de pestaña')
             ->assertSee('Salida de pantalla')
             ->assertSee('Media')
@@ -291,7 +291,7 @@ class ResultadosPanelTest extends TestCase
             ]],
         ]]);
 
-        $respuesta = $this->get($this->urlDelIntento())->assertOk()->assertSee('No hay respuestas de opción múltiple sin calificar.')->assertSee('Calificada automáticamente');
+        $respuesta = $this->get($this->urlDelIntento())->assertOk()->assertSee('No hay preguntas objetivas pendientes de calificar.')->assertSee('Calificada automáticamente');
 
         $this->assertCount(1, $this->consultar($respuesta->getContent(), '//form[contains(@action, "autocalificar")]//button[@disabled]'));
     }
@@ -310,9 +310,9 @@ class ResultadosPanelTest extends TestCase
             ->assertOk()
             ->assertSee('Podrás calificar este intento cuando el alumno lo entregue.')
             ->assertSee('El alumno no registró respuestas en este intento.')
-            ->assertSee('El alumno no respondió 2 preguntas.')
+            ->assertSee('El alumno no respondió 2 preguntas;')
             ->assertSee('Este intento no tiene incidencias.')
-            ->assertDontSee('Autocalificar opción múltiple')
+            ->assertDontSee('Calificar preguntas objetivas')
             ->assertDontSee('name="_method"', false);
     }
 

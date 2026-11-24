@@ -58,7 +58,7 @@ test('el administrador tiene formulario independiente y no aparece en los acceso
 test('pago simulado sin tarjeta obligatoria y con código de cuatro dígitos',async({page},testInfo)=>{
  await page.goto('/qa-payment.html');
  await expect(page.getByText('4242 4242 4242 4242',{exact:false})).toHaveCount(0);
- await expect(page.getByText('No se realizará ningún cargo.',{exact:false})).toBeVisible();
+ await expect(page.locator('.tp-payment-help')).toHaveCount(0);
  for(const width of [1366,375]){
   await page.setViewportSize({width,height:900});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
@@ -79,4 +79,31 @@ test('pago simulado sin tarjeta obligatoria y con código de cuatro dígitos',as
  });
  await page.getByRole('button',{name:'Activar plan',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Plan activado exitosamente'})).toBeVisible();
+});
+
+test('revisión de columnas legible y nota de IA pendiente de aprobación',async({page},testInfo)=>{
+ await page.goto('/qa-revision.html');
+ await expect(page.getByRole('table',{name:'Revisión de relación de columnas'})).toBeVisible();
+ await expect(page.getByRole('rowheader',{name:'Variable',exact:true})).toBeVisible();
+ await expect(page.getByText('Evaluación lista · pendiente de revisión docente')).toBeVisible();
+ await expect(page.getByText('6.75 de 10',{exact:false})).toBeVisible();
+ await expect(page.getByText('["Valor fijo","Valor fijo"]',{exact:true})).toHaveCount(0);
+ for(const width of [1366,375]){
+  await page.setViewportSize({width,height:900});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
+  await page.screenshot({path:testInfo.outputPath(`revision-${width}.png`),fullPage:true});
+ }
+});
+
+test('la evaluación pendiente se actualiza sin borrar una revisión en edición',async({page})=>{
+ await page.clock.install();
+ await page.goto('/qa-pending.html');
+ await expect(page.locator('[data-grading-pending]')).toBeVisible();
+ const reload=page.waitForRequest(request=>request.url().endsWith('/qa-pending.html'));
+ await page.clock.fastForward(21000);
+ await reload;
+ const grade=page.locator('#calificacion-202');
+ await grade.fill('92');
+ await page.clock.fastForward(21000);
+ await expect(grade).toHaveValue('92');
 });

@@ -3,6 +3,19 @@
 declare(strict_types=1);
 
 return [
+    'preparar' => 'Preparar evaluación automática',
+    'actualizacion' => 'La evaluación automática está en proceso. Esta página se actualizará mientras no estés editando una calificación.',
+    'preparar_ayuda' => 'Recupera evaluaciones pendientes o entregas anteriores. La opción múltiple y las columnas se califican automáticamente; la IA prepara las abiertas y de programación para tu revisión.',
+    'encolada' => 'Evaluación preparada. El proceso automático la atenderá; actualiza la página para consultar el resultado. No se modifican calificaciones ya revisadas.',
+    'provisional' => 'Evaluación lista · pendiente de revisión docente',
+    'no_configurada' => 'La evaluación automática con IA no está habilitada o falta la clave del servidor. Las preguntas objetivas pueden calificarse; las abiertas y de programación siguen pendientes.',
+    'errores' => [
+        'limite' => 'Se alcanzó una cuota de IA. La tarea quedó programada para reintento.',
+        'formato_ia' => 'El proveedor devolvió una evaluación incompleta o con formato inválido.',
+        'proveedor_no_disponible' => 'El proveedor de IA no pudo atender la consulta. Se intentará nuevamente.',
+        'procesamiento_no_completado' => 'El procesamiento encontró un error. La tarea se conserva para reintento.',
+        'reserva_agotada' => 'Se agotaron los reintentos automáticos. Puedes volver a preparar la evaluación.',
+    ],
     'proceso' => ['pendiente' => 'La propuesta automática está pendiente. Puedes continuar con la revisión manual.', 'procesando' => 'La propuesta automática se está preparando.', 'fallido' => 'No se completó la propuesta automática. Puedes solicitarla nuevamente o calificar manualmente.'],
     'titulo' => 'Generar preguntas con IA',
     'intro' => 'Describe el tema y revisa las propuestas antes de agregarlas a tu banco.',
@@ -29,5 +42,5 @@ return [
     'aviso_docente' => 'Esta es una sugerencia. Revisa la explicación y el puntaje; Guardar registra tu calificación final.',
     'modelo' => 'Generado con :modelo · Groq',
     'motivo' => 'Revisión docente de propuesta IA: :explicacion',
-    'calificacion_ayuda' => 'Consulta opcional para respuestas abiertas y programación. La opción múltiple se resuelve sin IA.',
+    'calificacion_ayuda' => 'La IA prepara las respuestas abiertas y de programación al entregar. Este botón permite solicitar una propuesta si sigue pendiente. La opción múltiple y las columnas se resuelven sin IA.',
 ];

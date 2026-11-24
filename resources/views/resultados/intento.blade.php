@@ -24,7 +24,7 @@
         <x-boton variante="secundario" icono="clipboard-document-check" :href="route('panel.resultados', ['examen' => $examenId])">{{ __('resultados.intento.volver') }}</x-boton>
     </div>
 
-    <section aria-labelledby="titulo-resumen-del-intento" class="space-y-4">
+    <section aria-labelledby="titulo-resumen-del-intento" class="space-y-4" @if ($detalle['evaluacion_en_proceso'] ?? false) data-grading-pending @endif>
         <h2 id="titulo-resumen-del-intento" class="text-xl font-semibold text-primario">{{ __('resultados.intento.resumen') }}</h2>
 
         <x-tarjeta class="space-y-4">
@@ -34,7 +34,12 @@
                     @if ($detalle['estado_de_nota'] === 'calificada')
                         <p class="text-2xl font-semibold text-primario">{{ __('resultados.nota.valor', ['nota' => $detalle['nota'], 'maximo' => $maximo]) }}</p>
                     @elseif ($detalle['estado_de_nota'] === 'pendiente')
-                        <x-insignia tono="aviso">{{ __('resultados.nota.pendiente') }}</x-insignia>
+                        @if (($detalle['nota_provisional'] ?? null) !== null)
+                            <p class="text-2xl font-semibold text-primario">{{ __('resultados.nota.valor', ['nota' => $detalle['nota_provisional'], 'maximo' => $maximo]) }}</p>
+                            <x-insignia tono="aviso">{{ __('ia.provisional') }}</x-insignia>
+                        @else
+                            <x-insignia tono="aviso">{{ __('resultados.nota.pendiente') }}</x-insignia>
+                        @endif
                     @else
                         <p class="text-base text-texto-suave">{{ __('resultados.nota.sin_entregar') }}</p>
                     @endif
@@ -63,6 +68,19 @@
             @endif
 
             @if ($detalle['puede_calificar'])
+                @if ($detalle['evaluacion_en_proceso'] ?? false)
+                    <p role="status" class="text-sm text-texto-suave">{{ __('ia.actualizacion') }}</p>
+                @endif
+                @if (($detalle['ia_automatica_disponible'] ?? null) === false && ($detalle['requiere_ia'] ?? false))
+                    <p role="status" class="text-sm text-texto-suave">{{ __('ia.no_configurada') }}</p>
+                @endif
+                @if ($detalle['puede_preparar_evaluacion'] ?? false)
+                    <form method="POST" action="{{ route('panel.resultados.evaluar', ['examen' => $examenId, 'intento' => $intentoId]) }}" class="space-y-2">
+                        @csrf
+                        <x-boton type="submit" icono="arrow-path">{{ __('ia.preparar') }}</x-boton>
+                        <p class="text-sm text-texto-suave">{{ __('ia.preparar_ayuda') }}</p>
+                    </form>
+                @endif
                 <form method="POST" action="{{ route('panel.resultados.autocalificar', ['examen' => $examenId, 'intento' => $intentoId]) }}" class="space-y-2">
                     @csrf
                     <x-boton type="submit" variante="secundario" :disabled="! $detalle['puede_autocalificar']">{{ __('resultados.intento.autocalificar') }}</x-boton>
@@ -97,6 +115,20 @@
 
                 <p class="font-semibold text-primario">{{ $respuesta['enunciado'] }}</p>
 
+                @if (($respuesta['columnas'] ?? null) !== null)
+                    <div class="overflow-x-auto rounded-lg border border-borde">
+                        <table class="w-full text-left text-sm" aria-label="{{ __('resultados.intento.revision_columnas') }}">
+                            <thead><tr class="border-b border-borde"><th scope="col" class="p-3">{{ __('resultados.intento.elemento') }}</th><th scope="col" class="p-3">{{ __('resultados.intento.respuesta_alumno') }}</th><th scope="col" class="p-3">{{ __('resultados.intento.relacion_correcta') }}</th></tr></thead>
+                            <tbody>@foreach ($respuesta['columnas']['filas'] as $par)
+                                <tr class="border-b border-borde last:border-0"><th scope="row" class="p-3 font-semibold">{{ $par['izquierda'] }}</th><td class="p-3">{{ $par['respuesta'] ?? __('resultados.intento.sin_respuesta') }}</td><td class="p-3">{{ $par['modelo'] }}</td></tr>
+                            @endforeach</tbody>
+                        </table>
+                    </div>
+                    @if (! $respuesta['columnas']['formato_reconocido'])
+                        <p class="text-sm text-texto-suave">{{ __('resultados.intento.formato_historico') }}</p>
+                        <details><summary>{{ __('resultados.intento.ver_original') }}</summary><p class="whitespace-pre-wrap break-all">{{ $respuesta['respuesta'] }}</p></details>
+                    @endif
+                @else
                 <div class="space-y-1">
                     <p class="text-sm text-texto-suave">{{ __('resultados.intento.respuesta_alumno') }}</p>
                     <p class="whitespace-pre-line rounded-lg border border-borde bg-white p-3">{{ $respuesta['respuesta'] ?? __('resultados.intento.sin_respuesta') }}</p>
@@ -107,6 +139,7 @@
                         <p class="text-sm text-texto-suave">{{ __('resultados.intento.respuesta_modelo') }}</p>
                         <p class="whitespace-pre-line rounded-lg border border-borde bg-white p-3">{{ $respuesta['modelo'] }}</p>
                     </div>
+                @endif
                 @endif
 
                 <ul class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-primario">
@@ -128,6 +161,7 @@
                 @endif
                 @if (in_array($respuesta['estado_ia'] ?? '', ['pendiente', 'procesando', 'fallido'], true) && !isset($respuesta['ia']) && $respuesta['calificacion'] === null)
                     <x-alerta tipo="info" :autoocultar="false">{{ __('ia.proceso.'.($respuesta['estado_ia'])) }}</x-alerta>
+                    @if ($respuesta['error_ia'] ?? null)<p class="text-sm text-texto-suave">{{ __('ia.errores.'.$respuesta['error_ia']) }}</p>@endif
                 @endif
                 @if (isset($respuesta['ia']))
                     <aside class="tp-ai-proposal" aria-labelledby="ia-titulo-{{ $respuesta['id'] }}">

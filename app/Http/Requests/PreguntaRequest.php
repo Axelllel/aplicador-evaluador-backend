@@ -59,8 +59,8 @@ class PreguntaRequest extends FormRequest
             'opciones_lista.*' => ['required', 'string', 'max:2000', 'not_regex:/[\r\n]/'],
             'correcta' => [Rule::requiredIf($estructurado && $tipo === 'opcion_multiple'), 'nullable', 'integer', 'min:0', 'max:9'],
             'pares_lista' => [Rule::requiredIf($estructurado && $tipo === 'relacion_columnas'), 'nullable', 'array', 'list', 'min:2', 'max:10'],
-            'pares_lista.*.izquierda' => ['required', 'string', 'max:2000'],
-            'pares_lista.*.derecha' => ['required', 'string', 'max:2000'],
+            'pares_lista.*.izquierda' => ['required', 'string', 'max:2000', 'not_regex:/[\r\n]/'],
+            'pares_lista.*.derecha' => ['required', 'string', 'max:2000', 'not_regex:/[\r\n]/'],
             'enunciado' => ['required', 'string', 'min:3', 'max:10000'],
             'opciones' => [
                 Rule::requiredIf(! $estructurado && in_array($tipo, ['opcion_multiple', 'relacion_columnas'], true)),
@@ -109,8 +109,11 @@ class PreguntaRequest extends FormRequest
                 }
             }
 
-            if ($tipo === 'relacion_columnas' && $this->paresDeColumnas() === null) {
-                $validador->errors()->add('opciones', __('preguntas.validacion.pares_invalidos', ['maximo' => self::MAXIMO_DE_OPCIONES]));
+            if ($tipo === 'relacion_columnas') {
+                $pares = $this->paresDeColumnas();
+                if ($pares === null || count(array_unique(array_column($pares, 'izquierda'))) !== count($pares)) {
+                    $validador->errors()->add('opciones', __('preguntas.validacion.pares_invalidos', ['maximo' => self::MAXIMO_DE_OPCIONES]));
+                }
             }
         });
     }
