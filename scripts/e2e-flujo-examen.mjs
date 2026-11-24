@@ -100,6 +100,8 @@ for (const p of Array.isArray(lista) ? lista : []) {
   // E2E_SIN_RESPONDER=1: el alumno deja sin contestar la pregunta abierta.
   if (process.env.E2E_SIN_RESPONDER === '1' && p.tipo !== 'opcion_multiple') continue;
   const texto = p.tipo === 'opcion_multiple' ? 'París' : 'Las plantas convierten la luz en energía química.';
+  // El control de tiempo exige abrir la pregunta antes de responderla.
+  [r, j] = await web('POST', '/alumno/api/abrir-pregunta', { examen_pregunta_id: id }); paso(`alumno: abrir pregunta #${id}`, r, j);
   [r, j] = await web('POST', '/alumno/api/respuesta', { examen_pregunta_id: id, respuesta_texto: texto }); paso(`alumno: responder #${id}`, r, j);
 }
 [r, j] = await web('POST', '/alumno/api/entrega', {}); paso('alumno: entregar', r, j);
