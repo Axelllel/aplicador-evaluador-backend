@@ -3,6 +3,7 @@ const pending = document.querySelector('[data-grading-pending]');
 if (pending) {
     let editing = false;
     document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', () => { editing = true; });
         form.addEventListener('input', () => { editing = true; });
         form.addEventListener('focusin', event => {
             if (event.target.matches('input:not([type="hidden"]),textarea,select')) editing = true;

@@ -106,4 +106,13 @@ test('la evaluación pendiente se actualiza sin borrar una revisión en edición
  await grade.fill('92');
  await page.clock.fastForward(21000);
  await expect(grade).toHaveValue('92');
+ await page.goto('/qa-pending.html');
+ await page.locator('form').filter({has:page.getByRole('button',{name:'Consultar IA para esta respuesta'})}).evaluate(form=>{
+  form.addEventListener('submit',event=>event.preventDefault());
+ });
+ let navigations=0;
+ page.on('framenavigated',()=>navigations++);
+ await page.getByRole('button',{name:'Consultar IA para esta respuesta'}).click();
+ await page.clock.fastForward(21000);
+ expect(navigations).toBe(0);
 });
