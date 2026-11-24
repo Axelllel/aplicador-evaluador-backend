@@ -56,6 +56,10 @@ class SesionController extends Controller
         if ($respuesta->exitosa()) {
             $this->sesion->iniciar($solicitud, $respuesta->cuerpo);
 
+            if (str_starts_with((string) parse_url((string) session('url.intended', ''), PHP_URL_PATH), '/administracion')) {
+                session()->forget('url.intended');
+            }
+
             return ($respuesta->cuerpo['mfa_required'] ?? false)
                 ? redirect()->route('panel.mfa')
                 : redirect()->intended(route('panel.inicio'));

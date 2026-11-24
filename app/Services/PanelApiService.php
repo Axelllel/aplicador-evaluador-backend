@@ -112,8 +112,8 @@ class PanelApiService
         $respuesta = $this->ejecutar($metodo, self::PREFIJO.'/'.ltrim($ruta, '/'), $datos, $token);
 
         if ($autenticada && $respuesta->estado === 403 && ($respuesta->cuerpo['code'] ?? '') === 'MFA_REQUIRED') {
-            session()->put(SesionPanelService::CLAVE.'.mfa_pendiente', true);
-            throw new HttpResponseException(redirect()->route('panel.mfa'));
+            session()->put(SesionPanelService::claveActual().'.mfa_pendiente', true);
+            throw new HttpResponseException(redirect()->route(SesionPanelService::rutaMfa()));
         }
 
         if ($autenticada && $respuesta->estado === 401) {

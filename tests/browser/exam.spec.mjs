@@ -37,3 +37,20 @@ test('acceso docente y selección de perfil sin desbordamiento',async({page},tes
   await page.screenshot({path:testInfo.outputPath(`${name}-${width}.png`),fullPage:true});
  }
 });
+
+test('el administrador tiene formulario independiente y no aparece en los accesos públicos',async({page},testInfo)=>{
+ await page.goto('/qa-perfiles.html');
+ await expect(page.locator('nav > a')).toHaveCount(2);
+ await expect(page.locator('a[href*="administracion"]')).toHaveCount(0);
+ await page.goto('/qa-login.html');
+ await expect(page.locator('form[action$="/login"]')).toHaveCount(1);
+ await expect(page.locator('a[href*="administracion"]')).toHaveCount(0);
+ for(const width of [1366,375]){
+  await page.setViewportSize({width,height:900});await page.goto('/qa-admin.html');
+  await expect(page.getByRole('heading',{name:'Administración del sistema'})).toBeVisible();
+  await expect(page.locator('form[action$="/administracion/ingreso"]')).toHaveCount(1);
+  await expect(page.locator('a[href$="/registro"]')).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
+  await page.screenshot({path:testInfo.outputPath(`administracion-${width}.png`),fullPage:true});
+ }
+});
